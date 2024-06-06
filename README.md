@@ -33,42 +33,42 @@ You are accessing a very early release of the Stellenbosch University DIC Code c
 
 ## Using `pip`
 
-1. Create a new virtual environment - this could be done from the main directory of the cloned repository
+1. Create a new virtual environment for use with this package
 
 ```
-python3 -m venv venv
-```
-
-2. Activate the virtual environment (from Linux)
-
-```
-source venv/bin/activate
-```
-
-3. Install the requirements
-
-```
-pip install -r requirements.txt
-```
-
-## Using `anacoda` - from the command line
-
-1. Create a new virtual environment - this could be done from the main directory of the cloned repository
-
-```
-conda create -n venv pip
+python3 -m venv sundic
 ```
 
 2. Activate the virtual environment
 
 ```
-conda activate venv
+source sundic/bin/activate
 ```
 
-3. Install the requirements
+3. Install the package (command issued from the main directory of the github downloaded code)
 
 ```
-pip install -r requirements.txt
+pip install .
+```
+
+## Using `anacoda` - from the command line
+
+1. Create a new virtual environment for use with this package
+
+```
+conda create -n sundic pip
+```
+
+2. Activate the virtual environment
+
+```
+conda activate sundic
+```
+
+3. Install the package (command issued from the main directory of the github downloaded code)
+
+```
+pip install .
 ```
 
 # Usage
