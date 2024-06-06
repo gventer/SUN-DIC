@@ -45,10 +45,11 @@ python3 -m venv sundic
 source sundic/bin/activate
 ```
 
-3. Install the package (command issued from the main directory of the github downloaded code)
+3. Download and install the package
 
 ```
-pip install .
+git clone https://github.com/gventer/SUN-DIC.git
+pip install ./SUN-DIC
 ```
 
 ## Using `anacoda` - from the command line
@@ -65,10 +66,11 @@ conda create -n sundic pip
 conda activate sundic
 ```
 
-3. Install the package (command issued from the main directory of the github downloaded code)
+3. Download and install the package
 
 ```
-pip install .
+git clone https://github.com/gventer/SUN-DIC.git
+pip install ./SUN-DIC
 ```
 
 # Usage
