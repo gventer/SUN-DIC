@@ -162,15 +162,17 @@ def planarDICLocal(settings):
             nDebugOld = settings['DebugLevel']
             settings['DebugLevel'] = 0
 
-            # Setup the submatrices
+            # Setup the submatrices - match shape to image if possible
+            nTotRows, nTotCols, _ = subSetPnts.shape
             mRows, mCols = factorCPUCnt(nCpus)
+            if nTotRows > nTotCols:
+                mRows, mCols = mCols, mRows
             subMatrices  = __splitMatrix__(subSetPnts, mRows, mCols)
 
             # Track the processes that are being submitted
             procIDs = []
             for i in range(mRows*mCols):
-                iRow = i//mCols
-                iCol = i%mRows
+                iRow, iCol = np.unravel_index( i, (mRows, mCols) )
                 procIDs.append(rmt_icOptimization.remote(
                     settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img))
                 if nDebugOld > 0:
@@ -471,11 +473,14 @@ def icOptimization(settings, subSetPnts, imgSet, img):
     # Process reference and target images for current image pair
     # delF: dFdy = delF[0], dFdx = delF[1]
     # Process the two images
+    # slow - 1s
     F, FInter, delF, FMax = processImage(imgSet, img, [gbSize, gbStdDev],
                                          isDatumImg=True, isNormalized=isNormalized)
+    
+    # fast
     G, GInter, _, _ = processImage(imgSet, img+imgIncr, [gbSize, gbStdDev],
                                    isDatumImg=False, isNormalized=isNormalized)
-
+    
     # ***Adjust the BGCutOff value - this is currently a very crude way to do this
     # Should most probably look at difference in intensity values
     if algorithm == 'IC-LM':
@@ -483,8 +488,9 @@ def icOptimization(settings, subSetPnts, imgSet, img):
 
     # Get the local coordinates for a subset
     xsi, eta = relativeCoords(subSetSize)
-
+    
     # Get the starting point for the optimization
+    # slow 2.5 s
     nextPnt, subSetPnts = getStartingPnt(subSetPnts, nGPPoints, xsi, eta, subSetSize,
                                          F, G, FInter, GInter, nBGCutOff,
                                          shapeFns=settings['ShapeFunctions'])
@@ -496,7 +502,7 @@ def icOptimization(settings, subSetPnts, imgSet, img):
     if settings['DebugLevel'] > 0:
         print('\nStarting IC Optimization for Image Pair: '+str(img))
         print('---------------------------------')
-
+  
     # Loop through all subset points, determine the model coefficients
     # for each subset independently - the order is determined by the next best
     # point to optimize
