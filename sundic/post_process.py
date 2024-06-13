@@ -39,17 +39,13 @@ class Comp(Enum):
 
 
 # --------------------------------------------------------------------------------------------
-def getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
-                     smoothWindow=0, smoothOrder=2):
+def getDisplacements(subSetPnts, smoothWindow=0, smoothOrder=2):
     """
-    Calculate and return the displacements based on the subset points and coefficients.
+    Calculate and return the displacements based on the subset points data structure from 
+    SUN-DIC.
 
     Parameters:
-     - settings (dict): Dictionary of settings - same values used to run sundic.
-     - nRows (int): Number of rows in the dic data.
-     - nCols (int): Number of columns in the dic data.
-     - subSetPoints (ndarray): Array of subset points from sundic.
-     - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+     - subSetPnts (ndarray): Array of subset points from sundic.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
         Default is 0.
@@ -70,26 +66,27 @@ def getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
      - ValueError: If an invalid shapeFns argument is provided.
     """
     # Setup a results array
-    nSubSets = coeffs.shape[1]
+    nSubSets = subSetPnts.shape[0] * subSetPnts.shape[1]
     results = np.zeros((nSubSets, 7))
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, 0:2] = subSetPoints.T
+    results[:, 0] = subSetPnts[:,:,0].reshape(nSubSets, order='F')
+    results[:, 1] = subSetPnts[:,:,1].reshape(nSubSets, order='F')
 
     # Store the x displacement component
-    results[:, Comp.X.value] = coeffs[0, :].T
+    results[:, Comp.X.value] = subSetPnts[:,:,2].reshape(nSubSets, order='F')
 
     # Get the y displacement component based on the shape functions used
-    if settings['ShapeFunctions'] == 'Affine':
-        results[:, Comp.Y.value] = np.copy(coeffs[3, :].T)
+    if subSetPnts.shape[2] == 9:
+        results[:, Comp.Y.value] = subSetPnts[:, : , 5].reshape(nSubSets, order='F')
 
-    elif settings['ShapeFunctions'] == 'Quadratic':
-        results[:, Comp.Y.value] = np.copy(coeffs[6, :].T)
+    elif subSetPnts.shape[2] == 15:
+        results[:, Comp.Y.value] = subSetPnts[:, : , 8].reshape(nSubSets, order='F')
 
     else:
         raise ValueError(
-            'Invalid shapeFns argument.  Only Affine and Quadratic are supported.')
+            'Invalid number of shape function arguments.  Only Affine and Quadratic are supported.')
 
     # Calculate the displacement magnitude and store in the 5th column of the
     # results array
@@ -98,28 +95,29 @@ def getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
 
     # If smoothing is requested, apply Savitzky-Golay smoothing
     if smoothWindow > 0:
+        nRows = subSetPnts.shape[0]
+        nCols = subSetPnts.shape[1]
         results[:, Comp.X.value] = __smoothResults__(nRows, nCols, results,
-                                                     Comp.X.value, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+                                                     Comp.X.value, smoothWindow=smoothWindow, 
+                                                     smoothOrder=smoothOrder)
         results[:, Comp.Y.value] = __smoothResults__(nRows, nCols, results,
-                                                     Comp.Y.value, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+                                                     Comp.Y.value, smoothWindow=smoothWindow, 
+                                                     smoothOrder=smoothOrder)
         results[:, Comp.MAG.value] = __smoothResults__(nRows, nCols, results,
-                                                       Comp.MAG.value, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+                                                       Comp.MAG.value, smoothWindow=smoothWindow, 
+                                                       smoothOrder=smoothOrder)
 
     return results
 
 
 # --------------------------------------------------------------------------------------------
-def getStrains(settings, nRows, nCols, subSetPoints, coeffs, smoothWindow=3, smoothOrder=2):
+def getStrains(subSetPnts, smoothWindow=3, smoothOrder=2):
     """
     Calculate and return the strains based on the subset points and coefficients.  For now only 
     Engineering Strain is calculated.
 
     Parameters:
-     - settings (dict): Dictionary of settings - same values used to run sundic.
-     - nRows (int): Number of rows in the dic data.
-     - nCols (int): Number of columns in the dic data.
-     - subSetPoints (ndarray): Array of subset points from sundic.
-     - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+     - subSetPnts (ndarray): Array of subset points from sundic.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number larger than 0.  Default is 3.
      - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
@@ -144,18 +142,20 @@ def getStrains(settings, nRows, nCols, subSetPoints, coeffs, smoothWindow=3, smo
         raise ValueError('smoothWindow must be larger than zero.')
 
     # Setup a results array
-    nSubSets = coeffs.shape[1]
+    nSubSets = subSetPnts.shape[0] * subSetPnts.shape[1]
     results = np.zeros((nSubSets, 7))
 
     # Get the displacements - no smoothing yet
-    disp = getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
-                            smoothWindow=0)
+    disp = getDisplacements(subSetPnts, smoothWindow=0)
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, 0:2] = subSetPoints.T
+    results[:, 0] = subSetPnts[:, :, 0].reshape(nSubSets, order='F')
+    results[:, 1] = subSetPnts[:, :, 1].reshape(nSubSets, order='F')
 
     # Apply Savitzky-Golay smoothing with gradient calculation
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]    
     dudy, dudx = __smoothResults__(
         nRows, nCols, disp, Comp.X.value, smoothWindow=smoothWindow,
         smoothOrder=smoothOrder, derivative='both')
@@ -177,7 +177,7 @@ def getStrains(settings, nRows, nCols, subSetPoints, coeffs, smoothWindow=3, smo
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispContour(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.MAG,
+def plotDispContour(settings, subSetPnts, dispComp=Comp.MAG,
                     alpha=0.75, plotImage=True, showPlot=True, fileName='',
                     smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None):
     """
@@ -185,10 +185,7 @@ def plotDispContour(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.
 
     Parameters:
         - settings (dict): Dictionary of settings - same values used to run sundic.
-        - nRows (int): Number of rows in the dic data.
-        - nCols (int): Number of columns in the dic data.
-        - subSetPoints (ndarray): Array of subset points from sundic.
-        - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+        - subSetPnts (ndarray): Array of subset points from sundic.
         - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.MAG.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
@@ -207,10 +204,11 @@ def plotDispContour(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.
     """
 
     # Get the displacement results
-    results = getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
-                               smoothWindow, smoothOrder)
+    results = getDisplacements(subSetPnts, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
     X = results[:, 0].reshape(nCols, nRows)
     Y = results[:, 1].reshape(nCols, nRows)
     if dispComp == Comp.MAG:
@@ -252,7 +250,7 @@ def plotDispContour(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainContour(settings, nRows, nCols, subSetPoints, coeffs, strainComp=Comp.X,
+def plotStrainContour(settings, subSetPnts, strainComp=Comp.X,
                       alpha=0.75, plotImage=True, showPlot=True, fileName='',
                       smoothWindow=3, smoothOrder=2, maxValue=None, minValue=None):
     """
@@ -260,10 +258,7 @@ def plotStrainContour(settings, nRows, nCols, subSetPoints, coeffs, strainComp=C
 
     Parameters:
         - settings (dict): Dictionary of settings - same values used to run sundic.
-        - nRows (int): Number of rows in the dic data.
-        - nCols (int): Number of columns in the dic data.
-        - subSetPoints (ndarray): Array of subset points from sundic.
-        - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+        - subSetPnts (ndarray): Array of subset points from sundic.
         - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.MAG.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
@@ -281,10 +276,11 @@ def plotStrainContour(settings, nRows, nCols, subSetPoints, coeffs, strainComp=C
     """
 
     # Get the displacement results
-    results = getStrains(settings, nRows, nCols, subSetPoints, coeffs,
-                         smoothWindow, smoothOrder)
+    results = getStrains(subSetPnts, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
     X = results[:, 0].reshape(nCols, nRows)
     Y = results[:, 1].reshape(nCols, nRows)
     if strainComp == Comp.SHEAR:
@@ -328,19 +324,15 @@ def plotStrainContour(settings, nRows, nCols, subSetPoints, coeffs, strainComp=C
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispCutLine(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.X,
-                    cutComp=Comp.Y, cutValues=[0], gridLines=True, showPlot=True,
-                    fileName='', smoothWindow=0, smoothOrder=2, interpolate=False):
+def plotDispCutLine(subSetPnts, dispComp=Comp.X, cutComp=Comp.Y, cutValues=[0], 
+                    gridLines=True, showPlot=True, fileName='', 
+                    smoothWindow=0, smoothOrder=2, interpolate=False):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
     is shown for the specified displacement component in specified direction.
 
     Parameters:
-        - settings (dict): Dictionary of settings - same values used to run sundic.
-        - nRows (int): Number of rows in the dic data.
-        - nCols (int): Number of columns in the dic data.
-        - subSetPoints (ndarray): Array of subset points from sundic.
-        - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+        - subSetPnts (ndarray): Array of subset points from sundic.
         - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.X.
         - cutComp (Comp, optional): Component of the cut line. Default is Comp.Y.
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
@@ -360,10 +352,11 @@ def plotDispCutLine(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.
     """
 
     # Get the displacement results
-    results = getDisplacements(settings, nRows, nCols, subSetPoints, coeffs,
-                               smoothWindow, smoothOrder)
+    results = getDisplacements(subSetPnts, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
     X = results[:, 0].reshape(nCols, nRows)
     X = X[:, 0]
     Y = results[:, 1].reshape(nCols, nRows)
@@ -399,20 +392,15 @@ def plotDispCutLine(settings, nRows, nCols, subSetPoints, coeffs, dispComp=Comp.
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainCutLine(settings, nRows, nCols, subSetPoints, coeffs, strainComp=Comp.X,
-                      cutComp=Comp.Y, cutValues=[0],
-                      gridLines=True, showPlot=True,
-                      fileName='', smoothWindow=9, smoothOrder=2, interpolate=False):
+def plotStrainCutLine(subSetPnts, strainComp=Comp.X, cutComp=Comp.Y, cutValues=[0],
+                      gridLines=True, showPlot=True, fileName='', 
+                      smoothWindow=9, smoothOrder=2, interpolate=False):
     """
     Plot a strain cut line based on the subset points and coefficients.  The cut line
     is shown for the specified strain component in the specified direction.
 
     Parameters:
-        - settings (dict): Dictionary of settings - same values used to run sundic.
-        - nRows (int): Number of rows in the dic data.
-        - nCols (int): Number of columns in the dic data.
-        - subSetPoints (ndarray): Array of subset points from sundic.
-        - coeffs (ndarray): Coefficients for calculating the displacements from sundic.
+        - subSetPnts (ndarray): Array of subset points from sundic.
         - strainComp (Comp, optional): Component of the displacement to plot. Default is Comp.X.
         - cutComp (Comp, optional): Component of the cut line. Default is Comp.Y.
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
@@ -431,10 +419,11 @@ def plotStrainCutLine(settings, nRows, nCols, subSetPoints, coeffs, strainComp=C
     """
 
     # Get the displacement results
-    results = getStrains(settings, nRows, nCols, subSetPoints, coeffs,
-                         smoothWindow, smoothOrder)
+    results = getStrains(subSetPnts, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
     X = results[:, 0].reshape(nCols, nRows)
     X = X[:, 0]
     Y = results[:, 1].reshape(nCols, nRows)
