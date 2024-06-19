@@ -18,10 +18,11 @@ You are accessing a very early release of the Stellenbosch University DIC Code c
 1. Completely open source using standard Python libraries wherever possible
 2. Make use of the zero-mean normalized sum of squared differences (ZNSSD) correlation criterion
 3. Have an advanced starting strategy for automatically creating initial guesses at a small number of starting points using the Akaze feature detection algorithm
-4. Have both linear (affine) and quadratic shape functions are available
+4. Have both linear (affine) and quadratic shape functions available
 5. Have both an inverse compositional Gauss-Newton (IC-GN) and an inverse compositional Levenberg-Marquardt (IC-LM) solver implemented
 6. Calculate both displacements and strains
 7. Strains are calculated using a Savitzky-Golay smoothing operations
+8. Parallel computing
 
 # Installation
 
