@@ -8,6 +8,7 @@
 
 # Import libraries required by the code
 import os as os
+import math as m
 import natsort as ns
 import configparser
 import time
@@ -129,7 +130,7 @@ def planarDICLocal(settings):
     nDefModCoeff = numShapeFnCoeffs(settings['ShapeFunctions'])
     subSetPnts = setupSubSets(
         subSetSize, stepSize, nDefModCoeff, ROI, debugLevel=debugLevel)
-    
+
     # Get the image pair information
     imgDatum = settings['DatumImage']
     imgTarget = settings['TargetImage']
@@ -147,7 +148,7 @@ def planarDICLocal(settings):
     if nCpus > 1:
         if debugLevel > 0:
             print('\nParallel Run Information :')
-            print('---------------------------------')            
+            print('---------------------------------')
             print('  Starting parallel run with {} CPUs'.format(nCpus))
         ray.init(num_cpus=nCpus)
 
@@ -164,27 +165,33 @@ def planarDICLocal(settings):
 
             # Setup the submatrices - match shape to image if possible
             nTotRows, nTotCols, _ = subSetPnts.shape
-            mRows, mCols = factorCPUCnt(nCpus)
-            if nTotRows > nTotCols:
-                mRows, mCols = mCols, mRows
-            subMatrices  = __splitMatrix__(subSetPnts, mRows, mCols)
+            mRows, mCols = __factorCPUCount__(nCpus, nTotRows/nTotCols)
+            if nDebugOld > 0:
+                print("\n  Splitting matrix into {}x{} submatrices".format(
+                    mRows, mCols))
+                print("")
+            subMatrices = __splitMatrix__(subSetPnts, mRows, mCols)
 
             # Track the processes that are being submitted
             procIDs = []
             for i in range(mRows*mCols):
-                iRow, iCol = np.unravel_index( i, (mRows, mCols) )
+                iRow, iCol = np.unravel_index(i, (mRows, mCols))
                 procIDs.append(rmt_icOptimization.remote(
                     settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img))
+
                 if nDebugOld > 0:
                     print("  Starting remote process for submatrix {} {}".
                           format(iRow, iCol))
+
+            if nDebugOld > 0:
+                print("")
 
             # Wait for results - start pulling results from tasks as soon as they are
             # are done
             while len(procIDs):
                 done_id, procIDs = ray.wait(procIDs)
                 iRow, iCol, rsltMatrix = ray.get(done_id[0])
-                (subMatrices[iRow][iCol])[:,:] = rsltMatrix
+                (subMatrices[iRow][iCol])[:, :] = rsltMatrix
                 if nDebugOld > 0:
                     print("  Submatrix {} {} completed".format(iRow, iCol))
 
@@ -192,7 +199,7 @@ def planarDICLocal(settings):
             settings['DebugLevel'] = nDebugOld
 
         # Serial run on one processor
-        else :
+        else:
             # coefficients at convergence for current (i'th) image pair
             subSetPnts = icOptimization(settings, subSetPnts, imgSet, img)
 
@@ -208,7 +215,7 @@ def planarDICLocal(settings):
     # Shutdown the parallel environment if required
     if nCpus > 1:
         ray.shutdown()
-    
+
     return subSetPnts
 
 
@@ -227,11 +234,11 @@ def rmt_icOptimization(settings, iRowID, iColID, subSetPnts, imgSet, img):
         - subSetPnts (ndarray): The subset points to optimize.
         - imgSet (ndarray): The array of images.
         - img (int): The index of the image to process.
-    
+
     Returns:
         - tuple: A tuple containing the row index, column index, and the updated subset points.
     """
-    rslt = icOptimization(settings, subSetPnts, imgSet, img)
+    rslt = icOptimization(settings, np.copy(subSetPnts), imgSet, img)
     return iRowID, iColID, rslt
 
 
@@ -476,11 +483,11 @@ def icOptimization(settings, subSetPnts, imgSet, img):
     # slow - 1s
     F, FInter, delF, FMax = processImage(imgSet, img, [gbSize, gbStdDev],
                                          isDatumImg=True, isNormalized=isNormalized)
-    
+
     # fast
     G, GInter, _, _ = processImage(imgSet, img+imgIncr, [gbSize, gbStdDev],
                                    isDatumImg=False, isNormalized=isNormalized)
-    
+
     # ***Adjust the BGCutOff value - this is currently a very crude way to do this
     # Should most probably look at difference in intensity values
     if algorithm == 'IC-LM':
@@ -488,7 +495,7 @@ def icOptimization(settings, subSetPnts, imgSet, img):
 
     # Get the local coordinates for a subset
     xsi, eta = relativeCoords(subSetSize)
-    
+
     # Get the starting point for the optimization
     # slow 2.5 s
     nextPnt, subSetPnts = getStartingPnt(subSetPnts, nGPPoints, xsi, eta, subSetSize,
@@ -496,13 +503,13 @@ def icOptimization(settings, subSetPnts, imgSet, img):
                                          shapeFns=settings['ShapeFunctions'])
 
     # Boolean array to indicate which points have been analyzed - initially all are false
-    analyze = np.zeros_like(subSetPnts[:,:,0], dtype=bool)
+    analyze = np.zeros_like(subSetPnts[:, :, 0], dtype=bool)
 
     # Print debug info if requested
     if settings['DebugLevel'] > 0:
         print('\nStarting IC Optimization for Image Pair: '+str(img))
         print('---------------------------------')
-  
+
     # Loop through all subset points, determine the model coefficients
     # for each subset independently - the order is determined by the next best
     # point to optimize
@@ -703,7 +710,7 @@ def processImage(imgSet, img, gaussBlur, isDatumImg=True, isNormalized=False):
 
 
 # --------------------------------------------------------------------------------------------
-def getNextPnt(currentPnt, subSetPnts, analyzed, xsi, eta, F, G, FInter, GInter, 
+def getNextPnt(currentPnt, subSetPnts, analyzed, xsi, eta, F, G, FInter, GInter,
                nBGCutOff, shapeFns='Affine'):
     """
     Get the next point to analyze in the optimization algorithm.  The next point is
@@ -733,8 +740,8 @@ def getNextPnt(currentPnt, subSetPnts, analyzed, xsi, eta, F, G, FInter, GInter,
 
     # Get the four neighbors of the current point
     maxRow = subSetPnts.shape[0] - 1
-    maxCol = subSetPnts.shape[1] - 1    
-    neighbors = np.zeros((4,2), dtype=int)
+    maxCol = subSetPnts.shape[1] - 1
+    neighbors = np.zeros((4, 2), dtype=int)
     neighbors[0, 0] = iRow - 1 if iRow > 0 else iRow
     neighbors[0, 1] = iCol
     neighbors[1, 0] = iRow + 1 if iRow < maxRow else iRow
@@ -773,12 +780,13 @@ def getNextPnt(currentPnt, subSetPnts, analyzed, xsi, eta, F, G, FInter, GInter,
 
         # Store the CZNSSD value in the last element of the parameter vector
         if newCZNSSD < oldCZNSSD:
-            subSetPnts[iRow, iCol, 2:] = subSetPnts[currentPnt[0], currentPnt[1], 2:]
+            subSetPnts[iRow, iCol,
+                       2:] = subSetPnts[currentPnt[0], currentPnt[1], 2:]
             subSetPnts[iRow, iCol, -1] = newCZNSSD
 
     # Find the index of the best point that has not been analyzed yet using a masked
     # array to ignore the analyzed points
-    maskedArray = np.ma.masked_array(subSetPnts[:,:,-1], mask=analyzed)
+    maskedArray = np.ma.masked_array(subSetPnts[:, :, -1], mask=analyzed)
     nextPnt = np.unravel_index(np.argmin(maskedArray), maskedArray.shape)
 
     # Return the next point to analyze
@@ -858,7 +866,7 @@ def getStartingPnt(subSetPnts, nGQPoints, xsi, eta, subSetSize, F, G, FInter, GI
     # indexing
     subSetPnts[yPnts[:, np.newaxis], xPnts, :] = adPoints
 
-    # We can actually setup a mask to search as we do for the getNextPoint operation, 
+    # We can actually setup a mask to search as we do for the getNextPoint operation,
     # however it seems faster to just directly search for the minimum value and it is
     # only done once
     startIdx = np.unravel_index(
@@ -1415,12 +1423,12 @@ def loadSettings():
         'General', 'ImageFolder', fallback='images')
     if not os.path.isdir(settings['ImageFolder']):
         raise ValueError('Config Parser:  Image folder does not exist')
-    
+
     settings['CPUCount'] = cp.get(
         'General', 'CPUCount', fallback='1').lower()
     if settings['CPUCount'] == 'auto':
         settings['CPUCount'] = os.cpu_count()
-    else: 
+    else:
         settings['CPUCount'] = int(settings['CPUCount'])
 
     if int(settings['CPUCount']) < 1:
@@ -1590,28 +1598,52 @@ def calcCZNSSD(nBGCutOff, f, f_mean, f_tilde, g, g_mean, g_tilde):
 
     return cznssd
 
+
 # -----------------------------------------------------------------------------
-def factorCPUCnt(c: int):
-    """Calculate the closest two factors of c.
-    
+def __factorCPUCount__(n, r):
+    """Calculate the two factors of integer n, that are closest to the ratio r.
+
+    Parameters:
+        n (int): The integer to be factored.
+        r (float): The ratio to be used for comparison.
+
     Returns:
-      [int, int]: The two factors of c that are closest; in other words, the
-        closest two integers for which a*b=c. If c is a perfect square, the
-        result will be [sqrt(c), sqrt(c)]; if c is a prime number, the result
-        will be [1, c]. The first number will always be the smallest, if they
-        are not equal.
+        tuple: A tuple containing the two factors of n that are closest to the ratio r.
     """
-    if c//1 != c:
-        raise TypeError("c must be an integer.")
 
-    a, b, i = 1, c, 0
-    while a < b:
-        i += 1
-        if c % i == 0:
-            a = i
-            b = c//a
+    # Check if n is an integer
+    if n//1 != n:
+        raise TypeError("n must be an integer.")
 
-    return [b, a]
+    # Set up variables
+    i = prevF1 = prevF2 = 0
+    prevDiff = m.inf
+
+    # Find all factors of n up to the square root of n.  Then compare with
+    # the given ratio r.  If the ratio is closer to r than the previous ratio
+    # then save the factors.  Else break the loop.
+    while i <= n:
+
+        i = i + 1
+
+        # Factor found
+        if (n % i == 0):
+            f1 = i
+            f2 = n//i
+            diff = m.fabs(r - f1/f2)
+
+            # Difference is still getting smaller
+            if (diff < prevDiff):
+                prevDiff = diff
+                prevF1 = f1
+                prevF2 = f2
+
+            # Difference is getting larger so break out
+            else:
+                break
+
+    return (prevF1, prevF2)
+
 
 # -----------------------------------------------------------------------------
 def __splitMatrix__(matrix, rowSplit, colSplit):
