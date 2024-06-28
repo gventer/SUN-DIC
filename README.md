@@ -9,9 +9,8 @@ You are accessing a very early release of the Stellenbosch University DIC Code c
 ## Limitations
 
 1. Can currently only deal with 2D planar problems (a stereo version is planned)
-2. Can currently only deal with a single image pair (that is a total of two images). Future work will allow for an incremental or absolute strategy to deal with multiple image pairs
-3. Can only specify a rectangular region of interest (ROI), but an all black background in the image pair can be used to deal with irregularly shaped domains
-4. There are currently no GUI available for the code
+2. Can only specify a rectangular region of interest (ROI), but an all black background in the image pair can be used to deal with irregularly shaped domains
+3. There are currently no GUI available for the code
 
 ## Key features
 
@@ -20,9 +19,10 @@ You are accessing a very early release of the Stellenbosch University DIC Code c
 3. Have an advanced starting strategy for automatically creating initial guesses at a small number of starting points using the Akaze feature detection algorithm
 4. Have both linear (affine) and quadratic shape functions available
 5. Have both an inverse compositional Gauss-Newton (IC-GN) and an inverse compositional Levenberg-Marquardt (IC-LM) solver implemented
-6. Calculate both displacements and strains
-7. Strains are calculated using a Savitzky-Golay smoothing operations
-8. Parallel computing
+6. Have both an absolute and relative update strategy when considering multiple image pairs
+7. Calculate both displacements and strains
+8. Strains are calculated using a Savitzky-Golay smoothing operations
+9. Parallel computing
 
 # Installation
 
