@@ -3,3 +3,6 @@ sundic/__pycache__
 build/
 sundic.egg-info/
 .ipynb_checkpoints/
+results.sdic
+todo
+test_sundic.py

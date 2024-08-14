@@ -6,17 +6,49 @@
 # Author: G Venter
 # Date: 2024/06/05
 ################################################################################
-from enum import Enum
+from enum import IntEnum
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from scipy.interpolate import RectBivariateSpline, NearestNDInterpolator
 import sundic.sundic as sdic
 from sundic.util.savitsky_golay import sgolay2d
+import sundic.util.datafile as dataFile
+import sundic.settings as sdset
 
 # --------------------------------------------------------------------------------------------
-class Comp(Enum):
-    """n
+class DispComp(IntEnum):
+    """
+    Enumeration representing different components used for displacementfields.
+
+    Attributes:
+        - X_DISP (int): The X component.
+        - Y_DISP (int): The Y component.
+        - Z_DISP (int): The Z component.
+        - DISP_MAG (int): The magnitude component.
+    """
+    X_DISP = 3
+    Y_DISP = 4
+    Z_DISP = 5
+    DISP_MAG = 6
+
+class StrainComp(IntEnum):
+    """
+    Enumeration representing different components used for strain fields.
+
+    Attributes:
+        - X_STRAIN (int): The X component.
+        - Y_STRAIN (int): The Y component.
+        - SHEAR_STRAIN (int): The shear component.
+        - VM_STRAIN (int): The Von Mises component.
+    """
+    X_STRAIN = 3
+    Y_STRAIN = 4
+    SHEAR_STRAIN = 5
+    VM_STRAIN = 6
+
+class CompID(IntEnum):
+    """
     Enumeration representing different components used for displacement and strain fields.
 
     Attributes:
@@ -26,31 +58,20 @@ class Comp(Enum):
         - SHEAR (int): The shear component.
         - VM(int): The Von Mises component.
     """
-    # General
-    X = 3
-    Y = 4
-
-    # Displacement specific
-    MAG = 6
-
-    # Strain specific
-    SHEAR = 5
-    VM = 6
+    XCoordID = 0
+    YCoordID = 1
+    XDispID  = 2
 
 # --------------------------------------------------------------------------------------------
-# Local used constants
-XCoordID = 0
-YCoordID = 1
-XDispID  = 2
-
-# --------------------------------------------------------------------------------------------
-def getDisplacements(subSetPnts, smoothWindow=0, smoothOrder=2):
+def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     """
-    Calculate and return the displacements based on the subset points data structure from 
+    Calculate and return the displacements based on the results file created by 
     SUN-DIC.
 
     Parameters:
-     - subSetPnts (ndarray): Array of subset points from sundic.
+     - resultsFile (string): Results file from sundic.
+     - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
         Default is 0.
@@ -66,63 +87,76 @@ def getDisplacements(subSetPnts, smoothWindow=0, smoothOrder=2):
             - Column 4: y displacement component.
             - Column 5: z displacement component - 0's for now.
             - Column 6: displacement magnitude.
+    - nRows: int.  The number of rows of subsets.
+    - nCols: int.  The number of columns of subsets.
 
     Raises:
      - ValueError: If an invalid shapeFns argument is provided.
     """
+    # Load the results file and unpack the data
+    inFile = dataFile.DataFile.openReader(resultsFile)
+
+    # Ingore the heading
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+
+    # Get the data
+    subSetPnts = inFile.readSubSetData(imgPair)
+
+    # Close the file
+    inFile.close()
+
     # Setup a results array
     nSubSets = subSetPnts.shape[0] * subSetPnts.shape[1]
     results = np.zeros((nSubSets, 7))
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, XCoordID] = subSetPnts[:,:,XCoordID].reshape(nSubSets, order='F')
-    results[:, YCoordID] = subSetPnts[:,:,YCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.XCoordID] = subSetPnts[:, :,
+                                             CompID.XCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.YCoordID] = subSetPnts[:, :, 
+                                             CompID.YCoordID].reshape(nSubSets, order='F')
 
     # Store the x displacement component
-    results[:, Comp.X.value] = subSetPnts[:,:,XDispID].reshape(nSubSets, order='F')
+    results[:, DispComp.X_DISP] = subSetPnts[:, :,
+                                             CompID.XDispID].reshape(nSubSets, order='F')
 
     # Get the y displacement component based on the shape functions used
-    if subSetPnts.shape[2] == 9:
-        results[:, Comp.Y.value] = subSetPnts[:, :, XDispID+3].reshape(nSubSets, order='F')
+    YDispID = int(CompID.XDispID + settings.numShapeFnCoeffs()/2)
+    results[:, DispComp.Y_DISP] = subSetPnts[:, :, YDispID].reshape(nSubSets, order='F')
 
-    elif subSetPnts.shape[2] == 15:
-        results[:, Comp.Y.value] = subSetPnts[:, :, XDispID+6].reshape(nSubSets, order='F')
-
-    else:
-        raise ValueError(
-            'Invalid number of shape function arguments.  Only Affine and Quadratic are supported.')
-
-    # Calculate the displacement magnitude and store in the 5th column of the
+    # Calculate the displacement magnitude and store in the correct column of the
     # results array
-    results[:, Comp.MAG.value] = np.sqrt(results[:, Comp.X.value]**2 +
-                                         results[:, Comp.Y.value]**2)
+    results[:, DispComp.DISP_MAG] = np.sqrt(results[:, DispComp.X_DISP]**2 +
+                                         results[:, DispComp.Y_DISP]**2)
 
     # If smoothing is requested, apply Savitzky-Golay smoothing
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
     if smoothWindow > 0:
-        nRows = subSetPnts.shape[0]
-        nCols = subSetPnts.shape[1]
-        results[:, Comp.X.value] = __smoothResults__(nRows, nCols, results,
-                                                     Comp.X.value, smoothWindow=smoothWindow, 
-                                                     smoothOrder=smoothOrder)
-        results[:, Comp.Y.value] = __smoothResults__(nRows, nCols, results,
-                                                     Comp.Y.value, smoothWindow=smoothWindow, 
-                                                     smoothOrder=smoothOrder)
-        results[:, Comp.MAG.value] = __smoothResults__(nRows, nCols, results,
-                                                       Comp.MAG.value, smoothWindow=smoothWindow, 
-                                                       smoothOrder=smoothOrder)
+        results[:, DispComp.X_DISP] = _smoothResults_(nRows, nCols, results,
+                                            DispComp.X_DISP, smoothWindow=smoothWindow, 
+                                            smoothOrder=smoothOrder)
+        results[:, DispComp.Y_DISP] = _smoothResults_(nRows, nCols, results,
+                                            DispComp.Y_DISP, smoothWindow=smoothWindow,
+                                            smoothOrder=smoothOrder)
+        results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, results,
+                                            DispComp.DISP_MAG, smoothWindow=smoothWindow,
+                                            smoothOrder=smoothOrder)
 
-    return results
+    return results, nRows, nCols
 
 
 # --------------------------------------------------------------------------------------------
-def getStrains(subSetPnts, smoothWindow=3, smoothOrder=2):
+def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
     """
     Calculate and return the strains based on the subset points and coefficients.  For now only 
     Engineering Strain is calculated.
 
     Parameters:
-     - subSetPnts (ndarray): Array of subset points from sundic.
+     - resultsFile (string): Results file from sundic.
+     - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number larger than 0.  Default is 3.
      - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
@@ -137,6 +171,8 @@ def getStrains(subSetPnts, smoothWindow=3, smoothOrder=2):
             - Column 4: y strain component.
             - Column 5: xy/shear strain component.
             - Column 6: Von Mises strain.
+    - nRows: int.  The number of rows of subsets.
+    - nCols: int.  The number of columns of subsets.            
 
     Raises:
      - ValueError: If an invalid smoothFactor argument is provided.
@@ -146,53 +182,51 @@ def getStrains(subSetPnts, smoothWindow=3, smoothOrder=2):
     if smoothWindow <= 0:
         raise ValueError('smoothWindow must be larger than zero.')
 
-    # Setup a results array
-    nSubSets = subSetPnts.shape[0] * subSetPnts.shape[1]
-    results = np.zeros((nSubSets, 7))
-
     # Get the displacements - no smoothing yet
-    disp = getDisplacements(subSetPnts, smoothWindow=0)
+    disp, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow=0)
+
+    # Setup a results array
+    results = np.zeros((nRows*nCols, 7))
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, XCoordID] = subSetPnts[:, :, XCoordID].reshape(nSubSets, order='F')
-    results[:, YCoordID] = subSetPnts[:, :, YCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.XCoordID] = disp[:, CompID.XCoordID]
+    results[:, CompID.YCoordID] = disp[:, CompID.YCoordID]
 
     # Apply Savitzky-Golay smoothing with gradient calculation
-    nRows = subSetPnts.shape[0]
-    nCols = subSetPnts.shape[1]    
-    dudy, dudx = __smoothResults__(
-        nRows, nCols, disp, Comp.X.value, smoothWindow=smoothWindow,
+    dudy, dudx = _smoothResults_(
+        nRows, nCols, disp, DispComp.X_DISP, smoothWindow=smoothWindow,
         smoothOrder=smoothOrder, derivative='both')
-    dvdy, dvdx = __smoothResults__(
-        nRows, nCols, disp, Comp.Y.value, smoothWindow=smoothWindow,
+    dvdy, dvdx = _smoothResults_(
+        nRows, nCols, disp, DispComp.Y_DISP, smoothWindow=smoothWindow,
         smoothOrder=smoothOrder, derivative='both')
 
     # Store the strain components
-    results[:, Comp.X.value] = dudx
-    results[:, Comp.Y.value] = dvdy
-    results[:, Comp.SHEAR.value] = 0.5 * (dudy + dvdx)
-    results[:, Comp.VM.value] = np.sqrt(results[:, Comp.X.value]**2 +
-                                        results[:, Comp.Y.value]**2 -
-                                        results[:, Comp.X.value] *
-                                        results[:, Comp.Y.value] +
-                                        3 * results[:, Comp.SHEAR.value]**2)
+    results[:, StrainComp.X_STRAIN] = dudx
+    results[:, StrainComp.Y_STRAIN] = dvdy
+    results[:, StrainComp.SHEAR_STRAIN] = 0.5 * (dudy + dvdx)
+    results[:, StrainComp.VM_STRAIN] = np.sqrt(results[:, StrainComp.X_STRAIN]**2 +
+                                        results[:, StrainComp.Y_STRAIN]**2 -
+                                        results[:, StrainComp.X_STRAIN] *
+                                        results[:, StrainComp.Y_STRAIN] +
+                                        3 * results[:, StrainComp.SHEAR_STRAIN]**2)
 
-    return results
+    return results, nRows, nCols
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispContour(settings, subSetPnts, imgSetID, dispComp=Comp.MAG,
+def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
                     alpha=0.75, plotImage=True, showPlot=True, fileName='',
                     smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
     Parameters:
-        - settings (dict): Dictionary of settings - same values used to run sundic.
-        - subSetPnts (ndarray): Array of subset points from sundic.
-        - imgSetID (int): ID of the image set to use for the plot.
-        - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.MAG.
+        - resultsFile (string): Results file from sundic.
+        - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+        - dispComp (Comp, optional): Component of the displacement to plot. 
+                    Default is DispComp.DISP_MAG.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
@@ -210,19 +244,17 @@ def plotDispContour(settings, subSetPnts, imgSetID, dispComp=Comp.MAG,
     """
 
     # Get the displacement results
-    results = getDisplacements(subSetPnts[imgSetID], smoothWindow, smoothOrder)
+    results, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    nRows = subSetPnts[imgSetID].shape[0]
-    nCols = subSetPnts[imgSetID].shape[1]
-    X = results[:, XCoordID].reshape(nCols, nRows)
-    Y = results[:, YCoordID].reshape(nCols, nRows)
-    if dispComp == Comp.MAG:
-        Z = results[:, Comp.MAG.value].reshape(nCols, nRows)
-    elif dispComp == Comp.X:
-        Z = results[:, Comp.X.value].reshape(nCols, nRows)
-    elif dispComp == Comp.Y:
-        Z = results[:, Comp.Y.value].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
+    if dispComp == DispComp.DISP_MAG:
+        Z = results[:, DispComp.DISP_MAG].reshape(nCols, nRows)
+    elif dispComp == DispComp.X_DISP:
+        Z = results[:, DispComp.X_DISP].reshape(nCols, nRows)
+    elif dispComp == DispComp.Y_DISP:
+        Z = results[:, DispComp.Y_DISP].reshape(nCols, nRows)
     else:
         raise ValueError('Invalid dispComp argument - use the Comp object.')
 
@@ -232,14 +264,20 @@ def plotDispContour(settings, subSetPnts, imgSetID, dispComp=Comp.MAG,
     if minValue:
         Z[Z < minValue] = minValue
 
+    # Get the settings object
+    inFile = dataFile.DataFile.openReader(resultsFile)
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+    inFile.close()
+
     # Read the image to plot on and plot
     if plotImage:
-        imgSet = sdic.getImageList(settings['ImageFolder'])
-        if imgSetID == -1:
-            imgSetID = len(imgSet) - 1
+        imgSet = sdic._getImageList_(settings.ImageFolder)
+        if imgPair == -1:
+            imgPair = len(imgSet) - 1
         else:
-            imgSetID = imgSetID + 1
-        img = cv2.imread(imgSet[imgSetID], cv2.IMREAD_GRAYSCALE)
+            imgPair = imgPair + 1
+        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
         plt.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
@@ -260,17 +298,18 @@ def plotDispContour(settings, subSetPnts, imgSetID, dispComp=Comp.MAG,
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainContour(settings, subSetPnts, imgSetID, strainComp=Comp.X,
+def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
                       alpha=0.75, plotImage=True, showPlot=True, fileName='',
                       smoothWindow=3, smoothOrder=2, maxValue=None, minValue=None):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
     Parameters:
-        - settings (dict): Dictionary of settings - same values used to run sundic.
-        - subSetPnts (ndarray): Array of subset points from sundic.
-        - imgSetID (int): ID of the image set to use for the plot.
-        - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.MAG.
+        - resultsFile (string): Results file from sundic.
+        - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+        - strainComp (Comp, optional): Component of the strain to plot. 
+                    Default is StrainComp.VM_STRAIN.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
@@ -286,22 +325,21 @@ def plotStrainContour(settings, subSetPnts, imgSetID, strainComp=Comp.X,
         - ValueError: If an invalid dispComp argument is provided.
     """
 
-    # Get the displacement results
-    results = getStrains(subSetPnts[imgSetID], smoothWindow, smoothOrder)
+    # Get the strain results
+    results, nRows, nCols = getStrains(resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    nRows = subSetPnts[imgSetID].shape[0]
-    nCols = subSetPnts[imgSetID].shape[1]
-    X = results[:, XCoordID].reshape(nCols, nRows)
-    Y = results[:, YCoordID].reshape(nCols, nRows)
-    if strainComp == Comp.SHEAR:
-        Z = results[:, Comp.SHEAR.value].reshape(nCols, nRows)
-    elif strainComp == Comp.X:
-        Z = results[:, Comp.X.value].reshape(nCols, nRows)
-    elif strainComp == Comp.Y:
-        Z = results[:, Comp.Y.value].reshape(nCols, nRows)
-    elif strainComp == Comp.VM:
-        Z = results[:, Comp.VM.value].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
+
+    if strainComp == StrainComp.SHEAR_STRAIN:
+        Z = results[:, StrainComp.SHEAR_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.X_STRAIN:
+        Z = results[:, StrainComp.X_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.Y_STRAIN:
+        Z = results[:, StrainComp.Y_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.VM_STRAIN:
+        Z = results[:, StrainComp.VM_STRAIN].reshape(nCols, nRows)
     else:
         raise ValueError('Invalid strainComp argument - use the Comp object.')
 
@@ -311,14 +349,20 @@ def plotStrainContour(settings, subSetPnts, imgSetID, strainComp=Comp.X,
     if minValue:
         Z[Z < minValue] = minValue
 
+    # Get the settings object
+    inFile = dataFile.DataFile.openReader(resultsFile)
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+    inFile.close()
+
     # Read the image to plot on and plot
     if plotImage:
-        imgSet = sdic.getImageList(settings['ImageFolder'])
-        if imgSetID == -1:
-            imgSetID = len(imgSet) - 1
+        imgSet = sdic._getImageList_(settings.ImageFolder)
+        if imgPair == -1:
+            imgPair = len(imgSet) - 1
         else:
-            imgSetID = imgSetID + 1
-        img = cv2.imread(imgSet[imgSetID], cv2.IMREAD_GRAYSCALE)
+            imgPair = imgPair + 1
+        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
         plt.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
@@ -339,18 +383,20 @@ def plotStrainContour(settings, subSetPnts, imgSetID, strainComp=Comp.X,
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispCutLine(subSetPnts, imgSetID, dispComp=Comp.X, cutComp=Comp.Y, cutValues=[0], 
-                    gridLines=True, showPlot=True, fileName='', 
+def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID, 
+                    cutValues=[0], gridLines=True, showPlot=True, fileName='', 
                     smoothWindow=0, smoothOrder=2, interpolate=False):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
     is shown for the specified displacement component in specified direction.
 
     Parameters:
-        - subSetPnts (ndarray): Array of subset points from sundic.
-        - imgSetID (int): ID of the image set to use for the plot.
-        - dispComp (Comp, optional): Component of the displacement to plot. Default is Comp.X.
-        - cutComp (Comp, optional): Component of the cut line. Default is Comp.Y.
+        - resultsFile (string): Results file from sundic.
+        - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+        - dispComp (Comp, optional): Component of the displacement to plot. 
+            Default is DispComp.DISP_MAG.
+        - cutComp (Comp, optional): Component of the cut line. Default is CompID.YCoordID.
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
         - gridLines (bool, optional): Flag to plot grid lines. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
@@ -368,31 +414,29 @@ def plotDispCutLine(subSetPnts, imgSetID, dispComp=Comp.X, cutComp=Comp.Y, cutVa
     """
 
     # Get the displacement results
-    results = getDisplacements(subSetPnts[imgSetID], smoothWindow, smoothOrder)
+    results, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    nRows = subSetPnts[imgSetID].shape[0]
-    nCols = subSetPnts[imgSetID].shape[1]
-    X = results[:, XCoordID].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
     X = X[:, 0]
-    Y = results[:, YCoordID].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
     Y = Y[0, :]
 
     # Setup the y label based on the requested component
     ylabel = ''
-    if dispComp == Comp.MAG:
+    if dispComp == DispComp.DISP_MAG:
         ylabel = 'Displacement Magnitude (pixels)'
-    elif dispComp == Comp.X:
+    elif dispComp == DispComp.X_DISP:
         ylabel = 'Displacement X (pixels)'
-    elif dispComp == Comp.Y:
+    elif dispComp == DispComp.Y_DISP:
         ylabel = 'Displacement Y (pixels)'
     else:
         raise ValueError('Invalid dispComp argument - use the Comp object.')
 
     # Create the cutline plot
-    plt = __createCutLineGraph__(nCols, nRows, results[:, XCoordID], results[:, YCoordID],
-                                 results[:, dispComp.value], cutValues, cutComp,
-                                 ylabel, interpolate)
+    plt = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
+                               results[:, CompID.YCoordID], results[:, dispComp.value], 
+                               cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
@@ -408,7 +452,8 @@ def plotDispCutLine(subSetPnts, imgSetID, dispComp=Comp.X, cutComp=Comp.Y, cutVa
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainCutLine(subSetPnts, imgSetID, strainComp=Comp.X, cutComp=Comp.Y, cutValues=[0],
+def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN, 
+                      cutComp=CompID.YCoordID, cutValues=[0],
                       gridLines=True, showPlot=True, fileName='', 
                       smoothWindow=9, smoothOrder=2, interpolate=False):
     """
@@ -416,10 +461,13 @@ def plotStrainCutLine(subSetPnts, imgSetID, strainComp=Comp.X, cutComp=Comp.Y, c
     is shown for the specified strain component in the specified direction.
 
     Parameters:
-        - subSetPnts (ndarray): Array of subset points from sundic.
-        - imgSetID (int): ID of the image set to use for the plot.
-        - strainComp (Comp, optional): Component of the displacement to plot. Default is Comp.X.
-        - cutComp (Comp, optional): Component of the cut line. Default is Comp.Y.
+        - resultsFile (string): Results file from sundic.
+        - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+        - strainComp (Comp, optional): Component of the displacement to plot. 
+            Default is StrainComp.VM_STRAIN
+        - cutComp (Comp, optional): Component of the cut line. 
+            Default is CompID.YCoordID
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
         - gridLines (bool, optional): Flag to plot grid lines. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
@@ -436,35 +484,33 @@ def plotStrainCutLine(subSetPnts, imgSetID, strainComp=Comp.X, cutComp=Comp.Y, c
     """
 
     # Get the displacement results
-    results = getStrains(subSetPnts[imgSetID], smoothWindow, smoothOrder)
+    results, nRows, nCols = getStrains(resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    nRows = subSetPnts[imgSetID].shape[0]
-    nCols = subSetPnts[imgSetID].shape[1]
-    X = results[:, XCoordID].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
     X = X[:, 0]
-    Y = results[:, YCoordID].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
     Y = Y[0, :]
     ylabel = ''
-    if strainComp == Comp.SHEAR:
+    if strainComp == StrainComp.SHEAR_STRAIN:
         ylabel = 'Strain (XY component)'
-        Z = results[:, Comp.SHEAR.value].reshape(nCols, nRows)
-    elif strainComp == Comp.X:
+        Z = results[:, StrainComp.SHEAR_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.X_STRAIN:
         ylabel = 'Strain (X component)'
-        Z = results[:, Comp.X.value].reshape(nCols, nRows)
-    elif strainComp == Comp.Y:
+        Z = results[:, StrainComp.X_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.Y_STRAIN:
         ylabel = 'Strain (Y component)'
-        Z = results[:, Comp.Y.value].reshape(nCols, nRows)
-    elif strainComp == Comp.VM:
+        Z = results[:, StrainComp.Y_STRAIN].reshape(nCols, nRows)
+    elif strainComp == StrainComp.VM_STRAIN:
         ylabel = 'Strain (Von Mises)'
-        Z = results[:, Comp.VM.value].reshape(nCols, nRows)
+        Z = results[:, StrainComp.VM_STRAIN].reshape(nCols, nRows)
     else:
         raise ValueError('Invalid strainComp argument - use the Comp object.')
 
     # Create the cutline plot
-    plt = __createCutLineGraph__(nCols, nRows, results[:, XCoordID], results[:, YCoordID],
-                                 results[:, strainComp.value], cutValues, cutComp,
-                                 ylabel, interpolate)
+    plt = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
+                               results[:, CompID.YCoordID], results[:, strainComp.value], 
+                               cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
@@ -480,7 +526,7 @@ def plotStrainCutLine(subSetPnts, imgSetID, strainComp=Comp.X, cutComp=Comp.Y, c
 
 
 # --------------------------------------------------------------------------------------------
-def __smoothResults__(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
+def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
                       derivative='none'):
     """
     Smooths the results of a computation over a grid using Savitzky-Golay smoothing.
@@ -515,7 +561,8 @@ def __smoothResults__(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2
 
     # Drop all NaN values and fill with nearest neighbor interpolation - only do this when
     # there are NaN values
-    smoothRslt = __fillMissingData__(results[:, 0], results[:, 1], smoothRslt)
+    smoothRslt = _fillMissingData_(results[:, CompID.XCoordID], 
+                                   results[:, CompID.YCoordID], smoothRslt)
 
     # Apply Savitzky-Golay smoothing and reset the NaN values to indicate points not found
     if derivative == 'none':
@@ -544,7 +591,7 @@ def __smoothResults__(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2
 
 
 # --------------------------------------------------------------------------------------------
-def __fillMissingData__(dataX, dataY, dataVal):
+def _fillMissingData_(dataX, dataY, dataVal):
     """
     Fill missing data values (specificall NaN's) using linear interpolation.
 
@@ -576,7 +623,7 @@ def __fillMissingData__(dataX, dataY, dataVal):
 
 
 # --------------------------------------------------------------------------------------------
-def __createCutLineGraph__(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
+def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
                            ylabel, interpolate):
     """
     Create a cut line graph based on the given data.  Used for both displacement and
@@ -618,12 +665,12 @@ def __createCutLineGraph__(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp
     if interpolate:
 
         # Fill missing data and setup the interpolator
-        Z = __fillMissingData__(dataX, dataY, dataZ)
+        Z = _fillMissingData_(dataX, dataY, dataZ)
         Z = Z.reshape(nCols, nRows)
         rbs = RectBivariateSpline(X, Y, Z, kx=3, ky=3)
 
         # Setup the x and y data and create the plot depending on the cutComp
-        if cutComp == Comp.X:
+        if cutComp == CompID.XCoordID:
             # Setup the data
             xlabel = 'y (pixels)'
             x = np.linspace(np.min(Y), np.max(Y), 101)
@@ -636,7 +683,7 @@ def __createCutLineGraph__(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp
                 label = "x={0:d} px".format(cutValues[col])
                 plt.plot(x, z, label=label)
 
-        elif cutComp == Comp.Y:
+        elif cutComp == CompID.YCoordID:
             # Setup the data
             xlabel = 'x (pixels)'
             x = np.linspace(np.min(X), np.max(X), 101)
@@ -661,7 +708,7 @@ def __createCutLineGraph__(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp
 
         # Get nearest neighbor indices for cutlines
         indices = np.zeros_like(cutValues)
-        if cutComp == Comp.X:
+        if cutComp == CompID.XCoordID:
             # Setup the data
             xlabel = 'y (pixels)'
             for idx, val in enumerate(cutValues):
@@ -673,7 +720,7 @@ def __createCutLineGraph__(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp
                 plt.plot(x, y[i, :], label=label)
             plt.legend()
 
-        elif cutComp == Comp.Y:
+        elif cutComp == CompID.YCoordID:
             # Setup the data
             xlabel = 'x (pixels)'
             for idx, val in enumerate(cutValues):

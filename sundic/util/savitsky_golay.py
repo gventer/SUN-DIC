@@ -8,7 +8,6 @@
 import scipy.signal as signal
 import numpy as np
 
-
 # -----------------------------------------------------------------------------
 def sgolay2d(z, window_size, order, derivative=None):
     """
