@@ -955,7 +955,7 @@ def _akazeDetect_(adPoints, subSetSize, F, G):
     for x, y in it:
 
         # Factor needed to increase size of image if needed to get enough keypoints
-        nSizeFactor = 1
+        nSizeFactor = 1.5
 
         # Get the keypoints in the query image - keep increasing the subset size until
         # we have enough keypoints
@@ -990,20 +990,20 @@ def _akazeDetect_(adPoints, subSetSize, F, G):
             nSizeFactor += 1
 
         # Setup the matcher to detect keypoint matches in the query and G images
-        matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
-        matches = matcher.match(descQ, descG)  # query then train
+        try:        
+            matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
+            matches = matcher.match(descQ, descG)  # query then train
 
-        # Store the x and y coordinates of the keypoints
-        nTop = len(matches)
-        coordQ = np.zeros([2, nTop])
-        coordG = np.zeros([2, nTop])
-        for idx, m in enumerate(matches[:nTop]):
-            coordQ[:, idx] = kpQ[m.queryIdx].pt[:]
-            coordG[:, idx] = kpG[m.trainIdx].pt[:]
+            # Store the x and y coordinates of the keypoints
+            nTop = len(matches)
+            coordQ = np.zeros([2, nTop])
+            coordG = np.zeros([2, nTop])
+            for idx, m in enumerate(matches[:nTop]):
+                coordQ[:, idx] = kpQ[m.queryIdx].pt[:]
+                coordG[:, idx] = kpG[m.trainIdx].pt[:]
 
-        # Do a ransac to find the best affine transformation based on the
-        # keypoint coordinates stored in coordQ and coordG
-        try:
+            # Do a ransac to find the best affine transformation based on the
+            # keypoint coordinates stored in coordQ and coordG
             model_robust, _ = sk.measure.ransac((coordQ.T, coordG.T), sk.transform.AffineTransform,
                                                 min_samples=3, residual_threshold=2,
                                                 max_trials=100)
