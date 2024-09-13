@@ -19,6 +19,7 @@ import ray as ray
 from sundic.util.fast_interp import interp2d
 import sundic.util.datafile as dataFile
 from scipy.interpolate import NearestNDInterpolator
+from sundic.util.savitsky_golay import sgolay2d
 
 # --------------------------------------------------------------------------------------------
 # Constants that does not make sense to set in the settings file
@@ -726,6 +727,32 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
     #**gv Test this with cv.IMREAD_UNCHANGED to read higher bit levels
     F = cv.imread(imgSet[img], cv.IMREAD_GRAYSCALE)
 
+    # Setup the gradients, but only if this is a reference image
+    delF = [0,0]
+    if (isDatumImg):
+        # Gradient of the image in the x and y directions
+        # NOTE:  This is a gradient of noisy data and should be carefully approached
+        # We tried two approaches and both seem to work quite well
+        #   1. Blur the image (Gaussian Blur) and then do numpy gradient calculations
+        #      The blur operation and the central difference gradients seem to work
+        #      quite well to remove noise
+        #   2. Use the sobel operator for gradient calculations - this is often used
+        #      in image processing for edge detection and seems to work well.  The
+        #      sobel operator is a convolution operation and is a bit slower than the
+        #      numpy gradient calculations but is only applied once and is done BEFORE
+        #      the blur operation
+        #
+        # Numpy gradients - if we do this, blur before gradient calculation
+        # delF = np.gradient(F)
+        #
+        # Using the sobel operator - apply BEFORE the blur operation
+        ksize = max(3, gfSize) # Use a minimum kernel size for the sobel operator
+        dfy = cv.Sobel(F, ddepth=cv.CV_32F, dx=0, dy=1, ksize=ksize)
+        dfy = dfy/m.pow(2., 2*ksize-1-2)
+        dfx = cv.Sobel(F, ddepth=cv.CV_32F, dx=1, dy=0, ksize=ksize)
+        dfx = dfx/m.pow(2., 2*ksize-1-2)
+        delF = [dfy, dfx]
+
     # Blur image with gaussian filter - if specified in settings
     if (gfSize > 0):
         F = cv.GaussianBlur(F, (gfSize, gfSize), gfStdDev)
@@ -734,17 +761,11 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
     Fmax = np.max(F)
     if isNormalized:
         F = F/Fmax
+        delF = [delF[0]/Fmax, delF[1]/Fmax]
 
     # Setup the interpolator for this image - needs to pass double precision values
     # for interpolation to work
     FInter = _fastInterpolation_(F.astype('double'))
-
-    # Setup the gradients, but only if this is a reference image
-    delF = None
-    if (isDatumImg):
-        # Gradient of the image in the x and y directions
-        # delF = np.gradient(F)
-        delF = np.gradient(F)
 
     return F, FInter, delF, Fmax
 
