@@ -285,8 +285,8 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
 
     # Setup the contour plot and plot on top of the image
     contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
-    ax.xlabel('x (pixels)')
-    ax.ylabel('y (pixels)')
+    ax.set_xlabel('x (pixels)')
+    ax.set_ylabel('y (pixels)')
     fig.colorbar(contour, ax = ax)
 
     # Show and or save the plot
