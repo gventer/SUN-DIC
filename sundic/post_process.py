@@ -356,6 +356,9 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     settings = sdset.Settings.fromMsgPackDict(setDict)
     inFile.close()
 
+    # Create figure object
+    fig, ax = plt.subplots()
+
     # Read the image to plot on and plot
     if plotImage:
         imgSet = sdic._getImageList_(settings.ImageFolder)
@@ -364,15 +367,13 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         else:
             imgPair = imgPair + 1
         img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
-        plt.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    plt.contourf(X, Y, Z, alpha=alpha, zorder=2)
-    cmap = plt.get_cmap('jet')
-    plt.set_cmap(cmap)
-    plt.xlabel('x (pixels)')
-    plt.ylabel('y (pixels)')
-    plt.colorbar()
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
+    ax.set_xlabel('x (pixels)')
+    ax.set_ylabel('y (pixels)')
+    fig.colorbar(contour, ax = ax)
 
     # Show and or save the plot
     if showPlot:
@@ -380,7 +381,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return fig
 
 
 # --------------------------------------------------------------------------------------------
@@ -449,7 +450,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return plt
 
 
 # --------------------------------------------------------------------------------------------
