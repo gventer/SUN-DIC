@@ -239,6 +239,9 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         - maxValue (float, optional): Maximum value to plot.  Default is None.
         - minValue (float, optional): Minimum value to plot.  Default is None.
 
+    Returns: 
+        - fig: The matplotlib plot object.
+
     Raises:
         - ValueError: If an invalid dispComp argument is provided.
     """
@@ -270,6 +273,9 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
     settings = sdset.Settings.fromMsgPackDict(setDict)
     inFile.close()
 
+    # Create figure object
+    fig, ax = plt.subplots()
+
     # Read the image to plot on and plot
     if plotImage:
         imgSet = sdic._getImageList_(settings.ImageFolder)
@@ -278,15 +284,13 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         else:
             imgPair = imgPair + 1
         img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
-        plt.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    plt.contourf(X, Y, Z, alpha=alpha, zorder=2)
-    cmap = plt.get_cmap('jet')
-    plt.set_cmap(cmap)
-    plt.xlabel('x (pixels)')
-    plt.ylabel('y (pixels)')
-    plt.colorbar()
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
+    ax.set_xlabel('x (pixels)')
+    ax.set_ylabel('y (pixels)')
+    fig.colorbar(contour, ax = ax)
 
     # Show and or save the plot
     if showPlot:
@@ -294,7 +298,7 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return fig
 
 
 # --------------------------------------------------------------------------------------------
@@ -320,6 +324,9 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
           Default is 2.
         - maxValue (float, optional): Maximum value to plot.  Default is None.
         - minValue (float, optional): Minimum value to plot.  Default is None.
+
+    Returns: 
+        - fig: The matplotlib plot object.
 
     Raises:
         - ValueError: If an invalid dispComp argument is provided.
@@ -355,6 +362,9 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     settings = sdset.Settings.fromMsgPackDict(setDict)
     inFile.close()
 
+    # Create figure object
+    fig, ax = plt.subplots()
+
     # Read the image to plot on and plot
     if plotImage:
         imgSet = sdic._getImageList_(settings.ImageFolder)
@@ -363,15 +373,13 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         else:
             imgPair = imgPair + 1
         img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
-        plt.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    plt.contourf(X, Y, Z, alpha=alpha, zorder=2)
-    cmap = plt.get_cmap('jet')
-    plt.set_cmap(cmap)
-    plt.xlabel('x (pixels)')
-    plt.ylabel('y (pixels)')
-    plt.colorbar()
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
+    ax.set_xlabel('x (pixels)')
+    ax.set_ylabel('y (pixels)')
+    fig.colorbar(contour, ax = ax)
 
     # Show and or save the plot
     if showPlot:
@@ -379,7 +387,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return fig
 
 
 # --------------------------------------------------------------------------------------------
@@ -408,6 +416,9 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False
           in which case the nearest neighbor is used.
+    
+    Returns: 
+        - fig: The matplotlib plot object.
 
     Raises:
         - ValueError: If an invalid dispComp or cutComp argument is provided.
@@ -434,13 +445,13 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
         raise ValueError('Invalid dispComp argument - use the Comp object.')
 
     # Create the cutline plot
-    plt = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
+    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
                                results[:, CompID.YCoordID], results[:, dispComp.value], 
                                cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
-        plt.grid()
+        ax.grid()
 
     # Show and or save the plot
     if showPlot:
@@ -448,7 +459,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return fig
 
 
 # --------------------------------------------------------------------------------------------
@@ -478,6 +489,9 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False.
+    
+    Returns: 
+        - fig: The matplotlib plot object.
 
     Raises:
         - ValueError: If an invalid dispComp or cutComp argument is provided.
@@ -508,13 +522,13 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         raise ValueError('Invalid strainComp argument - use the Comp object.')
 
     # Create the cutline plot
-    plt = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
+    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
                                results[:, CompID.YCoordID], results[:, strainComp.value], 
                                cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
-        plt.grid()
+        ax.grid()
 
     # Show and or save the plot
     if showPlot:
@@ -522,7 +536,7 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     if fileName:
         plt.savefig(fileName)
 
-    return
+    return fig
 
 
 # --------------------------------------------------------------------------------------------
@@ -641,7 +655,8 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
         - interpolate (bool): Whether to interpolate the data or use nearest values.
 
     Returns:
-        - plt: The matplotlib plot object.
+        - fig: The matplotlib plot object.
+        - ax: The matplotlib axis object.
 
     Raises:
         None
@@ -681,7 +696,7 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
             for col in range(0, y.shape[1]):
                 z = rbs.ev(y[:, col], x)
                 label = "x={0:d} px".format(cutValues[col])
-                plt.plot(x, z, label=label)
+                ax.plot(x, z, label=label)
 
         elif cutComp == CompID.YCoordID:
             # Setup the data
@@ -694,12 +709,12 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
             for col in range(0, y.shape[1]):
                 z = rbs.ev(x, y[:, col])
                 label = "y={0:d} px".format(cutValues[col])
-                plt.plot(x, z, label=label)
+                ax.plot(x, z, label=label)
 
         # Add the legend and the x, y labels
-        plt.legend()
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
+        ax.legend()
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
     # No interpolation - get nearest values
     else:
@@ -717,8 +732,8 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
             y = Z[indices, :]
             for i in range(0, len(cutValues)):
                 label = "x={0:d} px".format(int(X[indices[i]]))
-                plt.plot(x, y[i, :], label=label)
-            plt.legend()
+                ax.plot(x, y[i, :], label=label)
+            ax.legend()
 
         elif cutComp == CompID.YCoordID:
             # Setup the data
@@ -729,11 +744,11 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
             y = Z[:, indices]
             for i in range(0, len(cutValues)):
                 label = "y={0:d} px".format(int(X[indices[i]]))
-                plt.plot(x, y[:, i], label=label)
-            plt.legend()
+                ax.plot(x, y[:, i], label=label)
+            ax.legend()
 
         # Display the x and y labels
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-    return plt
+    return fig, ax
