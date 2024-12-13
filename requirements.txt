@@ -2,7 +2,7 @@ numpy>=2.0.2
 natsort>=8.4.0
 opencv_python_headless>=4.10.0.84
 scikit-image>=0.24.0
-ray
+ray>=2.35.0
 numba>=0.60.0
 msgpack-numpy>=0.4.8
 matplotlib>=3.9.2
