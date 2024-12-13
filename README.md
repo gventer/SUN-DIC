@@ -80,6 +80,12 @@ pip install ./SUN-DIC
 2. Open this from the main SUN-DIC directory and be sure to use the virtual environment you created above
 3. Note that the general work flow is to modify the `setting.ini` file, perform the DIC analysis and finally to post-process the results
 
+# API Documentation
+
+API Documentation can be found at the following github pages:
+
+[https://gventer.github.io/SUN-DIC](https://gventer.github.io/SUN-DIC/)
+
 # Acknowledgementss
 
 - The SUN-DIC analysis code is based on work done by Ed Brisley as part of his MEng degree at Stellenbosch University. His MEng thesis is available at the Stellenbosch University library (https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a)
