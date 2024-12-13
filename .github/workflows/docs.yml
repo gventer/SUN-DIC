@@ -1,4 +1,6 @@
 name: SUN-DIC_docs
+# GVenter - 13 December 2024
+# https://pdoc.dev/docs/pdoc.html#deploying-to-github-pages 
 
 # build the documentation whenever there are new commits on main
 on:
