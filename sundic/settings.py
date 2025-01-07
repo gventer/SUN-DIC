@@ -346,8 +346,6 @@ class Settings:
         if self.StepSize < 1:
             raise ValueError(
                 'Config Parser:  Step size must be greater than 0')
-        if self.StepSize % 2 == 0:
-            raise ValueError('Config Parser:  Step size must be an odd number')
 
         self.ShapeFunctions = cp.get(
             'DICSettings', 'ShapeFunctions', fallback=self.__defShapeFunctions)
