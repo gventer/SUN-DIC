@@ -27,10 +27,17 @@ class DispComp(IntEnum):
         - Z_DISP (int): The Z component.
         - DISP_MAG (int): The magnitude component.
     """
-    X_DISP = 3
-    Y_DISP = 4
-    Z_DISP = 5
-    DISP_MAG = 6
+    X_DISP = (3, 'X Displacement')
+    Y_DISP = (4, 'Y Displacement')
+    Z_DISP = (5, 'Z Displacement')
+    DISP_MAG = (6, 'Displacement Magnitude')
+
+    # Add a display name to the enumeration
+    def __new__(cls, value, display_name=None):
+        obj = int.__new__(cls, value)
+        obj._value_ = value
+        obj.display_name = display_name
+        return obj
 
 class StrainComp(IntEnum):
     """
@@ -42,25 +49,38 @@ class StrainComp(IntEnum):
         - SHEAR_STRAIN (int): The shear component.
         - VM_STRAIN (int): The Von Mises component.
     """
-    X_STRAIN = 3
-    Y_STRAIN = 4
-    SHEAR_STRAIN = 5
-    VM_STRAIN = 6
+    X_STRAIN = (3, 'X Strain')
+    Y_STRAIN = (4, 'Y Strain')
+    SHEAR_STRAIN = (5, 'Shear Strain')
+    VM_STRAIN = (6, 'Von Mises Strain')
+
+    # Add a display name to the enumeration
+    def __new__(cls, value, display_name=None):
+        obj = int.__new__(cls, value)
+        obj._value_ = value
+        obj.display_name = display_name
+        return obj    
 
 class CompID(IntEnum):
     """
     Enumeration representing different components used for displacement and strain fields.
 
     Attributes:
-        - X (int): The X component.
-        - Y (int): The Y component.
-        - MAG (int): The magnitude component.
-        - SHEAR (int): The shear component.
-        - VM(int): The Von Mises component.
+        - XCoordID (int): The X coordinate.
+        - YCoordID (int): The Y coordinate.
+        - XDispID (int): The X displacement.
     """
-    XCoordID = 0
-    YCoordID = 1
+    XCoordID = (0, 'X Coordinate')
+    YCoordID = (1, 'Y Coordinate')
     XDispID  = 2
+
+    # Add a display name to the enumeration
+    def __new__(cls, value, display_name=None):
+        obj = int.__new__(cls, value)
+        obj._value_ = value
+        obj.display_name = display_name
+        return obj
+    
 
 # --------------------------------------------------------------------------------------------
 def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
