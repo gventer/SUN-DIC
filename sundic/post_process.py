@@ -237,7 +237,7 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
 # --------------------------------------------------------------------------------------------
 def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
                     alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                    smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None):
+                    smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -318,13 +318,14 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
     if fileName:
         plt.savefig(fileName)
 
-    return fig
+    if return_fig:
+        return fig
 
 
 # --------------------------------------------------------------------------------------------
 def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
                       alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                      smoothWindow=3, smoothOrder=2, maxValue=None, minValue=None):
+                      smoothWindow=3, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -407,13 +408,14 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     if fileName:
         plt.savefig(fileName)
 
-    return fig
+    if return_fig:
+        return fig
 
 
 # --------------------------------------------------------------------------------------------
 def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID, 
                     cutValues=[0], gridLines=True, showPlot=True, fileName='', 
-                    smoothWindow=0, smoothOrder=2, interpolate=False):
+                    smoothWindow=0, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
     is shown for the specified displacement component in specified direction.
@@ -479,14 +481,15 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
     if fileName:
         plt.savefig(fileName)
 
-    return fig
+    if return_fig:
+        return fig
 
 
 # --------------------------------------------------------------------------------------------
 def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN, 
                       cutComp=CompID.YCoordID, cutValues=[0],
                       gridLines=True, showPlot=True, fileName='', 
-                      smoothWindow=9, smoothOrder=2, interpolate=False):
+                      smoothWindow=9, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a strain cut line based on the subset points and coefficients.  The cut line
     is shown for the specified strain component in the specified direction.
@@ -556,7 +559,8 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     if fileName:
         plt.savefig(fileName)
 
-    return fig
+    if return_fig:
+        return fig
 
 
 # --------------------------------------------------------------------------------------------
