@@ -100,7 +100,7 @@ def _getImageList_(imgSubFolder, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def planarDICLocal(settings, resultsFile):
+def planarDICLocal(settings, resultsFile, runGUI = False):
     """
     Perform local planar (2D) Digital Image Correlation (DIC) analysis.
 
@@ -159,12 +159,15 @@ def planarDICLocal(settings, resultsFile):
 
     # Initialize the parallel enviroment if required
     nCpus = settings.CPUCount
-    if nCpus > 1:
+    if nCpus > 1 or runGUI:
         if debugLevel > 0:
             print('\nParallel Run Information :')
             print('---------------------------------')
             print('  Starting parallel run with {} CPUs'.format(nCpus))
-        ray.init(num_cpus=nCpus)
+        if runGUI:
+            ray.init()
+        else:
+            ray.init(num_cpus=nCpus)
 
     # Loop through all image pairs to perform the local DIC
     # Start by setting up the return list and the current subset points
@@ -177,7 +180,7 @@ def planarDICLocal(settings, resultsFile):
     for imgPairIdx, img in enumerate(range(imgDatum, imgTarget, imgIncr)):
 
         # Setup the parallel run and wait for all results
-        if nCpus > 1:
+        if nCpus > 1 or runGUI:
             # Turn of debugging temporarily
             nDebugOld = settings.DebugLevel
             settings.DebugLevel = 0
@@ -249,7 +252,7 @@ def planarDICLocal(settings, resultsFile):
             print('  '+imgSet[img+imgIncr])
 
     # Shutdown the parallel environment if required
-    if nCpus > 1:
+    if nCpus > 1 and not runGUI:
         ray.shutdown()
 
     # Close the file
