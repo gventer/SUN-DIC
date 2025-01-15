@@ -100,7 +100,7 @@ def _getImageList_(imgSubFolder, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def planarDICLocal(settings, resultsFile):
+def planarDICLocal(settings, resultsFile, runGUI = False):
     """
     Perform local planar (2D) Digital Image Correlation (DIC) analysis.
 
@@ -122,140 +122,145 @@ def planarDICLocal(settings, resultsFile):
     Raises:
         - ValueError: If an invalid optimization algorithm is specified.
     """
-    # Store the debug level
-    debugLevel = settings.DebugLevel
+    try:
+        # Store the debug level
+        debugLevel = settings.DebugLevel
 
-    # Get the images to work with
-    imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
+        # Get the images to work with
+        imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
 
-    # Get the Region of Interest (ROI)
-    ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
+        # Get the Region of Interest (ROI)
+        ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
 
-    # Define measurement points using the settings specified in the config file
-    # These are the center points of the subsets
-    subSetSize = settings.SubsetSize
-    stepSize = settings.StepSize
-    nDefModCoeff = settings.numShapeFnCoeffs()
-    subSetPnts = _setupSubSets_(
-        subSetSize, stepSize, nDefModCoeff, ROI, debugLevel=debugLevel)
+        # Define measurement points using the settings specified in the config file
+        # These are the center points of the subsets
+        subSetSize = settings.SubsetSize
+        stepSize = settings.StepSize
+        nDefModCoeff = settings.numShapeFnCoeffs()
+        subSetPnts = _setupSubSets_(
+            subSetSize, stepSize, nDefModCoeff, ROI, debugLevel=debugLevel)
 
-    # Get the image pair information
-    imgDatum = settings.DatumImage
-    imgTarget = settings.TargetImage
-    if imgTarget == -1:
-        imgTarget = len(imgSet)-1
-    imgIncr = settings.Increment
-    imgPairs = int((imgTarget - imgDatum)/imgIncr)
+        # Get the image pair information
+        imgDatum = settings.DatumImage
+        imgTarget = settings.TargetImage
+        if imgTarget == -1:
+            imgTarget = len(imgSet)-1
+        imgIncr = settings.Increment
+        imgPairs = int((imgTarget - imgDatum)/imgIncr)
 
-    # Debug output if requested
-    if debugLevel > 0:
-        print('\nImage Pair Information :')
-        print('---------------------------------')
-        print('  Number of image pairs: ', imgPairs)
-
-    # Setup serialization of the data to msgpack binary file
-    df = dataFile.DataFile.openWriter(resultsFile)
-    df.writeHeading(settings)
-
-    # Initialize the parallel enviroment if required
-    nCpus = settings.CPUCount
-    if nCpus > 1:
+        # Debug output if requested
         if debugLevel > 0:
-            print('\nParallel Run Information :')
+            print('\nImage Pair Information :')
             print('---------------------------------')
-            print('  Starting parallel run with {} CPUs'.format(nCpus))
-        ray.init(num_cpus=nCpus)
+            print('  Number of image pairs: ', imgPairs)
 
-    # Loop through all image pairs to perform the local DIC
-    # Start by setting up the return list and the current subset points
-    returnData = []
-    prevSubSetPnts = np.copy(subSetPnts)
-    currSubSetPnts = subSetPnts
-    x_init = subSetPnts[:, :, CompID.XCoordID]
-    y_init = subSetPnts[:, :, CompID.YCoordID]
+        # Setup serialization of the data to msgpack binary file
+        df = dataFile.DataFile.openWriter(resultsFile)
+        df.writeHeading(settings)
 
-    for imgPairIdx, img in enumerate(range(imgDatum, imgTarget, imgIncr)):
+        # Initialize the parallel enviroment if required
+        nCpus = settings.CPUCount
+        if nCpus > 1 or runGUI:
+            if debugLevel > 0:
+                print('\nParallel Run Information :')
+                print('---------------------------------')
+                print('  Starting parallel run with {} CPUs'.format(nCpus))
+            ray.init(num_cpus=nCpus)
 
-        # Setup the parallel run and wait for all results
-        if nCpus > 1:
-            # Turn of debugging temporarily
-            nDebugOld = settings.DebugLevel
-            settings.DebugLevel = 0
+        # Loop through all image pairs to perform the local DIC
+        # Start by setting up the return list and the current subset points
+        returnData = []
+        prevSubSetPnts = np.copy(subSetPnts)
+        currSubSetPnts = subSetPnts
+        x_init = subSetPnts[:, :, CompID.XCoordID]
+        y_init = subSetPnts[:, :, CompID.YCoordID]
 
-            # Setup the submatrices - match shape to image if possible
-            nTotRows, nTotCols, _ = currSubSetPnts.shape
-            mRows, mCols = _factorCPUCount_(nCpus, nTotRows/nTotCols)
-            if nDebugOld > 0:
-                print("\n  Splitting matrix into {}x{} submatrices".format(
-                    mRows, mCols))
-                print("")
-            subMatrices = _splitMatrix_(currSubSetPnts, mRows, mCols)
+        for imgPairIdx, img in enumerate(range(imgDatum, imgTarget, imgIncr)):
 
-            # Track the processes that are being submitted
-            procIDs = []
-            for i in range(mRows*mCols):
-                iRow, iCol = np.unravel_index(i, (mRows, mCols))
-                procIDs.append(_rmt_icOptimization_.remote(
-                    settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img))
+            # Setup the parallel run and wait for all results
+            if nCpus > 1 or runGUI:
+                # Turn of debugging temporarily
+                nDebugOld = settings.DebugLevel
+                settings.DebugLevel = 0
+
+                # Setup the submatrices - match shape to image if possible
+                nTotRows, nTotCols, _ = currSubSetPnts.shape
+                mRows, mCols = _factorCPUCount_(nCpus, nTotRows/nTotCols)
+                if nDebugOld > 0:
+                    print("\n  Splitting matrix into {}x{} submatrices".format(
+                        mRows, mCols))
+                    print("")
+                subMatrices = _splitMatrix_(currSubSetPnts, mRows, mCols)
+
+                # Track the processes that are being submitted
+                procIDs = []
+                for i in range(mRows*mCols):
+                    iRow, iCol = np.unravel_index(i, (mRows, mCols))
+                    procIDs.append(_rmt_icOptimization_.remote(
+                        settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img))
+
+                    if nDebugOld > 0:
+                        print("  Starting remote process for submatrix {} {}".
+                            format(iRow, iCol))
 
                 if nDebugOld > 0:
-                    print("  Starting remote process for submatrix {} {}".
-                          format(iRow, iCol))
+                    print("")
 
-            if nDebugOld > 0:
-                print("")
+                # Wait for results - start pulling results from tasks as soon as they are
+                # are done
+                while len(procIDs):
+                    done_id, procIDs = ray.wait(procIDs)
+                    iRow, iCol, rsltMatrix = ray.get(done_id[0])
+                    (subMatrices[iRow][iCol])[:] = rsltMatrix
+                    if nDebugOld > 0:
+                        print("  Submatrix {} {} completed".format(iRow, iCol))
 
-            # Wait for results - start pulling results from tasks as soon as they are
-            # are done
-            while len(procIDs):
-                done_id, procIDs = ray.wait(procIDs)
-                iRow, iCol, rsltMatrix = ray.get(done_id[0])
-                (subMatrices[iRow][iCol])[:] = rsltMatrix
-                if nDebugOld > 0:
-                    print("  Submatrix {} {} completed".format(iRow, iCol))
+                # Turn debugging back on
+                settings.DebugLevel = nDebugOld
 
-            # Turn debugging back on
-            settings.DebugLevel = nDebugOld
-
-        # Serial run on one processor
-        else:
-            # coefficients at convergence for current (i'th) image pair
-            currSubSetPnts[:] = _icOptimization_(
-                settings, currSubSetPnts, imgSet, img)
-
-        # Update the subset points coordinates if required - we make copies of the
-        # current subset points to create a new array of subset points
-        if settings.isRelativeStrategy():
-            currSubSetPnts[:] = _updateSubSets_(x_init, y_init, prevSubSetPnts,
-                                                currSubSetPnts, nDefModCoeff)
-
-        # Store the current subset points in the return data
-        returnData.append(currSubSetPnts)
-        df.writeSubSetData(imgPairIdx, currSubSetPnts)
-
-        # Make a copy for the next iteration to work with in the next iteration
-        currSubSetPnts = np.copy(currSubSetPnts)
-
-        # The currently stored image subsetpoints are now the previous subset points
-        prevSubSetPnts = returnData[imgPairIdx]
-
-        # Make some debug output
-        if (settings.DebugLevel > 0):
-            print('  \nImage pair {} processed'.format(imgPairIdx))
-            if settings.isAbsoluteStrategy():
-                print('  '+imgSet[imgDatum])
+            # Serial run on one processor
             else:
-                print('  '+imgSet[img])
-            print('  '+imgSet[img+imgIncr])
+                # coefficients at convergence for current (i'th) image pair
+                currSubSetPnts[:] = _icOptimization_(
+                    settings, currSubSetPnts, imgSet, img)
 
-    # Shutdown the parallel environment if required
-    if nCpus > 1:
-        ray.shutdown()
+            # Update the subset points coordinates if required - we make copies of the
+            # current subset points to create a new array of subset points
+            if settings.isRelativeStrategy():
+                currSubSetPnts[:] = _updateSubSets_(x_init, y_init, prevSubSetPnts,
+                                                    currSubSetPnts, nDefModCoeff)
 
-    # Close the file
-    df.close()
+            # Store the current subset points in the return data
+            returnData.append(currSubSetPnts)
+            df.writeSubSetData(imgPairIdx, currSubSetPnts)
 
-    return returnData
+            # Make a copy for the next iteration to work with in the next iteration
+            currSubSetPnts = np.copy(currSubSetPnts)
+
+            # The currently stored image subsetpoints are now the previous subset points
+            prevSubSetPnts = returnData[imgPairIdx]
+
+            # Make some debug output
+            if (settings.DebugLevel > 0):
+                print('  \nImage pair {} processed'.format(imgPairIdx))
+                if settings.isAbsoluteStrategy():
+                    print('  '+imgSet[imgDatum])
+                else:
+                    print('  '+imgSet[img])
+                print('  '+imgSet[img+imgIncr])
+
+        # Shutdown the parallel environment if required
+        if nCpus > 1 or runGUI:
+            ray.shutdown()
+
+        # Close the file
+        df.close()
+
+        return returnData
+    except Exception as e:
+        if nCpus > 1 or runGUI:
+            ray.shutdown()
+        raise e
 
 
 # --------------------------------------------------------------------------------------------
