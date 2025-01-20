@@ -242,12 +242,14 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
 
             # Make some debug output
             if (settings.DebugLevel > 0):
-                print('  \nImage pair {} processed'.format(imgPairIdx))
+                print('\n  ------------------------------------------------------')
+                print('  Image pair {} processed:'.format(imgPairIdx))
                 if settings.isAbsoluteStrategy():
-                    print('  '+imgSet[imgDatum])
+                    print('    '+imgSet[imgDatum])
                 else:
-                    print('  '+imgSet[img])
-                print('  '+imgSet[img+imgIncr])
+                    print('    '+imgSet[img])
+                print('    '+imgSet[img+imgIncr])
+                print('  ------------------------------------------------------\n')
 
         # Shutdown the parallel environment if required
         if nCpus > 1 or runGUI:
@@ -305,7 +307,9 @@ def _setupROI_(ROI, img0, debugLevel=0):
     if (ROI[2] == 0 or ROI[3] == 0):
 
         # Read the image and determine the size
-        img = cv.imread(img0, cv.IMREAD_GRAYSCALE)
+        img = cv.imread(img0, cv.IMREAD_UNCHANGED)
+        ratio = np.amax(img) / 256
+        img = (img/ratio).astype('uint8')
         height, width = img.shape
 
         # Set the x-width
@@ -730,7 +734,9 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
 
     # Read the image as grayscale
     #**gv Test this with cv.IMREAD_UNCHANGED to read higher bit levels
-    F = cv.imread(imgSet[img], cv.IMREAD_GRAYSCALE)
+    F = cv.imread(imgSet[img], cv.IMREAD_UNCHANGED)
+    ratio = np.amax(F) / 256
+    F = (F/ratio).astype('uint8')
 
     # Setup the gradients, but only if this is a reference image
     delF = [0,0]

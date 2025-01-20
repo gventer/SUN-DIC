@@ -303,7 +303,9 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_UNCHANGED)
+        ratio = np.amax(img) / 256
+        img = (img/ratio).astype('uint8')
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
@@ -393,7 +395,9 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(imgSet[imgPair], cv2.IMREAD_UNCHANGED)
+        ratio = np.amax(img) / 256
+        img = (img/ratio).astype('uint8')
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
