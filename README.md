@@ -79,7 +79,7 @@ pip install ./SUN-DIC
 
 ## Starting the GUI
 
-Simply type `sundic_gui` to launch the GUI.  Using the GUI is straight-forward.  Simply follow the workflow outlined on the left-hand side of the GUI.  Hovering the mouse over any entry will provide pop-up help for that entry.
+Simply type `sundic` to launch the GUI.  Using the GUI is straight-forward.  Simply follow the workflow outlined on the left-hand side of the GUI.  Hovering the mouse over any entry will provide pop-up help for that entry.
 
 ## Using the API
 

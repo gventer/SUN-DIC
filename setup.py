@@ -18,7 +18,7 @@ setup(
     packages=['sundic', 'sundic.util', 'sundic.gui'],
     entry_points={
         "gui_scripts": [
-            "sundic_gui = sundic.gui.sundic_gui:main"
+            "sundic = sundic.gui.sundic_gui:main"
         ]
     },
     url='https://github.com/gventer/SUN-DIC',
