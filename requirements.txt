@@ -7,3 +7,5 @@ numba>=0.60.0
 msgpack-numpy>=0.4.8
 matplotlib>=3.9.2
 jupyter>=1.1.1
+pandas>=2.2.3
+PyQT5>=5.15.11
