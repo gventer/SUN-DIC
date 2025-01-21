@@ -34,9 +34,9 @@ import threading
 import subprocess
 import webbrowser
 
-from mainWindow import Ui_MainWindow
-from validators import *
-from widgets import *
+from sundic.gui.mainWindow import Ui_MainWindow
+from sundic.gui.validators import *
+from sundic.gui.widgets import *
 
 # Default scale factor for image
 SCALE_FACTOR = 1.25
@@ -2640,7 +2640,7 @@ class PlanarDICWorker(QThread):
         output = f.getvalue()
         self.progress.emit(output)
 
-def execute_pipeline():
+def main():
     # Make an object of the class and execute it
     app = QApplication(sys.argv)
 
@@ -2653,4 +2653,4 @@ def execute_pipeline():
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    execute_pipeline()
+    main()
