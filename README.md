@@ -9,28 +9,29 @@ You are accessing a very early release of the Stellenbosch University DIC Code c
 ## Limitations
 
 1. Can currently only deal with 2D planar problems (a stereo version is planned)
-2. Can only specify a rectangular region of interest (ROI), but an all black background in the image pair can be used to deal with irregularly shaped domains
-3. There are currently no GUI available for the code
+2. Can only specify a rectangular region of interest (ROI), but an all black background in the image pair can be used to automatically deal with irregularly shaped domains.  All black (according to a user specified threshold) background subsets are automatically ignored
 
 ## Key features
 
-1. Completely open source using standard Python libraries wherever possible
-2. Make use of the zero-mean normalized sum of squared differences (ZNSSD) correlation criterion
-3. Have an advanced starting strategy for automatically creating initial guesses at a small number of starting points using the Akaze feature detection algorithm
-4. Have both linear (affine) and quadratic shape functions available
-5. Have both an inverse compositional Gauss-Newton (IC-GN) and an inverse compositional Levenberg-Marquardt (IC-LM) solver implemented
-6. Have both an absolute and relative update strategy when considering multiple image pairs
-7. Calculate both displacements and strains
-8. Strains are calculated using a Savitzky-Golay smoothing operations
-9. Parallel computing
+1.  Completely open source using standard Python libraries wherever possible
+2.  Both an easy to use use GUI as well as an API are provided for using the code
+3.  Make use of the zero-mean normalized sum of squared differences (ZNSSD) correlation criterion
+4.  Have an advanced starting strategy for automatically creating initial guesses at a small number of starting points using the Akaze feature detection algorithm
+5.  Have both linear (affine) and quadratic shape functions available
+6.  Have both an inverse compositional Gauss-Newton (IC-GN) and an inverse compositional Levenberg-Marquardt (IC-LM) solver implemented
+7.  Have both an absolute and relative update strategy when considering multiple image pairs
+8.  Calculate both displacements and strains
+9.  Strains are calculated using a Savitzky-Golay smoothing operations
+10. Parallel computing
 
 # Installation
 
 1. Clone the repository
 2. Create a virtual environment
 3. Activate the virtual environment
-4. Install the required packages contained in the `requirements.txt` file
-   Below are some pointers how to achieve this using either python/pip or anacoda
+4. Install the cloned environment
+
+Below are some pointers how to achieve this using either python/pip or anacoda
 
 ## Using `pip`
 
@@ -76,9 +77,16 @@ pip install ./SUN-DIC
 
 # Usage
 
+## Starting the GUI
+
+Simply type `sundic_gui` to launch the GUI.  Using the GUI is straight-forward.  Simply follow the workflow outlined on the left-hand side of the GUI.  Hovering the mouse over any entry will provide pop-up help for that entry.
+
+## Using the API
+
 1. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed and complete working example
 2. Open this from the main SUN-DIC directory and be sure to use the virtual environment you created above
 3. Note that the general work flow is to modify the `setting.ini` file, perform the DIC analysis and finally to post-process the results
+4. The working example is provided as a Jupyter Notebook, but the API can of course also be used directly from a normal Python `.py` file
 
 # API Documentation
 
