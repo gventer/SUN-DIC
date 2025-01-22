@@ -52,8 +52,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/sun-dic
-
+      url: https://pypi.org/p/SUN-DIC
 
     steps:
     - name: Download all the dists
