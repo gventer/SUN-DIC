@@ -10,7 +10,7 @@ with open("sundic/version.py") as f:
     exec(f.read(), version)
 
 setup(
-    name='sundic',
+    name='SUN-DIC',
     version=version["__version__"],
     description='Stellenbosch University Digital Image Correlation Library',
     author='Gerhard Venter',
