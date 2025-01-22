@@ -33,7 +33,7 @@ jobs:
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
       #- run: python docs/make.py
-      - run: pdoc sundic -o docs/
+      - run: pdoc sundic !sundic.gui -o docs/
 
       - uses: actions/upload-pages-artifact@v3
         with:
