@@ -25,7 +25,7 @@ jobs:
           python-version: "3.x"
 
       - name: Build distributions
-        run: | >-
+        run: >-
           python3 -m
           pip install
           build
