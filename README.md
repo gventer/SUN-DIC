@@ -109,6 +109,9 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 2. Download the `planar_images` folder from this repository for example image data.
 3. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
 
+<img src="screenshots/settings.png" width="450"> <img src="screenshots/image_set.png" width="450"> <img src="screenshots/roi.png" width="450">
+<img src="screenshots/analyze.png" width="450"> <img src="screenshots/results.png" width="450">
+
 ---
 
 ### Using the API
