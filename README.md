@@ -1,109 +1,156 @@
+
+---
+
 # SUN-DIC
 
-Stellenbosch University DIC Code
+**Stellenbosch University Digital Image Correlation (DIC) Code**
 
-# Important Notice
+---
 
-You are accessing a very early release of the Stellenbosch University DIC Code called SUN-DIC. Currently this code has the following key features and limitations. Please forward any problems and/or suggestions for improvement to the author. More detailed information about the implementation will be provided at a later stage.
+## Important Notice
+
+This is an early release of the Stellenbosch University DIC Code, referred to as **SUN-DIC**. The code includes the following features and limitations. If you encounter issues or have suggestions for improvement, please contact the author. Additional documentation will be provided in future updates.
+
+---
 
 ## Limitations
 
-1. Can currently only deal with 2D planar problems (a stereo version is planned)
-2. Can only specify a rectangular region of interest (ROI), but an all black background in the image pair can be used to automatically deal with irregularly shaped domains.  All black (according to a user specified threshold) background subsets are automatically ignored
+1. Currently supports only 2D planar problems (a stereo version is under development).
+2. Only rectangular regions of interest (ROI) can be specified. However, subsets with an all-black background (based on a user-defined threshold) is ignored thus allowing the code to handle irregularly shaped domains.
+3. Limited documentation.  Please see the `settings.ini` file for complete documentation on on the options and the `test_sundic.ipynb` file as a working example of using the API.
 
-## Key features
+---
 
-1.  Completely open source using standard Python libraries wherever possible
-2.  Both an easy to use use GUI as well as an API are provided for using the code
-3.  Make use of the zero-mean normalized sum of squared differences (ZNSSD) correlation criterion
-4.  Have an advanced starting strategy for automatically creating initial guesses at a small number of starting points using the Akaze feature detection algorithm
-5.  Have both linear (affine) and quadratic shape functions available
-6.  Have both an inverse compositional Gauss-Newton (IC-GN) and an inverse compositional Levenberg-Marquardt (IC-LM) solver implemented
-7.  Have both an absolute and relative update strategy when considering multiple image pairs
-8.  Calculate both displacements and strains
-9.  Strains are calculated using a Savitzky-Golay smoothing operations
-10. Parallel computing
+## Key Features
 
-# Installation
+1. Fully open-source, utilizing standard Python libraries wherever possible.
+2. Offers both a user-friendly GUI and an API for interaction.
+3. Implements the Zero-Mean Normalized Sum of Squared Differences (ZNSSD) correlation criterion.
+4. Features an advanced starting strategy using the AKAZE feature detection algorithm for initial guess generation.
+5. Supports both linear (affine) and quadratic shape functions.
+6. Includes Inverse Compositional Gauss-Newton (IC-GN) and Inverse Compositional Levenberg-Marquardt (IC-LM) solvers.
+7. Provides absolute and relative update strategies for handling multiple image pairs.
+8. Computes displacements and strains.
+9. Utilizes Savitzky-Golay smoothing for strain calculations.  Displacements can also be smoothed using the same algorithm.
+10. Supports parallel computing for improved performance.
+11. Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/).
 
-1. Clone the repository
-2. Create a virtual environment
-3. Activate the virtual environment
-4. Install the cloned environment
+---
 
-Below are some pointers how to achieve this using either python/pip or anacoda
+## Installation
 
-## Using `pip`
+Although installation can be performed without creating a virtual environment, it is highly recommended to use one for easier dependency management.
 
-1. Create a new virtual environment for use with this package
+### General Steps
 
-```
-python3 -m venv sundic
-```
+1. Create a virtual environment.
+2. Activate the virtual environment.
+3. Install the package from [PyPI](https://pypi.org/project/SUN-DIC/).
+4. Optionally, download the following files and folders for a complete working example:
+   - `test_sundic.ipynb`
+   - `settings.ini`
+   - `planar_images` folder
+   These can be found in this repository and provide a practical starting point for using both the API or GUI.
 
-2. Activate the virtual environment
+---
 
-```
-source sundic/bin/activate
-```
+### Using `pip`
 
-3. Download and install the package
+1. Create a virtual environment (e.g., `sundic`):
+   ```
+   python3 -m venv sundic
+   ```
+2. Activate the virtual environment:
+   ```
+   source sundic/bin/activate
+   ```
+3. Install the package:
+   ```
+   pip install SUN-DIC
+   ```
 
-```
-git clone https://github.com/gventer/SUN-DIC.git
-pip install ./SUN-DIC
-```
+---
 
-## Using `anacoda` - from the command line
+### Using `conda`
 
-1. Create a new virtual environment for use with this package
+1. Create a virtual environment (e.g., `sundic`) with Python pre-installed:
+   ```
+   conda create -n sundic python=3.9
+   ```
+2. Activate the virtual environment:
+   ```
+   conda activate sundic
+   ```
+3. Install the package:
+   ```
+   pip install SUN-DIC
+   ```
 
-```
-conda create -n sundic pip
-```
+---
 
-2. Activate the virtual environment
+### Installing Directly from GitHub (Advanced users only)
 
-```
-conda activate sundic
-```
+1. Create and activate a virtual environment using either `pip` or `conda` as outlined above.
+2. Clone the repository and install the package:
+   ```
+   git clone https://github.com/gventer/SUN-DIC.git
+   pip install ./SUN-DIC
+   ```
 
-3. Download and install the package
+---
 
-```
-git clone https://github.com/gventer/SUN-DIC.git
-pip install ./SUN-DIC
-```
+## Usage
 
-# Usage
+Make sure the virtual environment where `SUN-DIC` is installed is active before proceeding.
 
-## Starting the GUI
+### Starting the GUI
 
-Simply type `sundic` to launch the GUI.  Using the GUI is straight-forward.  Simply follow the workflow outlined on the left-hand side of the GUI.  Hovering the mouse over any entry will provide pop-up help for that entry.
+1. Type `sundic` in the terminal to launch the GUI.
+2. Download the `planar_images` folder from this repository for example image data.
+3. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
 
-## Using the API
+---
 
-1. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed and complete working example
-2. Open this from the main SUN-DIC directory and be sure to use the virtual environment you created above
-3. Note that the general work flow is to modify the `setting.ini` file, perform the DIC analysis and finally to post-process the results
-4. The working example is provided as a Jupyter Notebook, but the API can of course also be used directly from a normal Python `.py` file
+### Using the API
 
-# API Documentation
+1. Download the following files from this repository:
+   - `test_sundic.ipynb`
+   - `settings.ini`
+   - `planar_images` folder
+2. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed working example.
+3. The typical workflow involves:
+   - Modifying the `settings.ini` file.
+   - Running the DIC analysis.
+   - Post-processing the results.
+4. While the example uses a Jupyter Notebook, the API can also be used in standard Python `.py` scripts.
 
-API Documentation can be found at the following github pages:
+---
+
+## API Documentation
+
+Detailed API documentation is available at:
 
 [https://gventer.github.io/SUN-DIC](https://gventer.github.io/SUN-DIC/)
 
-# Acknowledgementss
+---
 
-- The SUN-DIC analysis code is based on work done by Ed Brisley as part of his MEng degree at Stellenbosch University. His MEng thesis is available at the Stellenbosch University library (https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a)
-- The interpolator used is `fast_interp` written by David Stein and available under the Apache 2.0 license at: https://github.com/dbstein/fast_interp
-- The Savitsky-Golay 2D smoothing algorithm is from the scipy cookbook available at: https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html
+## Acknowledgments
 
-# License
+- **SUN-DIC Analysis Code**: Based on work by Ed Brisley as part of his MEng degree at Stellenbosch University. His thesis is available at the [Stellenbosch University Library](https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a).
+- **Interpolator**: Utilizes `fast_interp` by David Stein, licensed under Apache 2.0. Repository: [fast_interp](https://github.com/dbstein/fast_interp).
+- **Smoothing Algorithm**: Implements the 2D Savitzky-Golay algorithm from the [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html).
+- **GUI Development**: Developed by [Elijah Stockhall](https://github.com/EMStockhall/).
 
-This project is licensed under the MIT License - see the LICENSE file for details
+---
 
-# Authors
+## License
 
-[Gerhard Venter](https://github.com/gventer/)
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## Authors
+
+Developed by [Gerhard Venter](https://github.com/gventer/).
+
+---
