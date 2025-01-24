@@ -7,6 +7,9 @@
 # documentation.
 
 name: Upload SUN-DIC to PyPi
+permissions:
+  contents: read
+  pull-requests: write
 
 on: push
 
