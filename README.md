@@ -75,7 +75,7 @@ Although installation can be performed without creating a virtual environment, i
 
 1. Create a virtual environment (e.g., `sundic`) with Python pre-installed:
    ```
-   conda create -n sundic python=3.9
+   conda create -n sundic python
    ```
 2. Activate the virtual environment:
    ```
