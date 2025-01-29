@@ -7,3 +7,4 @@ __version__ = "0.0.6"
 #         is used for post-processing
 # 0.0.5 - Minor change to gradient calculations
 # 0.0.6 - Publishing to PyPi
+# 0.0.7 - Trying to fix run environment for GUI on windows
