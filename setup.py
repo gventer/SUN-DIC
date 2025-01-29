@@ -17,7 +17,7 @@ setup(
     author_email='gventer@sun.ac.za',
     packages=['sundic', 'sundic.util', 'sundic.gui'],
     entry_points={
-        "gui_scripts": [
+        "console_scripts": [
             "sundic = sundic.gui.sundic_gui:main"
         ]
     },
