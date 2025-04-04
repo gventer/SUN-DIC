@@ -58,7 +58,7 @@ Although installation can be performed without creating a virtual environment, i
 
 1. Create a virtual environment (e.g., `sundic`):
    ```
-   python3 -m venv sundic
+   python3.11 -m venv sundic
    ```
 2. Activate the virtual environment:
    ```
