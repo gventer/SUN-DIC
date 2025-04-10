@@ -257,6 +257,20 @@ class Settings:
 
 
     # --------------------------------------------------------------------------------------------
+    def isFastICLM(self):
+        """
+        Determine if the optimization algorithm is the fast version of the Levenberg-Marquardt method.
+
+        Returns:
+            - bool: True if the optimization algorithm is the fast Levenberg-Marquardt method, False otherwise.
+        """
+        if self.OptimizationAlgorithm == 'Fast-IC-LM':
+            return True
+        else:
+            return False
+
+
+    # --------------------------------------------------------------------------------------------
     def isAffineShapeFn(self):
         """
         Determine if the shape functions are affine.
@@ -416,9 +430,9 @@ class Settings:
         # Initialization of optimisation routine
         self.OptimizationAlgorithm = cp.get(
             'Optimisation', 'OptimizationAlgorithm', fallback=self.__defOptimizationAlgorithm)
-        if self.OptimizationAlgorithm not in ['IC-GN', 'IC-LM']:
+        if self.OptimizationAlgorithm not in ['IC-GN', 'IC-LM', 'Fast-IC-LM']:
             raise ValueError(
-                'Config Parser:  OptimizationAlgorithm must be IC-GN or IC-LM')
+                'Config Parser:  OptimizationAlgorithm must be IC-GN , IC-LM or Fast-IC-LM')
 
         self.MaxIterations = cp.getint(
             'Optimisation', 'MaxIterations', fallback=self.__defMaxIterations)

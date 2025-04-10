@@ -307,9 +307,7 @@ def _setupROI_(ROI, img0, debugLevel=0):
     if (ROI[2] == 0 or ROI[3] == 0):
 
         # Read the image and determine the size
-        img = cv.imread(img0, cv.IMREAD_UNCHANGED)
-        ratio = np.amax(img) / 256
-        img = (img/ratio).astype('uint8')
+        img = readImage( img0 )
         height, width = img.shape
 
         # Set the x-width
@@ -514,14 +512,23 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
     # IC-GN algorithm
     if settings.isICGN():
         isICGN = True
+        isICLM = False
+        isFastICLM = False
         isNormalized = False
     # IC-LM algorithm
     elif settings.isICLM():
         isICGN = False
+        isICLM = True
+        isFastICLM = False
+        isNormalized = True
+    elif settings.isFastICLM():
+        isICGN = False
+        isICLM = False
+        isFastICLM = True
         isNormalized = True
     else:
         raise ValueError(
-            'Invalid optimizationAlgorithm specified. Only supported values are: IC-GN | IC-LM')
+            'Invalid optimizationAlgorithm specified. Only supported values are: IC-GN | IC-LM | FastIC-LM')
 
     # Process reference and target images for current image pair
     # delF: dFdy = delF[0], dFdx = delF[1]
@@ -539,7 +546,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
     # ***Adjust the BGCutOff value - this is currently a very crude way to do this
     # Should most probably look at difference in intensity values
-    if settings.isICLM():
+    if isICLM or isFastICLM:
         nBGCutOff = nBGCutOff/FMax
 
     # Get the local coordinates for a subset
@@ -621,7 +628,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                 b = -np.dot(J.T, res)
 
                 # Perform IC-GN update
-                if isICGN:
+                if (isICGN):
 
                     # Get the new deltaP
                     deltaP = np.squeeze(np.linalg.solve(H, b))
@@ -630,14 +637,22 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                     shapeFnCoeffs_i[:-1] = _modelCoeffUpdate_(shapeFnCoeffs_i, deltaP,
                                                               shapeFns=settings.ShapeFunctions)
 
-                # Perform IC-LM update
-                else:
-                    # Delta p deformation applied to the original image
-                    xsi_df, eta_df = _relativeDeformedCoords_(
-                        deltaP, xsi, eta, shapeFns=settings.ShapeFunctions)
+                elif (isFastICLM or isICLM):
 
-                    df, df_mean, df_tilde = _deformedSubSetInfo_(
-                        FInter, x0, y0, xsi_df, eta_df)
+                    # Initialize the df, df_mean and df_tilde values - this is all we need
+                    # for the fast IC-LM algorithm
+                    df = f
+                    df_mean = f_mean
+                    df_tilde = f_tilde
+
+                    # For the normal IC-LM algorithm we need to actually calcualte these
+                    if isICLM:
+                        # Delta p deformation applied to the original image
+                        xsi_df, eta_df = _relativeDeformedCoords_(
+                            deltaP, xsi, eta, shapeFns=settings.ShapeFunctions)
+
+                        df, df_mean, df_tilde = _deformedSubSetInfo_(
+                            FInter, x0, y0, xsi_df, eta_df)
 
                     # Get he current CZNSSD value
                     cznssd = _calcCZNSSD_(nBGCutOff,
@@ -733,10 +748,7 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
     gfSize, gfStdDev = gaussBlur
 
     # Read the image as grayscale
-    #**gv Test this with cv.IMREAD_UNCHANGED to read higher bit levels
-    F = cv.imread(imgSet[img], cv.IMREAD_UNCHANGED)
-    ratio = np.amax(F) / 256
-    F = (F/ratio).astype('uint8')
+    F = readImage( imgSet[img] )
 
     # Setup the gradients, but only if this is a reference image
     delF = [0,0]
@@ -1596,3 +1608,29 @@ def _fillMissingData_(dataX, dataY, dataVal):
         dataVal[~mask] = interp(dataX[~mask], dataY[~mask])
 
     return dataVal
+
+
+# ---------------------------------------------------------------------------------------------
+def readImage(imgFile):
+    """
+    Read an image file and convert it to grayscale.
+
+    Parameters:
+        imgFile (str): The path to the image file.
+
+    Returns:
+        numpy.ndarray: The grayscale image.
+    """
+    # Read the image as is
+    img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
+
+    # Convert to grayscale if color image
+    if len(img.shape) == 3:
+        grayImg = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    else:
+        grayImg = img
+
+    ratio = np.amax(grayImg) / 256
+    grayImg = (grayImg/ratio).astype('uint8')
+
+    return grayImg

@@ -1,4 +1,4 @@
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 # 0.0.1 - Initial release
 # 0.0.2 - Changed underlying data structure and added parallel processing
 # 0.0.3 - Added support for multiple input files
@@ -8,3 +8,4 @@ __version__ = "0.0.7"
 # 0.0.5 - Minor change to gradient calculations
 # 0.0.6 - Publishing to PyPi
 # 0.0.7 - Trying to fix run environment for GUI on windows
+# 0.0.8 - Improved reading of images and added a new Fast-IC-LM algorithm
