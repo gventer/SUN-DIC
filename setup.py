@@ -16,9 +16,18 @@ setup(
     author='Gerhard Venter',
     author_email='gventer@sun.ac.za',
     packages=['sundic', 'sundic.util', 'sundic.gui'],
+    include_package_data=True,
+    package_data={
+        "sundic": [
+            "examples/settings.ini",
+            "examples/test_sundic.ipynb",
+            "examples/planar_images/*",
+        ],
+    },
     entry_points={
         "console_scripts": [
-            "sundic = sundic.gui.sundic_gui:main"
+            "sundic = sundic.gui.sundic_gui:main",
+            "copy-examples = sundic.copy_examples:copy_examples",
         ]
     },
     url='https://github.com/gventer/SUN-DIC',
@@ -31,5 +40,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
     ],
-    python_requires=">3.11"
+    python_requires=">3.11",
 )

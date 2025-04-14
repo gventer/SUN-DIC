@@ -46,11 +46,11 @@ Although installation can be performed without creating a virtual environment, i
 1. Create a virtual environment.
 2. Activate the virtual environment.
 3. Install the package from [PyPI](https://pypi.org/project/SUN-DIC/).
-4. Optionally, download the following files and folders for a complete working example:
+4. Copy the example problem to the current working directory by typing `copy-examples`.  A complete working example is provided by the following files:
    - `test_sundic.ipynb`
    - `settings.ini`
    - `planar_images` folder
-   These can be found in this repository and provide a practical starting point for using both the API or GUI.
+   These files provide practical starting point for using both the API or GUI.
 
 ---
 
@@ -68,7 +68,10 @@ Although installation can be performed without creating a virtual environment, i
    ```
    pip install SUN-DIC
    ```
-
+4. Copy the example problem:
+   ```
+   copy-examples
+   ```
 ---
 
 ### Using `conda`
@@ -85,7 +88,10 @@ Although installation can be performed without creating a virtual environment, i
    ```
    pip install SUN-DIC
    ```
-
+4. . Copy the example problem:
+   ```
+   copy-examples
+   ```
 ---
 
 ### Installing Directly from GitHub (Advanced users only)
@@ -96,6 +102,7 @@ Although installation can be performed without creating a virtual environment, i
    git clone https://github.com/gventer/SUN-DIC.git
    pip install ./SUN-DIC
    ```
+3. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
 
 ---
 
@@ -106,7 +113,7 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 ### Starting the GUI
 
 1. Type `sundic` in the terminal to launch the GUI.
-2. Download the `planar_images` folder from this repository for example image data.
+2. Use the `copy-examples` command to copy a complete working example to the current working directory.
 3. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
 
 <img src="screenshots/settings.png" width="450"> <img src="screenshots/image_set.png" width="450"> <img src="screenshots/roi.png" width="450">
@@ -116,10 +123,7 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 
 ### Using the API
 
-1. Download the following files from this repository:
-   - `test_sundic.ipynb`
-   - `settings.ini`
-   - `planar_images` folder
+1. Use the `copy-examples` command to copy a complete working example to the current working directory.
 2. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed working example.
 3. The typical workflow involves:
    - Modifying the `settings.ini` file.
