@@ -9,3 +9,6 @@ __version__ = "0.0.8"
 # 0.0.6 - Publishing to PyPi
 # 0.0.7 - Trying to fix run environment for GUI on windows
 # 0.0.8 - Improved reading of images and added a new Fast-IC-LM algorithm
+# 0.0.9 - Added ZNCC and ZNSSD data to post-processing and new Fast-IC-LM algorithm to GUI
+# 0.0.10 - Fixing versions and tags...
+# 0.0.11 - Fixing versions and tags...
