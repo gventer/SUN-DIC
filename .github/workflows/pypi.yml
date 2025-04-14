@@ -12,6 +12,8 @@ permissions:
   pull-requests: write
 
 on: push
+  # Allows for manual triggering of this action
+  workflow_dispatch:
 
 jobs:
   build:
