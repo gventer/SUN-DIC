@@ -11,7 +11,10 @@ permissions:
   contents: read
   pull-requests: write
 
-on: push
+on:
+  push:
+    # existing configuration for push
+  workflow_dispatch:  # This enables manual triggering
 
 jobs:
   build:
