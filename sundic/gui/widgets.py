@@ -126,6 +126,7 @@ class settingsUI(QWidget):
         self.algoTypeBox.setObjectName("algoTypeBox")
         self.algoTypeBox.addItem("")
         self.algoTypeBox.addItem("")
+        self.algoTypeBox.addItem("")
         self.gridLayout.addWidget(self.algoTypeBox, 0, 3, 1, 1)
         self.converLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
@@ -166,6 +167,7 @@ class settingsUI(QWidget):
         self.algorLab.setText("Algorithm")
         self.algoTypeBox.setItemText(0, "IC-GN")
         self.algoTypeBox.setItemText(1, "IC-LM")
+        self.algoTypeBox.setItemText(2, "Fast-IC-LM")
 
 class imageSetUi(QWidget):
     def __init__(self, parent):

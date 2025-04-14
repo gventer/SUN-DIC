@@ -371,7 +371,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
             _increment (int): Increment value.
             _ROI (list): Region of interest.
             _backgroundCutOff (float): Background cutoff value.
-            _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM).
+            _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM, 2 for Fast-IC-LM).
             _maxIter (int): Maximum number of iterations.
             _convTol (float): Convergence tolerance.
             flag00 (bool): Indicates if settings have been changed since the last save.
@@ -491,6 +491,8 @@ class mainProgram(QMainWindow, Ui_MainWindow):
             self._optAlgor = 0
         elif self._defaultSettings.OptimizationAlgorithm == 'IC-LM':
             self._optAlgor = 1
+        elif self._defaultSettings.OptimizationAlgorithm == 'Fast-IC-LM':
+            self._optAlgor = 2            
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
@@ -597,7 +599,7 @@ The default value is set conservatively high and should only be changed when ins
         self.settingsUI.refBox.setToolTip("""The reference strategy to use. Absolute - The reference image is the first image - no change in ROI. Useful for small deformations.
 Relative - The reference image is the previous image - ROI is updated for each image pair.  Useful for large deformations.""")
         self.settingsUI.algoTypeBox.setToolTip("""The optimization algorithm to use. IC-GN - Use the Incremental Gauss Newton algorithm.
-IC-LM - Use the Incremental Levenberg-Marquardt algorithm.""")
+IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the Fast Incremental Levenberg-Marquardt algorithm.""")
 
     def changedSettings(self):  # Saving User Input
         """
@@ -1893,6 +1895,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             self._optAlgor = 0
         elif self._defaultSettings.OptimizationAlgorithm == 'IC-LM':
             self._optAlgor = 1
+        elif self._defaultSettings.OptimizationAlgorithm == 'Fast-IC-LM':
+            self._optAlgor = 2
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
@@ -1908,7 +1912,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         - DIC Type (Planar or Stereo)
         - Shape Functions (Affine or Quadratic)
         - Reference Strategy (Relative or Absolute)
-        - Optimization Algorithm (IC-GN or IC-LM)
+        - Optimization Algorithm (IC-GN, IC-LM or Fast-IC-LM)
         - Datum and Target Images
         - Debug Level
         - Subset Size
@@ -1955,6 +1959,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _optAlgor = 'IC-GN'
         elif self._optAlgor == 1:
             _optAlgor = 'IC-LM'
+        elif self._optAlgor == 2:
+            _optAlgor = 'Fast-IC-LM'            
 
         _datumImage = int(self._datumImage) - 1
         if int(self._targetImage) == -1:
@@ -1999,7 +2005,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         - DIC Type (Planar or Stereo)
         - Shape Functions (Affine or Quadratic)
         - Reference Strategy (Relative or Absolute)
-        - Optimization Algorithm (IC-GN or IC-LM)
+        - Optimization Algorithm (IC-GN, IC-LM or Fast-IC-LM)
         - Datum and Target Images
         - Debug Level
         - Subset Size
@@ -2043,6 +2049,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _optAlgor = 'IC-GN'
         elif self._optAlgor == 1:
             _optAlgor = 'IC-LM'
+        elif self._optAlgor == 2:
+            _optAlgor = 'Fast-IC-LM'            
 
         _datumImage = int(self._datumImage) - 1
         if int(self._targetImage) == -1:
@@ -2116,7 +2124,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _increment (int): Increment value from the settings.
             _ROI (tuple): Region of interest from the settings.
             _backgroundCutOff (float): Background cutoff value from the settings.
-            _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM).
+            _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM, 2 for Fast-IC-LM).
             _maxIter (int): Maximum number of iterations from the settings.
             _convTol (float): Convergence threshold from the settings.
             flag01 (bool): Flag indicating if the file contains results.
@@ -2173,6 +2181,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
                 self._optAlgor = 0
             elif dicSet.OptimizationAlgorithm == 'IC-LM':
                 self._optAlgor = 1
+            elif dicSet.OptimizationAlgorithm == 'Fast-IC-LM':
+                self._optAlgor = 2
 
             self._maxIter = dicSet.MaxIterations
             self._convTol = dicSet.ConvergenceThreshold
@@ -2215,7 +2225,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _shapeFunc (int): Index for shape functions (0 for 'Affine', 1 for 'Quadratic').
             _startingPoints (int): Number of starting points for the analysis.
             _refStrat (int): Index for reference strategy (0 for 'Relative', 1 for 'Absolute').
-            _optAlgor (int): Index for optimization algorithm (0 for 'IC-GN', 1 for 'IC-LM').
+            _optAlgor (int): Index for optimization algorithm (0 for 'IC-GN', 1 for 'IC-LM', 2 for 'Fast-IC-LM').
             _maxIter (int): Maximum number of iterations for the optimization algorithm.
             _convTol (float): Convergence threshold for the optimization algorithm.
             settingsUI (object): The UI object containing the GUI elements to be updated.
@@ -2254,6 +2264,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             self._optAlgor = 0
         elif self._defaultSettings.OptimizationAlgorithm == 'IC-LM':
             self._optAlgor = 1
+        elif self._defaultSettings.OptimizationAlgorithm == 'Fast-IC-LM':
+            self._optAlgor = 2
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold

@@ -168,6 +168,59 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
 
 
 # --------------------------------------------------------------------------------------------
+def getCznssd(resultsFile, imgPair):
+    """
+    Calculate and return the Cznssd values for each subset based on the results file created by 
+    SUN-DIC.
+
+    Parameters:
+     - resultsFile (string): Results file from sundic.
+     - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+
+    Returns:
+     - ndarray: Array of Cznssd values.  The columns are as follows:
+            - Column 0: x coordinate of the subset point.
+            - Column 1: y coordinate of the subset point.
+            - Column 2: z coordinate - 0's for now.
+            - Column 3: Cznssd values.
+    - nRows: int.  The number of rows of subsets.
+    - nCols: int.  The number of columns of subsets.
+    """
+    # Load the results file and unpack the data
+    inFile = dataFile.DataFile.openReader(resultsFile)
+
+    # Ingore the heading
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+
+    # Get the data
+    subSetPnts = inFile.readSubSetData(imgPair)
+
+    # Close the file
+    inFile.close()
+
+    # Setup a results array
+    nRows = subSetPnts.shape[0]
+    nCols = subSetPnts.shape[1]
+    nSubSets = subSetPnts.shape[0] * subSetPnts.shape[1]
+    results = np.zeros((nSubSets, 4))
+
+    # Store the x and y coordinates of the subset points in the 1st and 2nd
+    # columns of the results array
+    results[:, CompID.XCoordID] = subSetPnts[:, :,
+                                             CompID.XCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.YCoordID] = subSetPnts[:, :, 
+                                             CompID.YCoordID].reshape(nSubSets, order='F')
+
+    # Store the Cznssd component
+    results[:, -1] = subSetPnts[:, :, -1].reshape(nSubSets, order='F')
+    results[:, -1][ results[:,-1] == sdic.IntConst.CNZSSD_MAX ] = np.nan
+
+    return results, nRows, nCols
+
+
+# --------------------------------------------------------------------------------------------
 def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
     """
     Calculate and return the strains based on the subset points and coefficients.  For now only 
@@ -345,6 +398,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
           Default is 2.
         - maxValue (float, optional): Maximum value to plot.  Default is None.
         - minValue (float, optional): Minimum value to plot.  Default is None.
+        - return_fig (bool, optional): Flag to return the figure object. Default is False.
 
     Returns: 
         - fig: The matplotlib plot object.
@@ -370,6 +424,82 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         Z = results[:, StrainComp.VM_STRAIN].reshape(nCols, nRows)
     else:
         raise ValueError('Invalid strainComp argument - use the Comp object.')
+
+    # Apply maximum and minimum values if provided
+    if maxValue:
+        Z[Z > maxValue] = maxValue
+    if minValue:
+        Z[Z < minValue] = minValue
+
+    # Get the settings object
+    inFile = dataFile.DataFile.openReader(resultsFile)
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+    inFile.close()
+
+    # Create figure object
+    fig, ax = plt.subplots()
+
+    # Read the image to plot on and plot
+    if plotImage:
+        imgSet = sdic._getImageList_(settings.ImageFolder)
+        if imgPair == -1:
+            imgPair = len(imgSet) - 1
+        else:
+            imgPair = imgPair + 1
+        img = sdic.readImage( imgSet[imgPair] )
+        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+
+    # Setup the contour plot and plot on top of the image
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
+    ax.set_xlabel('x (pixels)')
+    ax.set_ylabel('y (pixels)')
+    fig.colorbar(contour, ax = ax)
+
+    # Show and or save the plot
+    if showPlot:
+        plt.show()
+    if fileName:
+        plt.savefig(fileName)
+
+    if return_fig:
+        return fig
+
+
+# --------------------------------------------------------------------------------------------
+def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=True, fileName='',
+                    maxValue=None, minValue=None, return_fig=False):
+    """
+    Plot the displacement contour based on the subset points and coefficients.
+
+    Parameters:
+        - resultsFile (string): Results file from sundic.
+        - imgPair (int): Zero based image pair to post-process for displacement values.
+                    Use -1 for final/last pair.
+        - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
+        - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
+        - showPlot (bool, optional): Flag to show the plot. Default is True.
+        - fileName (str, optional): Name of the file to save the plot. Default is ''.
+        - maxValue (float, optional): Maximum value to plot.  Default is None.
+        - minValue (float, optional): Minimum value to plot.  Default is None.
+        - return_fig (bool, optional): Flag to return the figure object. Default is False.
+
+    Returns: 
+        - fig: The matplotlib plot object.
+
+    Raises:
+        - ValueError: If an invalid dispComp argument is provided.
+    """
+
+    # Get the displacement results
+    Cznssd, nRows, nCols = getCznssd(resultsFile, imgPair)
+
+    # Setup the plot arrays
+    X = Cznssd[:, CompID.XCoordID].reshape(nCols, nRows)
+    Y = Cznssd[:, CompID.YCoordID].reshape(nCols, nRows)
+
+    # Calculate the ZNCC form the stored Cznssd values
+    Z = (1. - 0.5*Cznssd[:,-1]).reshape(nCols, nRows)
 
     # Apply maximum and minimum values if provided
     if maxValue:
