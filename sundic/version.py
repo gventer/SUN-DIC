@@ -1,4 +1,4 @@
-__version__ = "0.0.8"
+__version__ = "0.0.12"
 # 0.0.1 - Initial release
 # 0.0.2 - Changed underlying data structure and added parallel processing
 # 0.0.3 - Added support for multiple input files
@@ -12,3 +12,4 @@ __version__ = "0.0.8"
 # 0.0.9 - Added ZNCC and ZNSSD data to post-processing and new Fast-IC-LM algorithm to GUI
 # 0.0.10 - Fixing versions and tags...
 # 0.0.11 - Fixing versions and tags...
+# 0.0.12 - Fixing versions and tags...
