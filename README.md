@@ -17,7 +17,7 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 
 1. Currently supports only 2D planar problems (a stereo version is under development).
 2. Only rectangular regions of interest (ROI) can be specified. However, subsets with an all-black background (based on a user-defined threshold) is ignored thus allowing the code to handle irregularly shaped domains.
-3. Limited documentation.  Please see the `settings.ini` file for complete documentation on on the options and the `test_sundic.ipynb` file as a working example of using the API.
+3. Limited documentation.  Please see the `settings.ini` file for complete documentation on the options and the `test_sundic.ipynb` file as a working example of using the API.  These files are included as a working example (with sample image files) which can be accessed by issuing the `copy-examples` command after installation.  Please see below.
 
 ---
 
