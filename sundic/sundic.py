@@ -165,7 +165,9 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
                 print('\nParallel Run Information :')
                 print('---------------------------------')
                 print('  Starting parallel run with {} CPUs'.format(nCpus))
-            ray.init(num_cpus=nCpus)
+
+                # Init ray with restarts
+                safe_ray_init(nCpus, debugLevel=debugLevel)
 
         # Loop through all image pairs to perform the local DIC
         # Start by setting up the return list and the current subset points
@@ -210,7 +212,9 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
                 # are done
                 while len(procIDs):
                     done_id, procIDs = ray.wait(procIDs)
-                    iRow, iCol, rsltMatrix = ray.get(done_id[0])
+
+                    # Launch ray tasks with retries
+                    iRow, iCol, rsltMatrix = safe_ray_launch(done_id[0], debugLevel=nDebugOld)
                     (subMatrices[iRow][iCol])[:] = rsltMatrix
                     if nDebugOld > 0:
                         print("  Submatrix {} {} completed".format(iRow, iCol))
@@ -253,15 +257,14 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
 
         # Shutdown the parallel environment if required
         if nCpus > 1 or runGUI:
-            ray.shutdown()
-
+            safe_ray_shutdown(debugLevel=debugLevel)
         # Close the file
         df.close()
 
         return returnData
     except Exception as e:
         if nCpus > 1 or runGUI:
-            ray.shutdown()
+            safe_ray_shutdown(debugLevel=debugLevel)
         raise e
 
 
@@ -1634,3 +1637,84 @@ def readImage(imgFile):
     grayImg = (grayImg/ratio).astype('uint8')
 
     return grayImg
+
+
+# ---------------------------------------------------------------------------------------------
+def safe_ray_init(nCpus, debugLevel=0):
+    """
+    Initialize the ray environment with retries to make it more robust.
+
+    Parameters:
+        nCpus (int): The number of CPUs to use.
+        debugLevel (int): The debug level for logging.
+
+    Returns:
+        ray (Ray): The initialized ray instance.
+    """    
+
+    nRetry = 3 # Number of retries
+
+    # Try to start ray with retries
+    for i in range(nRetry):  # Retry a few times
+        try:
+            return ray.init(num_cpus=nCpus)
+        except Exception as e:
+            if debugLevel > 1:
+                print(f"Ray init failed: {e}, retrying ({i+1}/{nRetry})...")
+            time.sleep(2)
+
+    raise RuntimeError(f"Ray failed to initialize after {nRetry} retries")
+
+
+# ---------------------------------------------------------------------------------------------
+def safe_ray_launch(func, debugLevel=0):
+    """
+    Launch a Ray task with retries to make it more robust.
+
+    Parameters:
+        func (Ray task): The Ray task to be launched.
+        debugLevel (int): The debug level for logging.
+
+    Returns:
+        result (any): The result of the Ray get function.
+    """    
+
+    nRetry = 3 # Number of retries
+
+    # Try to launch the task with retries
+    for i in range(nRetry):
+        try:
+            return ray.get(func)
+        except Exception as e:
+            if debugLevel > 1:
+                print(f"Ray task launch failed: {e}, retrying ({i+1}/{nRetry})...")
+            time.sleep(1)
+
+    raise RuntimeError(f"Ray task failed to initialize after {nRetry} retries")
+
+
+# ---------------------------------------------------------------------------------------------
+def safe_ray_shutdown(debugLevel=0):
+    """
+    Shutdown the Ray environment with retries to make it more robust.
+
+    Parameters:
+        debugLevel (int): The debug level for logging.
+
+    Returns:
+        None
+    """    
+
+    nRetry = 3 # Number of retries
+
+    # Try to shutdown ray with retries
+    for i in range(nRetry):
+        try:
+            ray.shutdown()
+            return
+        except Exception as e:
+            if debugLevel > 1:
+                print(f"Ray shutdown failed: {e}, retrying ({i+1}/{nRetry})...")
+            time.sleep(1)
+
+    print(f"Ray shutdown ultimately failed after {nRetry} retries. Will continue.")

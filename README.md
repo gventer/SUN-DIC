@@ -13,6 +13,12 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 
 ---
 
+## Presentations
+
+1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](presentations/2025_sundic_mod.pdf) 2025-04-17 MOD Research Group Meeting - Overview of SUN-DIC
+
+---
+
 ## Limitations
 
 1. Currently supports only 2D planar problems (a stereo version is under development).

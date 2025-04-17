@@ -1110,7 +1110,7 @@ Left click a third time to remove the ROI.""")
         self.analysisBut.setEnabled(True)
         self.analysisUi.startBut.setEnabled(True)
         subprocess.run(['ray', 'stop'])
-        ray.shutdown()
+        sd.safe_ray_shutdown()
         self.analysisUi.statusLab.setText("Status: Analysis Stopped")
         self.analysisUi.statusLab.setStyleSheet("color: red")
         self.asave()
@@ -2636,7 +2636,7 @@ class PlanarDICWorker(QThread):
                 print(f"Exception in thread: {e}")
             finally:
                 self._stop_event.set()
-                ray.shutdown()
+                sd.safe_ray_shutdown()
 
         dic_thread = threading.Thread(target=run_dic)
         dic_thread.start()
