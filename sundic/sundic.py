@@ -100,7 +100,7 @@ def _getImageList_(imgSubFolder, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def planarDICLocal(settings, resultsFile, runGUI = False):
+def planarDICLocal(settings, resultsFile, externalRay = False):
     """
     Perform local planar (2D) Digital Image Correlation (DIC) analysis.
 
@@ -111,6 +111,7 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
     Parameters:
         - settings: A Settings object containing the settings for the DIC analysis.
         - resultsFile: The name of the file to store the results in.
+        - externalRay: A boolean indicating whether to use an external ray server or not.
 
     Returns:
         - returnData (list): A list of subSetPoint arrays. Each subSetPoint array is a 
@@ -160,14 +161,16 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
 
         # Initialize the parallel enviroment if required
         nCpus = settings.CPUCount
-        if nCpus > 1 or runGUI:
+        if nCpus > 1:
             if debugLevel > 0:
                 print('\nParallel Run Information :')
                 print('---------------------------------')
                 print('  Starting parallel run with {} CPUs'.format(nCpus))
+                if externalRay:
+                    print('  Using external ray server')    
 
                 # Init ray with restarts
-                safe_ray_init(nCpus, debugLevel=debugLevel)
+                safe_ray_init(externalRay, nCpus, debugLevel=debugLevel)
 
         # Loop through all image pairs to perform the local DIC
         # Start by setting up the return list and the current subset points
@@ -180,7 +183,7 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
         for imgPairIdx, img in enumerate(range(imgDatum, imgTarget, imgIncr)):
 
             # Setup the parallel run and wait for all results
-            if nCpus > 1 or runGUI:
+            if nCpus > 1:
                 # Turn of debugging temporarily
                 nDebugOld = settings.DebugLevel
                 settings.DebugLevel = 0
@@ -256,15 +259,15 @@ def planarDICLocal(settings, resultsFile, runGUI = False):
                 print('  ------------------------------------------------------\n')
 
         # Shutdown the parallel environment if required
-        if nCpus > 1 or runGUI:
-            safe_ray_shutdown(debugLevel=debugLevel)
+        if nCpus > 1:
+            safe_ray_shutdown(externalRay, debugLevel=debugLevel)
         # Close the file
         df.close()
 
         return returnData
     except Exception as e:
-        if nCpus > 1 or runGUI:
-            safe_ray_shutdown(debugLevel=debugLevel)
+        if nCpus > 1:
+            safe_ray_shutdown(externalRay, debugLevel=debugLevel)
         raise e
 
 
@@ -1640,11 +1643,12 @@ def readImage(imgFile):
 
 
 # ---------------------------------------------------------------------------------------------
-def safe_ray_init(nCpus, debugLevel=0):
+def safe_ray_init(externalRay, nCpus, debugLevel=0):
     """
     Initialize the ray environment with retries to make it more robust.
 
     Parameters:
+        externalRay (bool): Whether to use an external ray instance.
         nCpus (int): The number of CPUs to use.
         debugLevel (int): The debug level for logging.
 
@@ -1657,9 +1661,12 @@ def safe_ray_init(nCpus, debugLevel=0):
     # Try to start ray with retries
     for i in range(nRetry):  # Retry a few times
         try:
-            return ray.init(num_cpus=nCpus)
+            if not externalRay:
+                return ray.init(num_cpus=nCpus)
+            else:
+                return ray.init(address="auto", ignore_reinit_error=True)
         except Exception as e:
-            if debugLevel > 1:
+            if debugLevel > 0:
                 print(f"Ray init failed: {e}, retrying ({i+1}/{nRetry})...")
             time.sleep(2)
 
@@ -1686,7 +1693,7 @@ def safe_ray_launch(func, debugLevel=0):
         try:
             return ray.get(func)
         except Exception as e:
-            if debugLevel > 1:
+            if debugLevel > 0:
                 print(f"Ray task launch failed: {e}, retrying ({i+1}/{nRetry})...")
             time.sleep(1)
 
@@ -1694,11 +1701,12 @@ def safe_ray_launch(func, debugLevel=0):
 
 
 # ---------------------------------------------------------------------------------------------
-def safe_ray_shutdown(debugLevel=0):
+def safe_ray_shutdown(externalRay, debugLevel=0):
     """
     Shutdown the Ray environment with retries to make it more robust.
 
     Parameters:
+        externalRay (bool): Whether to use an external ray instance.
         debugLevel (int): The debug level for logging.
 
     Returns:
@@ -1710,10 +1718,11 @@ def safe_ray_shutdown(debugLevel=0):
     # Try to shutdown ray with retries
     for i in range(nRetry):
         try:
-            ray.shutdown()
+            if not externalRay:
+                ray.shutdown()
             return
         except Exception as e:
-            if debugLevel > 1:
+            if debugLevel > 0:
                 print(f"Ray shutdown failed: {e}, retrying ({i+1}/{nRetry})...")
             time.sleep(1)
 

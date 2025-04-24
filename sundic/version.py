@@ -1,4 +1,4 @@
-__version__ = "0.0.14"
+__version__ = "0.0.15"
 # 0.0.1 - Initial release
 # 0.0.2 - Changed underlying data structure and added parallel processing
 # 0.0.3 - Added support for multiple input files
@@ -15,3 +15,4 @@ __version__ = "0.0.14"
 # 0.0.12 - Fixing versions and tags...
 # 0.0.13 - Restructure example packaging for ease of installation
 # 0.0.14 - Safe methods for using Ray - retry if necessary
+# 0.0.15 - Still working on Ray - now allow connection to an existing Ray cluster
