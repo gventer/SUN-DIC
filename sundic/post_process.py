@@ -356,7 +356,7 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair] )
+        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
@@ -447,7 +447,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair] )
+        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
@@ -523,7 +523,7 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair] )
+        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image

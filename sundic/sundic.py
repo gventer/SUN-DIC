@@ -527,6 +527,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
         isICLM = True
         isFastICLM = False
         isNormalized = True
+    # Fast IC-LM algorithm - same as IC-LM but with one less interpolation per iteration
     elif settings.isFastICLM():
         isICGN = False
         isICLM = False
@@ -550,8 +551,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
     G, GInter, _, _ = _processImage_(imgSet, gImgID, [gbSize, gbStdDev],
                                      isDatumImg=False, isNormalized=isNormalized)
 
-    # ***Adjust the BGCutOff value - this is currently a very crude way to do this
-    # Should most probably look at difference in intensity values
+    # Adjust the BGCutOff value for normalized images
     if isICLM or isFastICLM:
         nBGCutOff = nBGCutOff/FMax
 
@@ -1617,7 +1617,7 @@ def _fillMissingData_(dataX, dataY, dataVal):
 
 
 # ---------------------------------------------------------------------------------------------
-def readImage(imgFile):
+def readImage(imgFile, normalize8Bit=False):
     """
     Read an image file and convert it to grayscale.
 
@@ -1627,17 +1627,24 @@ def readImage(imgFile):
     Returns:
         numpy.ndarray: The grayscale image.
     """
-    # Read the image as is
+    # Read the image as is - allow for eg for 16-bit images
     img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
 
-    # Convert to grayscale if color image
+    # Convert to grayscale if color image - will only work with grayscale images
     if len(img.shape) == 3:
         grayImg = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     else:
         grayImg = img
 
-    ratio = np.amax(grayImg) / 256
-    grayImg = (grayImg/ratio).astype('uint8')
+    # Use the full range of the image bitrange but keep the same data type
+    imgDType = grayImg.dtype
+    maxValue = np.iinfo(imgDType).max + 1
+    ratio = np.amax(grayImg) / maxValue
+    grayImg = (grayImg/ratio).astype(imgDType)
+
+    # # Normalize the image to be in the range 0-255 - useful for displaying the image
+    if normalize8Bit:
+        grayImg = cv.normalize(grayImg, None, 0, 255, cv.NORM_MINMAX).astype('uint8')
 
     return grayImg
 
