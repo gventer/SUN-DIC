@@ -897,7 +897,7 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
             x = X
             y = Z[:, indices]
             for i in range(0, len(cutValues)):
-                label = "y={0:d} px".format(int(X[indices[i]]))
+                label = "y={0:d} px".format(int(Y[indices[i]]))
                 ax.plot(x, y[:, i], label=label)
             ax.legend()
 

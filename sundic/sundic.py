@@ -1295,22 +1295,19 @@ def _isConverged_(convergenceThreshold, deltaP, subSetSize, shapeFns):
      - bool: True if the optimizatin field has converged, False otherwise.
     """
 
-    # hw is the half-width of the subset
-    hw = 0.5*(subSetSize-1)
+    # Map the indices to use for the convergence check.  We ultimately only look at the
+    # L2 norm of the two displacement components
+    idx = np.zeros_like( deltaP, dtype=bool )
     if shapeFns == 'Affine':
-        hw_vector = np.array([1, hw, hw,
-                              1, hw, hw])
-
+        idx[0] = idx[3] = True
     elif shapeFns == 'Quadratic':
-        hw_vector = np.array([1, hw, hw, 0.5*hw**2, hw**2, 0.5*hw**2,
-                              1, hw, hw, 0.5*hw**2, hw**2, 0.5*hw**2])
-
+        idx[0] = idx[6] = True
     else:
         raise ValueError(
             'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
 
     # Now check for convergence
-    exitCriteria = np.linalg.norm(deltaP*hw_vector)
+    exitCriteria = np.linalg.norm(deltaP[idx])
     if (exitCriteria < convergenceThreshold):
         return True
     else:

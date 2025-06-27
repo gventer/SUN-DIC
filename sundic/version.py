@@ -1,6 +1,8 @@
 __version__ = "0.0.16"
 # 0.0.17 - Added better support of 12 and 16 bit images - these images are now no longer
 #          internally converted to 8 bit as was done in the past
+#        - Fixed labels in line cut graphs when speciying y-coordinate cuts
+#        - Fixed convergence check
 
 # 0.0.16 - Just getting github and pypi in sync
 # 0.0.15 - Still working on Ray - now allow connection to an existing Ray cluster
