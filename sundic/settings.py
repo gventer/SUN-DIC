@@ -2,6 +2,7 @@ import os
 import configparser
 import sundic.util.datafile as dataFile
 
+
 class Settings:
     """
     Class that contains the settings for a DIC job.
@@ -29,9 +30,10 @@ class Settings:
     __defOptimizationAlgorithm = 'IC-GN'
     __defMaxIterations = 50
     __defConvergenceThreshold = 0.0001
-
+    __defNZCCThreshold = 0.999
 
     # --------------------------------------------------------------------------------------------
+
     def __init__(self):
         """
         Initialize the DIC settings object to the default values.
@@ -55,9 +57,10 @@ class Settings:
         self.OptimizationAlgorithm = self.__defOptimizationAlgorithm
         self.MaxIterations = self.__defMaxIterations
         self.ConvergenceThreshold = self.__defConvergenceThreshold
-
+        self.NZCCThreshold = self.__defNZCCThreshold
 
     # --------------------------------------------------------------------------------------------
+
     @classmethod
     def fromSettingsFile(cls, filename='settings.ini'):
         """
@@ -74,8 +77,8 @@ class Settings:
         obj.loadSettings(filename)
         return obj
 
-
     # --------------------------------------------------------------------------------------------
+
     @classmethod
     def fromMsgPackFile(cls, filename):
         """
@@ -144,11 +147,13 @@ class Settings:
         retStr += "  %25s : %s\n" % ('Max Iterations', str(self.MaxIterations))
         retStr += "  %25s : %s\n" % \
             ('Convergence Threshold', str(self.ConvergenceThreshold))
+        retStr += "  %25s : %s\n" % \
+            ('NZCC Threshold', str(self.NZCCThreshold))
 
         return retStr
 
-
     # --------------------------------------------------------------------------------------------
+
     def _loadMsgPackFile_(self, filename):
         """
         Load the settings object from a file in MsgPack format.
@@ -179,28 +184,8 @@ class Settings:
         # Set object dictionary from setting read from file
         self.__dict__ = setDict
 
-
     # --------------------------------------------------------------------------------------------
-    def numShapeFnCoeffs(self):
-        """
-        Return the number of coefficients required for the shape functions.
 
-        Returns:
-            - int: The number of coefficients required for the shape functions.
-
-        Raises:
-            - ValueError: If the ShapeFunctions value is invalid.
-        """
-        if self.ShapeFunctions == 'Affine':
-            return 6
-        elif self.ShapeFunctions == 'Quadratic':
-            return 12
-        else:
-            raise ValueError(
-                'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
-
-
-    # --------------------------------------------------------------------------------------------
     def isRelativeStrategy(self):
         """
         Determine if the reference strategy is relative.
@@ -213,8 +198,8 @@ class Settings:
         else:
             return False
 
-
     # --------------------------------------------------------------------------------------------
+
     def isAbsoluteStrategy(self):
         """
         Determine if the reference strategy is absolute.
@@ -227,8 +212,8 @@ class Settings:
         else:
             return False
 
-
     # --------------------------------------------------------------------------------------------
+
     def isICGN(self):
         """
         Determine if the optimization algorithm is the Gauss-Newton method.
@@ -241,8 +226,8 @@ class Settings:
         else:
             return False
 
-
     # --------------------------------------------------------------------------------------------
+
     def isICLM(self):
         """
         Determine if the optimization algorithm is the Levenberg-Marquardt method.
@@ -255,8 +240,8 @@ class Settings:
         else:
             return False
 
-
     # --------------------------------------------------------------------------------------------
+
     def isFastICLM(self):
         """
         Determine if the optimization algorithm is the fast version of the Levenberg-Marquardt method.
@@ -269,36 +254,8 @@ class Settings:
         else:
             return False
 
-
     # --------------------------------------------------------------------------------------------
-    def isAffineShapeFn(self):
-        """
-        Determine if the shape functions are affine.
 
-        Returns:
-            - bool: True if the shape functions are affine, False otherwise.
-        """
-        if self.ShapeFunctions == 'Affine':
-            return True
-        else:
-            return False
-
-
-    # --------------------------------------------------------------------------------------------
-    def isQuadraticShapeFn(self):
-        """
-        Determine if the shape functions are quadratic.
-
-        Returns:
-            - bool: True if the shape functions are quadratic, False otherwise.
-        """
-        if self.ShapeFunctions == 'Quadratic':
-            return True
-        else:
-            return False
-
-
-    # --------------------------------------------------------------------------------------------
     def loadSettings(self, configFile='settings.ini'):
         """
         Load the DIC settings from a configuration file and return them as a dictionary.
@@ -445,6 +402,12 @@ class Settings:
         if self.ConvergenceThreshold < 0:
             raise ValueError(
                 'Config Parser:  ConvergenceThreshold must be greater than or equal to 0')
+
+        self.NZCCThreshold = cp.getfloat(
+            'Optimisation', 'NZCCThreshold', fallback=self.__defNZCCThreshold)
+        if self.NZCCThreshold < 0:
+            raise ValueError(
+                'Config Parser:  NZCCThreshold must be greater than or equal to 0')
 
         # Perform Debug output if requested - print all values in dictionary
         if self.DebugLevel > 1:

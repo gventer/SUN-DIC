@@ -3,7 +3,9 @@ __version__ = "0.0.16"
 #          internally converted to 8 bit as was done in the past
 #        - Fixed labels in line cut graphs when speciying y-coordinate cuts
 #        - Fixed convergence check
-
+#        - Changed internal data structure to allow for subset base subsetsize and
+#          subset specific shape functions to be specified
+#        - Added support for an optional CZNCC convergence check
 # 0.0.16 - Just getting github and pypi in sync
 # 0.0.15 - Still working on Ray - now allow connection to an existing Ray cluster
 # 0.0.14 - Safe methods for using Ray - retry if necessary

@@ -17,6 +17,8 @@ import sundic.util.datafile as dataFile
 import sundic.settings as sdset
 
 # --------------------------------------------------------------------------------------------
+
+
 class DispComp(IntEnum):
     """
     Enumeration representing different components used for displacementfields.
@@ -39,6 +41,7 @@ class DispComp(IntEnum):
         obj.display_name = display_name
         return obj
 
+
 class StrainComp(IntEnum):
     """
     Enumeration representing different components used for strain fields.
@@ -59,7 +62,8 @@ class StrainComp(IntEnum):
         obj = int.__new__(cls, value)
         obj._value_ = value
         obj.display_name = display_name
-        return obj    
+        return obj
+
 
 class CompID(IntEnum):
     """
@@ -72,7 +76,11 @@ class CompID(IntEnum):
     """
     XCoordID = (0, 'X Coordinate')
     YCoordID = (1, 'Y Coordinate')
-    XDispID  = 2
+    SSSizeID = 2   # The subset size
+    ShapeFnID = 3   # The shape function - 0 = affine, 1 = quadratic
+    CZNSSDID = 4   # The CZNSSD value for the subset
+    XDispID = 5   # The x-displacement of the subset point - start of x model coefficients
+    YDispID = 11  # The y-displacement of the subset point - start of y model coefficients
 
     # Add a display name to the enumeration
     def __new__(cls, value, display_name=None):
@@ -80,7 +88,7 @@ class CompID(IntEnum):
         obj._value_ = value
         obj.display_name = display_name
         return obj
-    
+
 
 # --------------------------------------------------------------------------------------------
 def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
@@ -134,7 +142,7 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     # columns of the results array
     results[:, CompID.XCoordID] = subSetPnts[:, :,
                                              CompID.XCoordID].reshape(nSubSets, order='F')
-    results[:, CompID.YCoordID] = subSetPnts[:, :, 
+    results[:, CompID.YCoordID] = subSetPnts[:, :,
                                              CompID.YCoordID].reshape(nSubSets, order='F')
 
     # Store the x displacement component
@@ -142,27 +150,27 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
                                              CompID.XDispID].reshape(nSubSets, order='F')
 
     # Get the y displacement component based on the shape functions used
-    YDispID = int(CompID.XDispID + settings.numShapeFnCoeffs()/2)
-    results[:, DispComp.Y_DISP] = subSetPnts[:, :, YDispID].reshape(nSubSets, order='F')
+    results[:, DispComp.Y_DISP] = subSetPnts[:, :,
+                                             CompID.YDispID].reshape(nSubSets, order='F')
 
     # Calculate the displacement magnitude and store in the correct column of the
     # results array
     results[:, DispComp.DISP_MAG] = np.sqrt(results[:, DispComp.X_DISP]**2 +
-                                         results[:, DispComp.Y_DISP]**2)
+                                            results[:, DispComp.Y_DISP]**2)
 
     # If smoothing is requested, apply Savitzky-Golay smoothing
     nRows = subSetPnts.shape[0]
     nCols = subSetPnts.shape[1]
     if smoothWindow > 0:
         results[:, DispComp.X_DISP] = _smoothResults_(nRows, nCols, results,
-                                            DispComp.X_DISP, smoothWindow=smoothWindow, 
-                                            smoothOrder=smoothOrder)
+                                                      DispComp.X_DISP, smoothWindow=smoothWindow,
+                                                      smoothOrder=smoothOrder)
         results[:, DispComp.Y_DISP] = _smoothResults_(nRows, nCols, results,
-                                            DispComp.Y_DISP, smoothWindow=smoothWindow,
-                                            smoothOrder=smoothOrder)
+                                                      DispComp.Y_DISP, smoothWindow=smoothWindow,
+                                                      smoothOrder=smoothOrder)
         results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, results,
-                                            DispComp.DISP_MAG, smoothWindow=smoothWindow,
-                                            smoothOrder=smoothOrder)
+                                                        DispComp.DISP_MAG, smoothWindow=smoothWindow,
+                                                        smoothOrder=smoothOrder)
 
     return results, nRows, nCols
 
@@ -210,12 +218,13 @@ def getCznssd(resultsFile, imgPair):
     # columns of the results array
     results[:, CompID.XCoordID] = subSetPnts[:, :,
                                              CompID.XCoordID].reshape(nSubSets, order='F')
-    results[:, CompID.YCoordID] = subSetPnts[:, :, 
+    results[:, CompID.YCoordID] = subSetPnts[:, :,
                                              CompID.YCoordID].reshape(nSubSets, order='F')
 
     # Store the Cznssd component
-    results[:, -1] = subSetPnts[:, :, -1].reshape(nSubSets, order='F')
-    results[:, -1][ results[:,-1] == sdic.IntConst.CNZSSD_MAX ] = np.nan
+    results[:, -1] = subSetPnts[:, :,
+                                CompID.CZNSSDID].reshape(nSubSets, order='F')
+    results[:, -1][results[:, -1] == sdic.IntConst.CNZSSD_MAX] = np.nan
 
     return results, nRows, nCols
 
@@ -279,10 +288,10 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
     results[:, StrainComp.Y_STRAIN] = dvdy
     results[:, StrainComp.SHEAR_STRAIN] = 0.5 * (dudy + dvdx)
     results[:, StrainComp.VM_STRAIN] = np.sqrt(results[:, StrainComp.X_STRAIN]**2 +
-                                        results[:, StrainComp.Y_STRAIN]**2 -
-                                        results[:, StrainComp.X_STRAIN] *
-                                        results[:, StrainComp.Y_STRAIN] +
-                                        3 * results[:, StrainComp.SHEAR_STRAIN]**2)
+                                               results[:, StrainComp.Y_STRAIN]**2 -
+                                               results[:, StrainComp.X_STRAIN] *
+                                               results[:, StrainComp.Y_STRAIN] +
+                                               3 * results[:, StrainComp.SHEAR_STRAIN]**2)
 
     return results, nRows, nCols
 
@@ -320,7 +329,8 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
     """
 
     # Get the displacement results
-    results, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow, smoothOrder)
+    results, nRows, nCols = getDisplacements(
+        resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows)
@@ -356,14 +366,14 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
+        img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
     contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
     ax.set_xlabel('x (pixels)')
     ax.set_ylabel('y (pixels)')
-    fig.colorbar(contour, ax = ax)
+    fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
     if showPlot:
@@ -408,7 +418,8 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     """
 
     # Get the strain results
-    results, nRows, nCols = getStrains(resultsFile, imgPair, smoothWindow, smoothOrder)
+    results, nRows, nCols = getStrains(
+        resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows)
@@ -447,14 +458,14 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
+        img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
     contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
     ax.set_xlabel('x (pixels)')
     ax.set_ylabel('y (pixels)')
-    fig.colorbar(contour, ax = ax)
+    fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
     if showPlot:
@@ -499,7 +510,7 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
     Y = Cznssd[:, CompID.YCoordID].reshape(nCols, nRows)
 
     # Calculate the ZNCC form the stored Cznssd values
-    Z = (1. - 0.5*Cznssd[:,-1]).reshape(nCols, nRows)
+    Z = (1. - 0.5*Cznssd[:, -1]).reshape(nCols, nRows)
 
     # Apply maximum and minimum values if provided
     if maxValue:
@@ -523,14 +534,14 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
             imgPair = len(imgSet) - 1
         else:
             imgPair = imgPair + 1
-        img = sdic.readImage( imgSet[imgPair], normalize8Bit=True )
+        img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
         ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
     contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
     ax.set_xlabel('x (pixels)')
     ax.set_ylabel('y (pixels)')
-    fig.colorbar(contour, ax = ax)
+    fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
     if showPlot:
@@ -543,8 +554,8 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID, 
-                    cutValues=[0], gridLines=True, showPlot=True, fileName='', 
+def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID,
+                    cutValues=[0], gridLines=True, showPlot=True, fileName='',
                     smoothWindow=0, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
@@ -568,7 +579,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False
           in which case the nearest neighbor is used.
-    
+
     Returns: 
         - fig: The matplotlib plot object.
 
@@ -577,7 +588,8 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
     """
 
     # Get the displacement results
-    results, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow, smoothOrder)
+    results, nRows, nCols = getDisplacements(
+        resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows)
@@ -597,9 +609,10 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
         raise ValueError('Invalid dispComp argument - use the Comp object.')
 
     # Create the cutline plot
-    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
-                               results[:, CompID.YCoordID], results[:, dispComp.value], 
-                               cutValues, cutComp, ylabel, interpolate)
+    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
+                                   results[:, CompID.YCoordID], results[:,
+                                                                        dispComp.value],
+                                   cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
@@ -616,9 +629,9 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN, 
+def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
                       cutComp=CompID.YCoordID, cutValues=[0],
-                      gridLines=True, showPlot=True, fileName='', 
+                      gridLines=True, showPlot=True, fileName='',
                       smoothWindow=9, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a strain cut line based on the subset points and coefficients.  The cut line
@@ -642,7 +655,7 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False.
-    
+
     Returns: 
         - fig: The matplotlib plot object.
 
@@ -651,7 +664,8 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     """
 
     # Get the displacement results
-    results, nRows, nCols = getStrains(resultsFile, imgPair, smoothWindow, smoothOrder)
+    results, nRows, nCols = getStrains(
+        resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows)
@@ -675,9 +689,10 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         raise ValueError('Invalid strainComp argument - use the Comp object.')
 
     # Create the cutline plot
-    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID], 
-                               results[:, CompID.YCoordID], results[:, strainComp.value], 
-                               cutValues, cutComp, ylabel, interpolate)
+    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
+                                   results[:, CompID.YCoordID], results[:,
+                                                                        strainComp.value],
+                                   cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
     if gridLines:
@@ -695,7 +710,7 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
 # --------------------------------------------------------------------------------------------
 def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
-                      derivative='none'):
+                    derivative='none'):
     """
     Smooths the results of a computation over a grid using Savitzky-Golay smoothing.
 
@@ -729,7 +744,7 @@ def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
 
     # Drop all NaN values and fill with nearest neighbor interpolation - only do this when
     # there are NaN values
-    smoothRslt = _fillMissingData_(results[:, CompID.XCoordID], 
+    smoothRslt = _fillMissingData_(results[:, CompID.XCoordID],
                                    results[:, CompID.YCoordID], smoothRslt)
 
     # Apply Savitzky-Golay smoothing and reset the NaN values to indicate points not found
@@ -780,7 +795,7 @@ def _fillMissingData_(dataX, dataY, dataVal):
         mask = ~np.isnan(dataVal)
 
         # Setup the nearest neighbor interpolator
-        #interp = LinearNDInterpolator(
+        # interp = LinearNDInterpolator(
         interp = NearestNDInterpolator(
             list(zip(dataX[mask], dataY[mask])), dataVal[mask])
 
@@ -792,7 +807,7 @@ def _fillMissingData_(dataX, dataY, dataVal):
 
 # --------------------------------------------------------------------------------------------
 def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
-                           ylabel, interpolate):
+                         ylabel, interpolate):
     """
     Create a cut line graph based on the given data.  Used for both displacement and
     strain plots
