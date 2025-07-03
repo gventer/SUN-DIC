@@ -10,6 +10,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import os
 
+
 class settingsUI(QWidget):
 
     def __init__(self, parent):
@@ -17,13 +18,15 @@ class settingsUI(QWidget):
         self.gridLayout = QtWidgets.QGridLayout(self)
         self.gridLayout.setSpacing(11)
         self.gridLayout.setObjectName("gridLayout")
+
         self.startingPIn = QtWidgets.QLineEdit(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.startingPIn.setFont(font)
         self.startingPIn.setObjectName("startingPIn")
-        self.gridLayout.addWidget(self.startingPIn, 3, 3, 1, 1)
+        self.gridLayout.addWidget(self.startingPIn, 4, 3, 1, 1)
+
         self.subsetSizeIn = QtWidgets.QLineEdit(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -38,13 +41,15 @@ class settingsUI(QWidget):
         self.stepSizeLab.setFont(font)
         self.stepSizeLab.setObjectName("stepSizeLab")
         self.gridLayout.addWidget(self.stepSizeLab, 3, 0, 1, 1)
+
         self.label_9 = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.label_9.setFont(font)
         self.label_9.setObjectName("label_9")
-        self.gridLayout.addWidget(self.label_9, 3, 2, 1, 1)
+        self.gridLayout.addWidget(self.label_9, 4, 2, 1, 1)
+
         self.refStartLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -97,6 +102,7 @@ class settingsUI(QWidget):
         self.maxItIn.setFont(font)
         self.maxItIn.setObjectName("maxItIn")
         self.gridLayout.addWidget(self.maxItIn, 1, 3, 1, 1)
+
         self.convergenceIn = QtWidgets.QLineEdit(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -104,6 +110,15 @@ class settingsUI(QWidget):
         self.convergenceIn.setFont(font)
         self.convergenceIn.setObjectName("convergenceIn")
         self.gridLayout.addWidget(self.convergenceIn, 2, 3, 1, 1)
+
+        self.znccTolIn = QtWidgets.QLineEdit(self)
+        font = QtGui.QFont()
+        font.setFamily("Figtree Light")
+        font.setPointSize(11)
+        self.znccTolIn.setFont(font)
+        self.znccTolIn.setObjectName("znccTolIn")
+        self.gridLayout.addWidget(self.znccTolIn, 3, 3, 1, 1)
+
         self.shapeFuncLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -128,6 +143,7 @@ class settingsUI(QWidget):
         self.algoTypeBox.addItem("")
         self.algoTypeBox.addItem("")
         self.gridLayout.addWidget(self.algoTypeBox, 0, 3, 1, 1)
+
         self.converLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -135,6 +151,15 @@ class settingsUI(QWidget):
         self.converLab.setFont(font)
         self.converLab.setObjectName("converLab")
         self.gridLayout.addWidget(self.converLab, 2, 2, 1, 1)
+
+        self.znccTolLab = QtWidgets.QLabel(self)
+        font = QtGui.QFont()
+        font.setFamily("Figtree Light")
+        font.setPointSize(11)
+        self.znccTolLab.setFont(font)
+        self.znccTolLab.setObjectName("znccTolLab")
+        self.gridLayout.addWidget(self.znccTolLab, 3, 2, 1, 1)
+
         self.shapeFuncBox = QtWidgets.QComboBox(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -162,12 +187,14 @@ class settingsUI(QWidget):
         self.shapeFuncLab.setText("Shape Function")
         self.dicTypeLab.setText("DIC Type")
         self.converLab.setText("Convergence:")
+        self.znccTolLab.setText("ZNCC Tolerance:")
         self.shapeFuncBox.setItemText(0, "Affine")
         self.shapeFuncBox.setItemText(1, "Quadratic")
         self.algorLab.setText("Algorithm")
         self.algoTypeBox.setItemText(0, "IC-GN")
         self.algoTypeBox.setItemText(1, "IC-LM")
         self.algoTypeBox.setItemText(2, "Fast-IC-LM")
+
 
 class imageSetUi(QWidget):
     def __init__(self, parent):
@@ -179,10 +206,12 @@ class imageSetUi(QWidget):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.folderLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.folderLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.folderLab.sizePolicy().hasHeightForWidth())
         self.folderLab.setSizePolicy(sizePolicy)
         self.folderLab.setMaximumSize(QtCore.QSize(16777215, 28))
         font = QtGui.QFont()
@@ -192,10 +221,12 @@ class imageSetUi(QWidget):
         self.folderLab.setObjectName("folderLab")
         self.horizontalLayout.addWidget(self.folderLab)
         self.folderDisp = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.folderDisp.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.folderDisp.sizePolicy().hasHeightForWidth())
         self.folderDisp.setSizePolicy(sizePolicy)
         self.folderDisp.setMaximumSize(QtCore.QSize(16777215, 28))
         font = QtGui.QFont()
@@ -215,7 +246,8 @@ class imageSetUi(QWidget):
         self.selFolderBut.setObjectName("selFolderBut")
         self.horizontalLayout.addWidget(self.selFolderBut)
         self.verticalLayout.addLayout(self.horizontalLayout)
-        spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -242,7 +274,8 @@ class imageSetUi(QWidget):
         font.setPointSize(11)
         self.startLab.setFont(font)
         self.startLab.setObjectName("startLab")
-        self.gridLayout.addWidget(self.startLab, 0, 0, 1, 1, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.gridLayout.addWidget(
+            self.startLab, 0, 0, 1, 1, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.endIn = QtWidgets.QLineEdit(self)
         self.endIn.setMaximumSize(QtCore.QSize(82, 22))
         self.endIn.setBaseSize(QtCore.QSize(8, 8))
@@ -269,15 +302,18 @@ class imageSetUi(QWidget):
         font.setPointSize(11)
         self.endLab.setFont(font)
         self.endLab.setObjectName("endLab")
-        self.gridLayout.addWidget(self.endLab, 1, 0, 1, 1, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.gridLayout.addWidget(
+            self.endLab, 1, 0, 1, 1, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.incLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.incLab.setFont(font)
         self.incLab.setObjectName("incLab")
-        self.gridLayout.addWidget(self.incLab, 2, 0, 1, 1, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.gridLayout.addWidget(
+            self.incLab, 2, 0, 1, 1, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem1, 0, 2, 1, 1)
         self.setMax = QtWidgets.QToolButton(self)
         font = QtGui.QFont()
@@ -293,7 +329,8 @@ class imageSetUi(QWidget):
         font.setPointSize(11)
         self.imagesLab.setFont(font)
         self.imagesLab.setObjectName("imagesLab")
-        self.horizontalLayout_2.addWidget(self.imagesLab, 0, QtCore.Qt.AlignTop)
+        self.horizontalLayout_2.addWidget(
+            self.imagesLab, 0, QtCore.Qt.AlignTop)
         self.dispImages = QtWidgets.QListView(self)
         self.dispImages.setMaximumSize(QtCore.QSize(16777215, 90))
         self.dispImages.setBaseSize(QtCore.QSize(250, 250))
@@ -301,19 +338,24 @@ class imageSetUi(QWidget):
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.dispImages.setFont(font)
-        self.dispImages.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.dispImages.setHorizontalScrollBarPolicy(
+            QtCore.Qt.ScrollBarAsNeeded)
         self.dispImages.setResizeMode(QtWidgets.QListView.Adjust)
         self.dispImages.setObjectName("dispImages")
-        self.horizontalLayout_2.addWidget(self.dispImages, 0, QtCore.Qt.AlignTop)
+        self.horizontalLayout_2.addWidget(
+            self.dispImages, 0, QtCore.Qt.AlignTop)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem2)
         self.groupBox = QtWidgets.QGroupBox(self)
         self.groupBox.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.groupBox.sizePolicy().hasHeightForWidth())
         self.groupBox.setSizePolicy(sizePolicy)
         self.groupBox.setMinimumSize(QtCore.QSize(0, 90))
         self.groupBox.setMaximumSize(QtCore.QSize(16777215, 90))
@@ -330,7 +372,8 @@ class imageSetUi(QWidget):
         self.gridLayout_2.setSizeConstraint(QtWidgets.QLayout.SetNoConstraint)
         self.gridLayout_2.setContentsMargins(0, 12, 0, 0)
         self.gridLayout_2.setObjectName("gridLayout_2")
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout_2.addItem(spacerItem3, 0, 2, 1, 1)
         self.gausLab = QtWidgets.QLabel(self.gridLayoutWidget)
         font = QtGui.QFont()
@@ -372,9 +415,11 @@ class imageSetUi(QWidget):
         self.defaultsBut.setFont(font)
         self.defaultsBut.setObjectName("defaultsBut")
         self.verticalLayout.addWidget(self.defaultsBut)
-        spacerItem4 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem4 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem4)
-        spacerItem5 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem5 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem5)
 
         self.folderLab.setText("Folder:")
@@ -389,6 +434,7 @@ class imageSetUi(QWidget):
         self.gausLab.setText("Gaussian Blur:")
         self.backLab.setText("Background/Cutoff:")
         self.defaultsBut.setText("Defaults")
+
 
 class roiDefUi(QWidget):
     def __init__(self, parent):
@@ -473,13 +519,15 @@ class roiDefUi(QWidget):
         self.heightIn.setObjectName("heightIn")
         self.gridLayout.addWidget(self.heightIn, 1, 3, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout.addItem(spacerItem)
         self.checkBox.setText("Enter Manually")
         self.widthDisp.setText("Width:")
         self.heightDisp.setText("Height:")
         self.topLeftyDisp.setText("Top Left x:")
         self.topLeftxDisp.setText("Top Left y:")
+
 
 class analysisUi(QWidget):
     def __init__(self, parent):
@@ -501,10 +549,12 @@ class analysisUi(QWidget):
         self.cpuLab.setObjectName("cpuLab")
         self.gridLayout.addWidget(self.cpuLab, 1, 0, 1, 1)
         self.debugIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.debugIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.debugIn.sizePolicy().hasHeightForWidth())
         self.debugIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -520,10 +570,12 @@ class analysisUi(QWidget):
         self.debugLab.setObjectName("debugLab")
         self.gridLayout.addWidget(self.debugLab, 0, 0, 1, 1)
         self.cpuIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cpuIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.cpuIn.sizePolicy().hasHeightForWidth())
         self.cpuIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -531,16 +583,20 @@ class analysisUi(QWidget):
         self.cpuIn.setFont(font)
         self.cpuIn.setObjectName("cpuIn")
         self.gridLayout.addWidget(self.cpuIn, 1, 1, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem, 0, 2, 1, 1)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem1, 1, 2, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
         self.progOut = QtWidgets.QTextEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.progOut.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.progOut.sizePolicy().hasHeightForWidth())
         self.progOut.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -554,7 +610,8 @@ class analysisUi(QWidget):
         self.verticalLayout.addWidget(self.progOut)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem2)
         self.statusLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
@@ -573,7 +630,7 @@ class analysisUi(QWidget):
         self.startBut.setFont(font)
         self.startBut.setObjectName("startBut")
         self.horizontalLayout.addWidget(self.startBut)
-        
+
         self.killBut = QtWidgets.QPushButton(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -582,7 +639,8 @@ class analysisUi(QWidget):
         self.killBut.setObjectName("killBut")
         self.horizontalLayout.addWidget(self.killBut)
 
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem3)
         self.verticalLayout.addLayout(self.horizontalLayout)
 
@@ -591,6 +649,7 @@ class analysisUi(QWidget):
         self.statusLab.setText("Status:")
         self.startBut.setText("Start")
         self.killBut.setText("Stop")
+
 
 class resultsUi(QWidget):
     def __init__(self, parent):
@@ -608,29 +667,29 @@ class resultsUi(QWidget):
         font.setPointSize(11)
         self.textBut.setFont(font)
         self.textBut.setStyleSheet("    QPushButton{\n"
-"        border: 2px  solid  rgb(0, 0, 0);\n"
-"        background: rgb(255, 255, 255);\n"
-"        border-style: outset;\n"
-"        border-width: 1px 1px 1px 1px;\n"
-"        border-radius: 0px;\n"
-"        color: black;\n"
-"        padding: 5px 5px 5px 5px;   \n"
-"    }\n"
-"QPushButton:checked {\n"
-"border-style: inset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
-");\n"
-"}\n"
-"QPushButton:disabled {\n"
-"border-style: outset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
-");\n"
-"}\n"
-"")
+                                   "        border: 2px  solid  rgb(0, 0, 0);\n"
+                                   "        background: rgb(255, 255, 255);\n"
+                                   "        border-style: outset;\n"
+                                   "        border-width: 1px 1px 1px 1px;\n"
+                                   "        border-radius: 0px;\n"
+                                   "        color: black;\n"
+                                   "        padding: 5px 5px 5px 5px;   \n"
+                                   "    }\n"
+                                   "QPushButton:checked {\n"
+                                   "border-style: inset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
+                                   ");\n"
+                                   "}\n"
+                                   "QPushButton:disabled {\n"
+                                   "border-style: outset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
+                                   ");\n"
+                                   "}\n"
+                                   "")
         self.textBut.setCheckable(True)
         self.textBut.setAutoExclusive(True)
         self.textBut.setObjectName("textBut")
@@ -641,29 +700,29 @@ class resultsUi(QWidget):
         font.setPointSize(11)
         self.contBut.setFont(font)
         self.contBut.setStyleSheet("    QPushButton{\n"
-"        border: 2px  solid  rgb(0, 0, 0);\n"
-"        background: rgb(255, 255, 255);\n"
-"        border-style: outset;\n"
-"        border-width: 1px 1px 1px 0px;\n"
-"        border-radius: 0px;\n"
-"        color: black;\n"
-"        padding: 5px 5px 5px 5px;   \n"
-"    }\n"
-"QPushButton:checked {\n"
-"border-style: inset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
-");\n"
-"}\n"
-"QPushButton:disabled {\n"
-"border-style: outset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
-");\n"
-"}\n"
-"")
+                                   "        border: 2px  solid  rgb(0, 0, 0);\n"
+                                   "        background: rgb(255, 255, 255);\n"
+                                   "        border-style: outset;\n"
+                                   "        border-width: 1px 1px 1px 0px;\n"
+                                   "        border-radius: 0px;\n"
+                                   "        color: black;\n"
+                                   "        padding: 5px 5px 5px 5px;   \n"
+                                   "    }\n"
+                                   "QPushButton:checked {\n"
+                                   "border-style: inset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
+                                   ");\n"
+                                   "}\n"
+                                   "QPushButton:disabled {\n"
+                                   "border-style: outset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
+                                   ");\n"
+                                   "}\n"
+                                   "")
         self.contBut.setCheckable(True)
         self.contBut.setAutoExclusive(True)
         self.contBut.setObjectName("contBut")
@@ -674,39 +733,41 @@ class resultsUi(QWidget):
         font.setPointSize(11)
         self.lineBut.setFont(font)
         self.lineBut.setStyleSheet("    QPushButton{\n"
-"        border: 2px  solid  rgb(0, 0, 0);\n"
-"        background: rgb(255, 255, 255);\n"
-"        border-style: outset;\n"
-"        border-width: 1px 1px 1px 0px;\n"
-"        border-radius: 0px;\n"
-"        color: black;\n"
-"        padding: 5px 5px 5px 5px;   \n"
-"    }\n"
-"QPushButton:checked {\n"
-"border-style: inset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
-");\n"
-"}\n"
-"QPushButton:disabled {\n"
-"border-style: outset;\n"
-"background: qradialgradient(\n"
-"cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
-"radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
-");\n"
-"}\n"
-"")
+                                   "        border: 2px  solid  rgb(0, 0, 0);\n"
+                                   "        background: rgb(255, 255, 255);\n"
+                                   "        border-style: outset;\n"
+                                   "        border-width: 1px 1px 1px 0px;\n"
+                                   "        border-radius: 0px;\n"
+                                   "        color: black;\n"
+                                   "        padding: 5px 5px 5px 5px;   \n"
+                                   "    }\n"
+                                   "QPushButton:checked {\n"
+                                   "border-style: inset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
+                                   ");\n"
+                                   "}\n"
+                                   "QPushButton:disabled {\n"
+                                   "border-style: outset;\n"
+                                   "background: qradialgradient(\n"
+                                   "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                   "radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
+                                   ");\n"
+                                   "}\n"
+                                   "")
         self.lineBut.setCheckable(True)
         self.lineBut.setAutoExclusive(True)
         self.lineBut.setObjectName("lineBut")
         self.horizontalLayout.addWidget(self.lineBut)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.mainVLayout.addLayout(self.horizontalLayout)
         self.tempLayout = QtWidgets.QVBoxLayout()
         self.tempLayout.setObjectName("tempLayout")
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.tempLayout.addItem(spacerItem1)
         self.mainVLayout.addLayout(self.tempLayout)
 
@@ -729,10 +790,12 @@ class resultsUiSum(QWidget):
         self.gridLayout.setVerticalSpacing(5)
         self.gridLayout.setObjectName("gridLayout")
         self.incStrainsIn = QtWidgets.QCheckBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.incStrainsIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.incStrainsIn.sizePolicy().hasHeightForWidth())
         self.incStrainsIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -740,12 +803,15 @@ class resultsUiSum(QWidget):
         self.incStrainsIn.setFont(font)
         self.incStrainsIn.setText("")
         self.incStrainsIn.setObjectName("incStrainsIn")
-        self.gridLayout.addWidget(self.incStrainsIn, 2, 3, 1, 1, QtCore.Qt.AlignLeft)
+        self.gridLayout.addWidget(
+            self.incStrainsIn, 2, 3, 1, 1, QtCore.Qt.AlignLeft)
         self.incDispIn = QtWidgets.QCheckBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.incDispIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.incDispIn.sizePolicy().hasHeightForWidth())
         self.incDispIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -753,48 +819,60 @@ class resultsUiSum(QWidget):
         self.incDispIn.setFont(font)
         self.incDispIn.setText("")
         self.incDispIn.setObjectName("incDispIn")
-        self.gridLayout.addWidget(self.incDispIn, 2, 1, 1, 1, QtCore.Qt.AlignLeft)
+        self.gridLayout.addWidget(
+            self.incDispIn, 2, 1, 1, 1, QtCore.Qt.AlignLeft)
         self.incDispLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.incDispLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.incDispLab.sizePolicy().hasHeightForWidth())
         self.incDispLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.incDispLab.setFont(font)
         self.incDispLab.setObjectName("incDispLab")
-        self.gridLayout.addWidget(self.incDispLab, 2, 0, 1, 1, QtCore.Qt.AlignLeft)
+        self.gridLayout.addWidget(
+            self.incDispLab, 2, 0, 1, 1, QtCore.Qt.AlignLeft)
         self.imgPairLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairLab.sizePolicy().hasHeightForWidth())
         self.imgPairLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.imgPairLab.setFont(font)
         self.imgPairLab.setObjectName("imgPairLab")
-        self.gridLayout.addWidget(self.imgPairLab, 0, 0, 1, 1, QtCore.Qt.AlignLeft)
+        self.gridLayout.addWidget(
+            self.imgPairLab, 0, 0, 1, 1, QtCore.Qt.AlignLeft)
         self.incStrainsLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.incStrainsLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.incStrainsLab.sizePolicy().hasHeightForWidth())
         self.incStrainsLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.incStrainsLab.setFont(font)
         self.incStrainsLab.setObjectName("incStrainsLab")
-        self.gridLayout.addWidget(self.incStrainsLab, 2, 2, 1, 1, QtCore.Qt.AlignLeft)
+        self.gridLayout.addWidget(
+            self.incStrainsLab, 2, 2, 1, 1, QtCore.Qt.AlignLeft)
         self.imgPairIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairIn.sizePolicy().hasHeightForWidth())
         self.imgPairIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -803,10 +881,12 @@ class resultsUiSum(QWidget):
         self.imgPairIn.setObjectName("imgPairIn")
         self.gridLayout.addWidget(self.imgPairIn, 0, 1, 1, 1)
         self.removeNanLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.removeNanLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.removeNanLab.sizePolicy().hasHeightForWidth())
         self.removeNanLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -815,10 +895,12 @@ class resultsUiSum(QWidget):
         self.removeNanLab.setObjectName("removeNanLab")
         self.gridLayout.addWidget(self.removeNanLab, 0, 2, 1, 1)
         self.removeNanIn = QtWidgets.QCheckBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.removeNanIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.removeNanIn.sizePolicy().hasHeightForWidth())
         self.removeNanIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -828,10 +910,12 @@ class resultsUiSum(QWidget):
         self.removeNanIn.setObjectName("removeNanIn")
         self.gridLayout.addWidget(self.removeNanIn, 0, 3, 1, 1)
         self.smoothOrderIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderIn.sizePolicy().hasHeightForWidth())
         self.smoothOrderIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -840,10 +924,12 @@ class resultsUiSum(QWidget):
         self.smoothOrderIn.setObjectName("smoothOrderIn")
         self.gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
         self.smoothOrderLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderLab.sizePolicy().hasHeightForWidth())
         self.smoothOrderLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -852,10 +938,12 @@ class resultsUiSum(QWidget):
         self.smoothOrderLab.setObjectName("smoothOrderLab")
         self.gridLayout.addWidget(self.smoothOrderLab, 1, 2, 1, 1)
         self.smoothWindowLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWindowLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWindowLab.sizePolicy().hasHeightForWidth())
         self.smoothWindowLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -864,10 +952,12 @@ class resultsUiSum(QWidget):
         self.smoothWindowLab.setObjectName("smoothWindowLab")
         self.gridLayout.addWidget(self.smoothWindowLab, 1, 0, 1, 1)
         self.smoothWindowIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWindowIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWindowIn.sizePolicy().hasHeightForWidth())
         self.smoothWindowIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -878,18 +968,22 @@ class resultsUiSum(QWidget):
         self.gridLayout.addWidget(self.smoothWindowIn, 1, 1, 1, 1)
         self.verticalLayout_2.addLayout(self.gridLayout)
         self.writeDataBut = QtWidgets.QPushButton(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.writeDataBut.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.writeDataBut.sizePolicy().hasHeightForWidth())
         self.writeDataBut.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
         self.writeDataBut.setFont(font)
         self.writeDataBut.setObjectName("writeDataBut")
-        self.verticalLayout_2.addWidget(self.writeDataBut, 0, QtCore.Qt.AlignHCenter)
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_2.addWidget(
+            self.writeDataBut, 0, QtCore.Qt.AlignHCenter)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
 
         self.imgPairLab.setText("Image Pair:")
@@ -900,6 +994,7 @@ class resultsUiSum(QWidget):
         self.incStrainsLab.setText("Include Strains:")
         self.writeDataBut.setText("Write Data")
 
+
 class resultsUiCon(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
@@ -909,10 +1004,12 @@ class resultsUiCon(QWidget):
         self.gridLayout.setVerticalSpacing(4)
         self.gridLayout.setObjectName("gridLayout")
         self.imgPairLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairLab.sizePolicy().hasHeightForWidth())
         self.imgPairLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -921,10 +1018,12 @@ class resultsUiCon(QWidget):
         self.imgPairLab.setObjectName("imgPairLab")
         self.gridLayout.addWidget(self.imgPairLab, 0, 0, 1, 1)
         self.imgPairIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairIn.sizePolicy().hasHeightForWidth())
         self.imgPairIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -933,10 +1032,12 @@ class resultsUiCon(QWidget):
         self.imgPairIn.setObjectName("imgPairIn")
         self.gridLayout.addWidget(self.imgPairIn, 0, 1, 1, 1)
         self.compLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.compLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.compLab.sizePolicy().hasHeightForWidth())
         self.compLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -945,10 +1046,12 @@ class resultsUiCon(QWidget):
         self.compLab.setObjectName("compLab")
         self.gridLayout.addWidget(self.compLab, 0, 2, 1, 1)
         self.compIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.compIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.compIn.sizePolicy().hasHeightForWidth())
         self.compIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -957,10 +1060,12 @@ class resultsUiCon(QWidget):
         self.compIn.setObjectName("compIn")
         self.gridLayout.addWidget(self.compIn, 0, 3, 1, 1)
         self.smoothWinLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWinLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWinLab.sizePolicy().hasHeightForWidth())
         self.smoothWinLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -969,10 +1074,12 @@ class resultsUiCon(QWidget):
         self.smoothWinLab.setObjectName("smoothWinLab")
         self.gridLayout.addWidget(self.smoothWinLab, 1, 0, 1, 1)
         self.smoothWinIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWinIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWinIn.sizePolicy().hasHeightForWidth())
         self.smoothWinIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -981,10 +1088,12 @@ class resultsUiCon(QWidget):
         self.smoothWinIn.setObjectName("smoothWinIn")
         self.gridLayout.addWidget(self.smoothWinIn, 1, 1, 1, 1)
         self.smoothOrderLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderLab.sizePolicy().hasHeightForWidth())
         self.smoothOrderLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -993,10 +1102,12 @@ class resultsUiCon(QWidget):
         self.smoothOrderLab.setObjectName("smoothOrderLab")
         self.gridLayout.addWidget(self.smoothOrderLab, 1, 2, 1, 1)
         self.maxValLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.maxValLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.maxValLab.sizePolicy().hasHeightForWidth())
         self.maxValLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1005,10 +1116,12 @@ class resultsUiCon(QWidget):
         self.maxValLab.setObjectName("maxValLab")
         self.gridLayout.addWidget(self.maxValLab, 2, 0, 1, 1)
         self.maxValIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.maxValIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.maxValIn.sizePolicy().hasHeightForWidth())
         self.maxValIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1017,10 +1130,12 @@ class resultsUiCon(QWidget):
         self.maxValIn.setObjectName("maxValIn")
         self.gridLayout.addWidget(self.maxValIn, 2, 1, 1, 1)
         self.minValLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.minValLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.minValLab.sizePolicy().hasHeightForWidth())
         self.minValLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1029,10 +1144,12 @@ class resultsUiCon(QWidget):
         self.minValLab.setObjectName("minValLab")
         self.gridLayout.addWidget(self.minValLab, 2, 2, 1, 1)
         self.minValIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.minValIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.minValIn.sizePolicy().hasHeightForWidth())
         self.minValIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1041,10 +1158,12 @@ class resultsUiCon(QWidget):
         self.minValIn.setObjectName("minValIn")
         self.gridLayout.addWidget(self.minValIn, 2, 3, 1, 1)
         self.alphaLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.alphaLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.alphaLab.sizePolicy().hasHeightForWidth())
         self.alphaLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1053,10 +1172,12 @@ class resultsUiCon(QWidget):
         self.alphaLab.setObjectName("alphaLab")
         self.gridLayout.addWidget(self.alphaLab, 3, 0, 1, 1)
         self.alphaIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.alphaIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.alphaIn.sizePolicy().hasHeightForWidth())
         self.alphaIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1065,10 +1186,12 @@ class resultsUiCon(QWidget):
         self.alphaIn.setObjectName("alphaIn")
         self.gridLayout.addWidget(self.alphaIn, 3, 1, 1, 1)
         self.smoothOrderIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderIn.sizePolicy().hasHeightForWidth())
         self.smoothOrderIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1076,8 +1199,6 @@ class resultsUiCon(QWidget):
         self.smoothOrderIn.setFont(font)
         self.smoothOrderIn.setObjectName("smoothOrderIn")
         self.gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
-        
-
 
         self.imgPairLab.setText("Image Pair:")
         self.compLab.setText("Component:")
@@ -1086,6 +1207,7 @@ class resultsUiCon(QWidget):
         self.smoothOrderLab.setText("Smoothing Order:")
         self.maxValLab.setText("Max Value:")
         self.minValLab.setText("Min Value:")
+
 
 class resultsUiCut(QWidget):
     def __init__(self, parent):
@@ -1096,10 +1218,12 @@ class resultsUiCut(QWidget):
         self.gridLayout.setVerticalSpacing(4)
         self.gridLayout.setObjectName("gridLayout")
         self.cutValLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cutValLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.cutValLab.sizePolicy().hasHeightForWidth())
         self.cutValLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1108,10 +1232,12 @@ class resultsUiCut(QWidget):
         self.cutValLab.setObjectName("cutValLab")
         self.gridLayout.addWidget(self.cutValLab, 1, 2, 1, 1)
         self.imgPairLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairLab.sizePolicy().hasHeightForWidth())
         self.imgPairLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1120,10 +1246,12 @@ class resultsUiCut(QWidget):
         self.imgPairLab.setObjectName("imgPairLab")
         self.gridLayout.addWidget(self.imgPairLab, 0, 0, 1, 1)
         self.imgPairIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.imgPairIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.imgPairIn.sizePolicy().hasHeightForWidth())
         self.imgPairIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1132,10 +1260,12 @@ class resultsUiCut(QWidget):
         self.imgPairIn.setObjectName("imgPairIn")
         self.gridLayout.addWidget(self.imgPairIn, 0, 1, 1, 1)
         self.compLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.compLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.compLab.sizePolicy().hasHeightForWidth())
         self.compLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1144,10 +1274,12 @@ class resultsUiCut(QWidget):
         self.compLab.setObjectName("compLab")
         self.gridLayout.addWidget(self.compLab, 0, 2, 1, 1)
         self.compIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.compIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.compIn.sizePolicy().hasHeightForWidth())
         self.compIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1156,10 +1288,12 @@ class resultsUiCut(QWidget):
         self.compIn.setObjectName("compIn")
         self.gridLayout.addWidget(self.compIn, 0, 3, 1, 1)
         self.cutValIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cutValIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.cutValIn.sizePolicy().hasHeightForWidth())
         self.cutValIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1168,10 +1302,12 @@ class resultsUiCut(QWidget):
         self.cutValIn.setObjectName("cutValIn")
         self.gridLayout.addWidget(self.cutValIn, 1, 3, 1, 1)
         self.cutCompLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cutCompLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.cutCompLab.sizePolicy().hasHeightForWidth())
         self.cutCompLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1180,10 +1316,12 @@ class resultsUiCut(QWidget):
         self.cutCompLab.setObjectName("cutCompLab")
         self.gridLayout.addWidget(self.cutCompLab, 1, 0, 1, 1)
         self.cutCompIn = QtWidgets.QComboBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.cutCompIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.cutCompIn.sizePolicy().hasHeightForWidth())
         self.cutCompIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1192,10 +1330,12 @@ class resultsUiCut(QWidget):
         self.cutCompIn.setObjectName("cutCompIn")
         self.gridLayout.addWidget(self.cutCompIn, 1, 1, 1, 1)
         self.smoothWinLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWinLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWinLab.sizePolicy().hasHeightForWidth())
         self.smoothWinLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1204,10 +1344,12 @@ class resultsUiCut(QWidget):
         self.smoothWinLab.setObjectName("smoothWinLab")
         self.gridLayout.addWidget(self.smoothWinLab, 2, 0, 1, 1)
         self.smoothWinIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothWinIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothWinIn.sizePolicy().hasHeightForWidth())
         self.smoothWinIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1216,10 +1358,12 @@ class resultsUiCut(QWidget):
         self.smoothWinIn.setObjectName("smoothWinIn")
         self.gridLayout.addWidget(self.smoothWinIn, 2, 1, 1, 1)
         self.smoothOrderLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderLab.sizePolicy().hasHeightForWidth())
         self.smoothOrderLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1228,10 +1372,12 @@ class resultsUiCut(QWidget):
         self.smoothOrderLab.setObjectName("smoothOrderLab")
         self.gridLayout.addWidget(self.smoothOrderLab, 2, 2, 1, 1)
         self.smoothOrderIn = QtWidgets.QLineEdit(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.smoothOrderIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.smoothOrderIn.sizePolicy().hasHeightForWidth())
         self.smoothOrderIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1240,10 +1386,12 @@ class resultsUiCut(QWidget):
         self.smoothOrderIn.setObjectName("smoothOrderIn")
         self.gridLayout.addWidget(self.smoothOrderIn, 2, 3, 1, 1)
         self.interpLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.interpLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.interpLab.sizePolicy().hasHeightForWidth())
         self.interpLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1252,10 +1400,12 @@ class resultsUiCut(QWidget):
         self.interpLab.setObjectName("interpLab")
         self.gridLayout.addWidget(self.interpLab, 4, 0, 1, 1)
         self.interpIn = QtWidgets.QCheckBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.interpIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.interpIn.sizePolicy().hasHeightForWidth())
         self.interpIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1265,10 +1415,12 @@ class resultsUiCut(QWidget):
         self.interpIn.setObjectName("interpIn")
         self.gridLayout.addWidget(self.interpIn, 4, 1, 1, 1)
         self.gridLinesLab = QtWidgets.QLabel(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.gridLinesLab.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.gridLinesLab.sizePolicy().hasHeightForWidth())
         self.gridLinesLab.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1277,10 +1429,12 @@ class resultsUiCut(QWidget):
         self.gridLinesLab.setObjectName("gridLinesLab")
         self.gridLayout.addWidget(self.gridLinesLab, 4, 2, 1, 1)
         self.gridLinesIn = QtWidgets.QCheckBox(self)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.gridLinesIn.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.gridLinesIn.sizePolicy().hasHeightForWidth())
         self.gridLinesIn.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -1289,7 +1443,6 @@ class resultsUiCut(QWidget):
         self.gridLinesIn.setText("")
         self.gridLinesIn.setObjectName("gridLinesIn")
         self.gridLayout.addWidget(self.gridLinesIn, 4, 3, 1, 1)
-
 
         self.imgPairLab.setText("Image Pair:")
         self.compLab.setText("Display Component:")

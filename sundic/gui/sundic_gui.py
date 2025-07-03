@@ -1,4 +1,18 @@
 # Importing required modules
+import sundic.version as sdversion
+from sundic.gui.widgets import *
+from sundic.gui.validators import *
+from sundic.gui.mainWindow import Ui_MainWindow
+import webbrowser
+import subprocess
+import threading
+import io
+import os
+import sys
+import ray
+import msgpack
+import pandas as pd
+import numpy as np
 import PyQt5
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -22,26 +36,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-import numpy as np
-import pandas as pd
-import msgpack
-import ray
-
-import sys
-import os
-import io
-import threading
-import subprocess
-import webbrowser
-
-from sundic.gui.mainWindow import Ui_MainWindow
-from sundic.gui.validators import *
-from sundic.gui.widgets import *
 
 # Default scale factor for image
 SCALE_FACTOR = 1.25
 
-import sundic.version as sdversion
 
 class PhotoViewer(QGraphicsView):
     """
@@ -81,7 +79,6 @@ class PhotoViewer(QGraphicsView):
         updateBoundingBox(pos): Updates the bounding box during mouse drag.
     """
 
-
     # Class for creating QGraphicsScene which loads, displays and manipulates
     # images for defining area of interest
 
@@ -113,7 +110,7 @@ class PhotoViewer(QGraphicsView):
         self.flag02 = False  # Has the rect been drawn by manual input
         self.flag03 = False  # Need to remove drawn rect in place of man rect
         self.flag04 = False  # Need to remove man rect in place of drawn rect
-    
+
     def hasPhoto(self):
         return not self._empty
 
@@ -199,7 +196,6 @@ class PhotoViewer(QGraphicsView):
         self.coordinatesChanged.emit(QPoint())
         super().leaveEvent(event)
 
-
     def enterEvent(self, event):
         super().enterEvent(event)
         self.viewport().setCursor(Qt.CrossCursor)
@@ -239,7 +235,8 @@ class PhotoViewer(QGraphicsView):
                     brush = QBrush()
                     brush.setColor(QColor(255, 0, 0, 80))
                     brush.setStyle(Qt.SolidPattern)
-                    self.rect_item = QGraphicsRectItem(QRectF(xaxis, yaxis, width, height))
+                    self.rect_item = QGraphicsRectItem(
+                        QRectF(xaxis, yaxis, width, height))
                     self.rect_item.setPen(pen)
                     self.rect_item.setBrush(brush)
                     self._scene.addItem(self.rect_item)
@@ -282,14 +279,13 @@ class PhotoViewer(QGraphicsView):
         pen = QPen()
         pen.setColor(Qt.red)
         pen.setWidth(2)
-        self.bounding_rect_item = QGraphicsRectItem(QRectF(xaxis, yaxis, width, height))
+        self.bounding_rect_item = QGraphicsRectItem(
+            QRectF(xaxis, yaxis, width, height))
         self.bounding_rect_item.setPen(pen)
         self._scene.addItem(self.bounding_rect_item)
-    
 
-    
 
-class mainProgram(QMainWindow, Ui_MainWindow): 
+class mainProgram(QMainWindow, Ui_MainWindow):
     """mainProgram is a class that inherits from QMainWindow and Ui_MainWindow. 
     It serves as the main class for the GUI application, handling initialization, UI setup, 
     and various functionalities such as settings configuration, image set management, ROI 
@@ -374,6 +370,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
             _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM, 2 for Fast-IC-LM).
             _maxIter (int): Maximum number of iterations.
             _convTol (float): Convergence tolerance.
+            _znccTol (float): ZNCC tolerance for convergence.
             flag00 (bool): Indicates if settings have been changed since the last save.
             flag01 (bool): Indicates if the file has results.
             flag02 (bool): Tracks the state of the ROI painter.
@@ -436,6 +433,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self._optAlgor = None
         self._maxIter = None
         self._convTol = None
+        self._znccTol = None  # ZNCC tolerance for convergence
 
         defSettings = sdset.Settings()
         self._defaultSettings = defSettings
@@ -446,12 +444,14 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self.flag00 = False  # Have the settings been changed since the last save
         self.flag01 = False  # Does the file have results
         self.flag02 = False  # Used for tracking the state of the ROI painter
-        self.flag03 = False  # Used when the DIC job is being submitted. Allows the saving of settings even if results exist because they are going to be overwritten with new results.
+        # Used when the DIC job is being submitted. Allows the saving of settings even if results exist because they are going to be overwritten with new results.
+        self.flag03 = False
         self.flag04 = False  # Used to track if the results tab has been opened previously
         self.flag05 = False  # Used to track if user has been on the results - summary tab
         self.flag06 = False  # Used to track if user has been on the results - contour graph tab
         self.flag07 = False  # Used to track if the user has been on the results - cutline graph tab
-        self.flag08 = False  # Used to track if the user has changed the default value for the image set final image
+        # Used to track if the user has changed the default value for the image set final image
+        self.flag08 = False
 
         # Spare Flags
         self.flag09 = False  #
@@ -492,10 +492,12 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         elif self._defaultSettings.OptimizationAlgorithm == 'IC-LM':
             self._optAlgor = 1
         elif self._defaultSettings.OptimizationAlgorithm == 'Fast-IC-LM':
-            self._optAlgor = 2            
+            self._optAlgor = 2
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
+        # ZNCC tolerance for convergence
+        self._znccTol = self._defaultSettings.NZCCThreshold
 
     def settings(self):
         """
@@ -542,6 +544,8 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self.settingsUI.dicTypeBox.setCurrentIndex(self._DICType)
         self.settingsUI.shapeFuncBox.setCurrentIndex(self._shapeFunc)
         self.settingsUI.convergenceIn.setText(str(self._convTol))
+        # ZNCC tolerance for convergence
+        self.settingsUI.znccTolIn.setText(str(self._znccTol))
         self.settingsUI.refBox.setCurrentIndex(self._refStrat)
         self.settingsUI.algoTypeBox.setCurrentIndex(self._optAlgor)
 
@@ -619,6 +623,7 @@ IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the 
             _optAlgor (int): Index of the selected optimization algorithm from algoTypeBox.
             _maxIter (str): Text input for the maximum number of iterations.
             _convTol (str): Text input for the convergence tolerance.
+            _znccTol (str): Text input for the ZNCC tolerance for convergence.
             _startingPoints (str): Text input for the starting points.
 
         Sets:
@@ -635,6 +640,8 @@ IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the 
         self._optAlgor = self.settingsUI.algoTypeBox.currentIndex()
         self._maxIter = (self.settingsUI.maxItIn.text())
         self._convTol = (self.settingsUI.convergenceIn.text())
+        # ZNCC tolerance for convergence
+        self._znccTol = (self.settingsUI.znccTolIn.text())
         self._startingPoints = (self.settingsUI.startingPIn.text())
         self.flag00 = True
         self.showUnsaved()
@@ -711,10 +718,6 @@ IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the 
         self.imageSetUi.gausIn.setText(str(self._gausBlurSize))
         self.imageSetUi.backIn.setText(str(self._backgroundCutOff))
         self.imageSetUi.folderDisp.setText(self._imageFolder)
-
-        
-
-        
 
         # Adding validators
         self.imageSetUi.startIn.setValidator(PositiveIntValidator())
@@ -796,7 +799,7 @@ Must be larger than 0.""")
             self.imageSetUi.model.appendRow(item)
         self.flag00 = True
         self.showUnsaved()
-    
+
     def setMaxTargetImage(self):
         """
         Sets the maximum target image based on the number of files in the image folder.
@@ -1110,11 +1113,11 @@ Left click a third time to remove the ROI.""")
         self.analysisBut.setEnabled(True)
         self.analysisUi.startBut.setEnabled(True)
         subprocess.run(['ray', 'stop'])
-        sd.safe_ray_shutdown(externalRay = False)
+        sd.safe_ray_shutdown(externalRay=False)
         self.analysisUi.statusLab.setText("Status: Analysis Stopped")
         self.analysisUi.statusLab.setStyleSheet("color: red")
         self.asave()
-        
+
     def results(self):
         """
         Sets up the results UI within the main frame layout. If a layout already exists, it deletes it first.
@@ -1141,7 +1144,7 @@ Left click a third time to remove the ROI.""")
         self.resultsUi.textBut.clicked.connect(self.drawResultsSum)
         self.resultsUi.contBut.clicked.connect(self.drawResultsCon)
         self.resultsUi.lineBut.clicked.connect(self.drawResultsCut)
- 
+
     def getImagePairList(self):
         """
         Reads and unpacks image pair data from a file using MessagePack.
@@ -1229,7 +1232,8 @@ Left click a third time to remove the ROI.""")
         # Populating the image pair input dropdown
         for i in range(0, self.lastImagePair+1):
             self.resultsUiSum.imgPairIn.addItem("")
-            self.resultsUiSum.imgPairIn.setItemText(i, f"{self.lastImagePair-i}")
+            self.resultsUiSum.imgPairIn.setItemText(
+                i, f"{self.lastImagePair-i}")
 
         # Setting values for the results summary tab
         if not self.flag05:
@@ -1243,19 +1247,26 @@ Left click a third time to remove the ROI.""")
             self.flag05 = True
         else:
             self.resultsUiSum.imgPairIn.setCurrentIndex(self.resultsSumImgPair)
-            self.resultsUiSum.smoothWindowIn.setText(self.resultsSumSmoothWindow)
+            self.resultsUiSum.smoothWindowIn.setText(
+                self.resultsSumSmoothWindow)
             self.resultsUiSum.smoothOrderIn.setText(self.resultsSumSmoothOrder)
             self.resultsUiSum.removeNanIn.setChecked(self.resultsSumRemoveNan)
             self.resultsUiSum.incDispIn.setChecked(self.resultsSumIncDisp)
             self.resultsUiSum.incStrainsIn.setChecked(self.resultsSumIncStrain)
-        
+
         # Connecting the input fields to the resultsSumChanged method
-        self.resultsUiSum.imgPairIn.currentIndexChanged.connect(self.resultsSumChanged)
-        self.resultsUiSum.smoothWindowIn.editingFinished.connect(self.resultsSumChanged)
-        self.resultsUiSum.smoothOrderIn.editingFinished.connect(self.resultsSumChanged)
-        self.resultsUiSum.removeNanIn.stateChanged.connect(self.resultsSumChanged)
-        self.resultsUiSum.incDispIn.stateChanged.connect(self.resultsSumChanged)
-        self.resultsUiSum.incStrainsIn.stateChanged.connect(self.resultsSumChanged)
+        self.resultsUiSum.imgPairIn.currentIndexChanged.connect(
+            self.resultsSumChanged)
+        self.resultsUiSum.smoothWindowIn.editingFinished.connect(
+            self.resultsSumChanged)
+        self.resultsUiSum.smoothOrderIn.editingFinished.connect(
+            self.resultsSumChanged)
+        self.resultsUiSum.removeNanIn.stateChanged.connect(
+            self.resultsSumChanged)
+        self.resultsUiSum.incDispIn.stateChanged.connect(
+            self.resultsSumChanged)
+        self.resultsUiSum.incStrainsIn.stateChanged.connect(
+            self.resultsSumChanged)
 
         # Adding validators
         self.resultsUiSum.smoothWindowIn.setValidator(OddNumberZeroValidator())
@@ -1268,7 +1279,8 @@ Left click a third time to remove the ROI.""")
         self.resultsUiSum.smoothWindowIn.setToolTip("""The size of the window for smoothing the results. Must be an odd number.
 If only exporting displacement data, then this value can be 0.
 If this value is greater than 0, then it must be larger than the smooth order.""")
-        self.resultsUiSum.smoothOrderIn.setToolTip("Order of the Savitzky-Golay smoothing polynomial.")
+        self.resultsUiSum.smoothOrderIn.setToolTip(
+            "Order of the Savitzky-Golay smoothing polynomial.")
 
     def resultsSumChanged(self):
         """
@@ -1320,31 +1332,41 @@ If this value is greater than 0, then it must be larger than the smooth order.""
 
             # Getting required data
             if incDisp:
-                dispResults, _, _ = sdpp.getDisplacements(self._savePath, imgPair = imgPair, smoothWindow = smoothWindow, smoothOrder = smoothOrder)
+                dispResults, _, _ = sdpp.getDisplacements(
+                    self._savePath, imgPair=imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
             if incStrain:
-                strainResults, _, _ = sdpp.getStrains(self._savePath, imgPair = imgPair, smoothWindow = smoothWindow, smoothOrder = smoothOrder)
-            
+                strainResults, _, _ = sdpp.getStrains(
+                    self._savePath, imgPair=imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+
             # Optional remove NaN
             if removeNan:
                 if incDisp:
-                    dispResults = dispResults[~np.isnan(dispResults).any(axis=1)]
+                    dispResults = dispResults[~np.isnan(
+                        dispResults).any(axis=1)]
                 if incStrain:
-                    strainResults = strainResults[~np.isnan(strainResults).any(axis=1)]
-            
+                    strainResults = strainResults[~np.isnan(
+                        strainResults).any(axis=1)]
+
             # Saving the data as data frames
             if incDisp and incStrain:
-                dispDataFrame = pd.DataFrame(dispResults, columns = ["X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
-                strainDataFrame = pd.DataFrame(strainResults, columns = ["X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
-                results = pd.merge(dispDataFrame, strainDataFrame, how="right", on=["X Coord", "Y Coord", "Z Coord"])
+                dispDataFrame = pd.DataFrame(dispResults, columns=[
+                                             "X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
+                strainDataFrame = pd.DataFrame(strainResults, columns=[
+                                               "X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
+                results = pd.merge(dispDataFrame, strainDataFrame, how="right", on=[
+                                   "X Coord", "Y Coord", "Z Coord"])
             elif incDisp:
-                results = pd.DataFrame(dispResults, columns = ["X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
+                results = pd.DataFrame(dispResults, columns=[
+                                       "X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
             elif incStrain:
-                results = pd.DataFrame(strainResults, columns = ["X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
-            
+                results = pd.DataFrame(strainResults, columns=[
+                                       "X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
+
             # Saving the data to a CSV file
             options = QtWidgets.QFileDialog.Options()
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
-            savePath, _ = QFileDialog.getSaveFileName(self, "Save File", "", "CSV Files (*.csv)", options=options)
+            savePath, _ = QFileDialog.getSaveFileName(
+                self, "Save File", "", "CSV Files (*.csv)", options=options)
             if savePath:
                 if not savePath.endswith(".csv"):
                     savePath = savePath + ".csv"
@@ -1352,7 +1374,8 @@ If this value is greater than 0, then it must be larger than the smooth order.""
         except Exception as e:
             # Capture the standard error and display it in a popup
             error_message = str(e)
-            QMessageBox.critical(self, "Error", f"An error occurred: {error_message}")
+            QMessageBox.critical(
+                self, "Error", f"An error occurred: {error_message}")
 
     def drawResultsCon(self):
         """
@@ -1378,7 +1401,8 @@ If this value is greater than 0, then it must be larger than the smooth order.""
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
 
@@ -1394,30 +1418,34 @@ If this value is greater than 0, then it must be larger than the smooth order.""
         self.resultsUi.tempLayout.addWidget(self.resultsSelector)
         self.resultsSelector.setSizePolicy(sizePolicy)
         self.resultsSelector.setFont(font)
-        
+
         if not self.flag04:
             self.option2Ind = 0
             self.resultsSelector.setCurrentIndex(self.option2Ind)
             self.flag04 = True
         else:
             self.resultsSelector.setCurrentIndex(self.option2Ind)
-        self.resultsSelector.currentIndexChanged.connect(self.resultsSelChanged)
+        self.resultsSelector.currentIndexChanged.connect(
+            self.resultsSelChanged)
         self.resultsUiCon = resultsUiCon(self)
         self.resultsUi.tempLayout.addWidget(self.resultsUiCon)
 
         # Populating the image pair and component input fields depending on user input
         for i in range(0, self.lastImagePair+1):
             self.resultsUiCon.imgPairIn.addItem("")
-            self.resultsUiCon.imgPairIn.setItemText(i, f"{self.lastImagePair-i}")
+            self.resultsUiCon.imgPairIn.setItemText(
+                i, f"{self.lastImagePair-i}")
         if int(self.resultsSelector.currentIndex()) == 0:
             for index, e in enumerate(sdpp.DispComp):
                 self.resultsUiCon.compIn.addItem("")
-                self.resultsUiCon.compIn.setItemText(index, f"{e.display_name}")
+                self.resultsUiCon.compIn.setItemText(
+                    index, f"{e.display_name}")
         elif int(self.resultsSelector.currentIndex()) == 1:
             for index, e in enumerate(sdpp.StrainComp):
                 self.resultsUiCon.compIn.addItem("")
-                self.resultsUiCon.compIn.setItemText(index, f"{e.display_name}")
-        
+                self.resultsUiCon.compIn.setItemText(
+                    index, f"{e.display_name}")
+
         # Setting values for the results container tab
         if not self.flag06:
             self.resultsUiCon.imgPairIn.setCurrentIndex(0)
@@ -1439,38 +1467,49 @@ If this value is greater than 0, then it must be larger than the smooth order.""
             self.resultsUiCon.smoothOrderIn.setText(self.resultsConSmoothOrder)
 
         # Connecting the input fields to the resultsConChanged method
-        self.resultsUiCon.imgPairIn.currentIndexChanged.connect(self.resultsConChanged)
-        self.resultsUiCon.smoothWinIn.editingFinished.connect(self.resultsConChanged)
-        self.resultsUiCon.alphaIn.editingFinished.connect(self.resultsConChanged)
-        self.resultsUiCon.compIn.currentIndexChanged.connect(self.resultsConChanged)
-        self.resultsUiCon.maxValIn.editingFinished.connect(self.resultsConChanged)
-        self.resultsUiCon.minValIn.editingFinished.connect(self.resultsConChanged)
-        self.resultsUiCon.smoothOrderIn.editingFinished.connect(self.resultsConChanged)
-
+        self.resultsUiCon.imgPairIn.currentIndexChanged.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.smoothWinIn.editingFinished.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.alphaIn.editingFinished.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.compIn.currentIndexChanged.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.maxValIn.editingFinished.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.minValIn.editingFinished.connect(
+            self.resultsConChanged)
+        self.resultsUiCon.smoothOrderIn.editingFinished.connect(
+            self.resultsConChanged)
 
         # Creating a spacer to neaten up the layout
-        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding)
+        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum,
+                             QSizePolicy.MinimumExpanding)
         self.resultsUi.tempLayout.addItem(spacer)
 
-        
         # Creating and adding the Submit Graph button
         submitGraphBut = QPushButton("Submit Graph", self)
         submitGraphBut.setSizePolicy(sizePolicy)
         submitGraphBut.setFont(font)
-        self.resultsUi.tempLayout.insertWidget(2, submitGraphBut, 0, QtCore.Qt.AlignHCenter)
+        self.resultsUi.tempLayout.insertWidget(
+            2, submitGraphBut, 0, QtCore.Qt.AlignHCenter)
 
         # Connecting the Submit Graph button to the submitGraph method
         submitGraphBut.clicked.connect(self.submitGraph)
-        
+
         # Adding validators
         self.resultsUiCon.smoothWinIn.setValidator(OddNumberZeroValidator())
         self.resultsUiCon.smoothOrderIn.setValidator(PositiveIntValidator())
 
         # Adding tooltips
-        self.resultsUiCon.alphaIn.setToolTip("The transparency of the contour plot. Must be between 0 and 1.")
-        self.resultsUiCon.maxValIn.setToolTip("The maximum value for the contour plot. If left to None, will use the maximum value in the data.")
-        self.resultsUiCon.minValIn.setToolTip("The minimum value for the contour plot. If left to None, will use the minimum value in the data.")
-        self.resultsUiCon.smoothOrderIn.setToolTip("Order of the Savitzky-Golay smoothing polynomial.")
+        self.resultsUiCon.alphaIn.setToolTip(
+            "The transparency of the contour plot. Must be between 0 and 1.")
+        self.resultsUiCon.maxValIn.setToolTip(
+            "The maximum value for the contour plot. If left to None, will use the maximum value in the data.")
+        self.resultsUiCon.minValIn.setToolTip(
+            "The minimum value for the contour plot. If left to None, will use the minimum value in the data.")
+        self.resultsUiCon.smoothOrderIn.setToolTip(
+            "Order of the Savitzky-Golay smoothing polynomial.")
         self.resultsUiCon.smoothWinIn.setToolTip("""The size of the window for smoothing the results. Must be an odd number.
 A value of 0 means no smoothing but can only be set to zero for displacement graphs.""")
 
@@ -1495,7 +1534,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self.resultsConMaxVal = self.resultsUiCon.maxValIn.text()
         self.resultsConMinVal = self.resultsUiCon.minValIn.text()
         self.resultsConSmoothOrder = self.resultsUiCon.smoothOrderIn.text()
-        
+
     def drawResultsCut(self):
         """
         Configures and populates the UI elements for the results cut tab in the application.
@@ -1519,7 +1558,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(11)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
 
@@ -1541,27 +1581,32 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             self.flag04 = True
         else:
             self.resultsSelector.setCurrentIndex(self.option2Ind)
-        self.resultsSelector.currentIndexChanged.connect(self.resultsSelChanged)
-        
+        self.resultsSelector.currentIndexChanged.connect(
+            self.resultsSelChanged)
+
         self.resultsUiCut = resultsUiCut(self)
         self.resultsUi.tempLayout.addWidget(self.resultsUiCut)
 
         # Populating the image pair and component input fields depending on user input
         for i in range(0, self.lastImagePair+1):
             self.resultsUiCut.imgPairIn.addItem("")
-            self.resultsUiCut.imgPairIn.setItemText(i, f"{self.lastImagePair-i}")
+            self.resultsUiCut.imgPairIn.setItemText(
+                i, f"{self.lastImagePair-i}")
         if int(self.resultsSelector.currentIndex()) == 0:
             for index, e in enumerate(sdpp.DispComp):
                 self.resultsUiCut.compIn.addItem("")
-                self.resultsUiCut.compIn.setItemText(index, f"{e.display_name}")
+                self.resultsUiCut.compIn.setItemText(
+                    index, f"{e.display_name}")
         elif int(self.resultsSelector.currentIndex()) == 1:
             for index, e in enumerate(sdpp.StrainComp):
                 self.resultsUiCut.compIn.addItem("")
-                self.resultsUiCut.compIn.setItemText(index, f"{e.display_name}")
+                self.resultsUiCut.compIn.setItemText(
+                    index, f"{e.display_name}")
         for index, e in enumerate(sdpp.CompID):
             if e.display_name != None:
                 self.resultsUiCut.cutCompIn.addItem("")
-                self.resultsUiCut.cutCompIn.setItemText(index, f"{e.display_name}")
+                self.resultsUiCut.cutCompIn.setItemText(
+                    index, f"{e.display_name}")
 
         # Setting values for the results cut tab
         if not self.flag07:
@@ -1586,24 +1631,33 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             self.resultsUiCut.cutValIn.setText(self.resultsCutCutValues)
 
         # Connecting the input fields to the resultsCutChanged method
-        self.resultsUiCut.imgPairIn.currentIndexChanged.connect(self.resultsCutChanged)
-        self.resultsUiCut.smoothWinIn.editingFinished.connect(self.resultsCutChanged)
-        self.resultsUiCut.compIn.currentIndexChanged.connect(self.resultsCutChanged)
-        self.resultsUiCut.smoothOrderIn.editingFinished.connect(self.resultsCutChanged)
-        self.resultsUiCut.cutCompIn.currentIndexChanged.connect(self.resultsCutChanged)
-        self.resultsUiCut.gridLinesIn.stateChanged.connect(self.resultsCutChanged)
+        self.resultsUiCut.imgPairIn.currentIndexChanged.connect(
+            self.resultsCutChanged)
+        self.resultsUiCut.smoothWinIn.editingFinished.connect(
+            self.resultsCutChanged)
+        self.resultsUiCut.compIn.currentIndexChanged.connect(
+            self.resultsCutChanged)
+        self.resultsUiCut.smoothOrderIn.editingFinished.connect(
+            self.resultsCutChanged)
+        self.resultsUiCut.cutCompIn.currentIndexChanged.connect(
+            self.resultsCutChanged)
+        self.resultsUiCut.gridLinesIn.stateChanged.connect(
+            self.resultsCutChanged)
         self.resultsUiCut.interpIn.stateChanged.connect(self.resultsCutChanged)
-        self.resultsUiCut.cutValIn.editingFinished.connect(self.resultsCutChanged)
+        self.resultsUiCut.cutValIn.editingFinished.connect(
+            self.resultsCutChanged)
 
         # Adding a spacer for better visual organization
-        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding)
+        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum,
+                             QSizePolicy.MinimumExpanding)
         self.resultsUi.tempLayout.addItem(spacer)
 
         # Creating and adding the Submit Graph button
         submitGraphBut = QPushButton("Submit Graph", self)
         submitGraphBut.setSizePolicy(sizePolicy)
         submitGraphBut.setFont(font)
-        self.resultsUi.tempLayout.insertWidget(2, submitGraphBut, 0, QtCore.Qt.AlignHCenter)
+        self.resultsUi.tempLayout.insertWidget(
+            2, submitGraphBut, 0, QtCore.Qt.AlignHCenter)
 
         # Connecting the Submit Graph button to the submitGraph method
         submitGraphBut.clicked.connect(self.submitGraph)
@@ -1615,37 +1669,42 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         # Adding tooltips
         self.resultsUiCut.smoothWinIn.setToolTip("""The size of the window for smoothing the results. Must be an odd number.
 A value of 0 means no smoothing but can only be set to zero for displacement graphs.""")
-        self.resultsUiCut.smoothOrderIn.setToolTip("Order of the Savitzky-Golay smoothing polynomial.")
-        self.resultsUiCut.cutValIn.setToolTip("The values at which to cut the data. Must be a comma separated list of integers.")
-        self.resultsUiCut.gridLinesIn.setToolTip("Whether to show grid lines on the plot.")
-        self.resultsUiCut.interpIn.setToolTip("Whether to interpolate the data.")
-        self.resultsUiCut.cutCompIn.setToolTip("The component to cut the data along.")
+        self.resultsUiCut.smoothOrderIn.setToolTip(
+            "Order of the Savitzky-Golay smoothing polynomial.")
+        self.resultsUiCut.cutValIn.setToolTip(
+            "The values at which to cut the data. Must be a comma separated list of integers.")
+        self.resultsUiCut.gridLinesIn.setToolTip(
+            "Whether to show grid lines on the plot.")
+        self.resultsUiCut.interpIn.setToolTip(
+            "Whether to interpolate the data.")
+        self.resultsUiCut.cutCompIn.setToolTip(
+            "The component to cut the data along.")
         self.resultsUiCut.compIn.setToolTip("The component to plot.")
 
     def resultsCutChanged(self):
-            """
-            Updates the attributes related to the results cut based on the current UI input values.
+        """
+        Updates the attributes related to the results cut based on the current UI input values.
 
-            This method retrieves the current values from the UI elements and assigns them to the corresponding
-            attributes of the class instance. The attributes updated are:
-            - resultsCutImgPair: Index of the selected image pair.
-            - resultsCutSmoothWin: Text value of the smoothing window input.
-            - resultsCutComp: Index of the selected component.
-            - resultsCutSmoothOrder: Text value of the smoothing order input.
-            - resultsCutCutComp: Index of the selected cut component.
-            - resultsCutGridLines: Boolean indicating if grid lines are checked.
-            - resultsCutInterp: Boolean indicating if interpolation is checked.
-            - resultsCutCutValues: Text value of the cut values input.
-            """
-            self.resultsCutImgPair = self.resultsUiCut.imgPairIn.currentIndex()
-            self.resultsCutSmoothWin = self.resultsUiCut.smoothWinIn.text()
-            self.resultsCutComp = self.resultsUiCut.compIn.currentIndex()
-            self.resultsCutSmoothOrder = self.resultsUiCut.smoothOrderIn.text()
-            self.resultsCutCutComp = self.resultsUiCut.cutCompIn.currentIndex()
-            self.resultsCutGridLines = self.resultsUiCut.gridLinesIn.isChecked()
-            self.resultsCutInterp = self.resultsUiCut.interpIn.isChecked()
-            self.resultsCutCutValues = self.resultsUiCut.cutValIn.text()
-    
+        This method retrieves the current values from the UI elements and assigns them to the corresponding
+        attributes of the class instance. The attributes updated are:
+        - resultsCutImgPair: Index of the selected image pair.
+        - resultsCutSmoothWin: Text value of the smoothing window input.
+        - resultsCutComp: Index of the selected component.
+        - resultsCutSmoothOrder: Text value of the smoothing order input.
+        - resultsCutCutComp: Index of the selected cut component.
+        - resultsCutGridLines: Boolean indicating if grid lines are checked.
+        - resultsCutInterp: Boolean indicating if interpolation is checked.
+        - resultsCutCutValues: Text value of the cut values input.
+        """
+        self.resultsCutImgPair = self.resultsUiCut.imgPairIn.currentIndex()
+        self.resultsCutSmoothWin = self.resultsUiCut.smoothWinIn.text()
+        self.resultsCutComp = self.resultsUiCut.compIn.currentIndex()
+        self.resultsCutSmoothOrder = self.resultsUiCut.smoothOrderIn.text()
+        self.resultsCutCutComp = self.resultsUiCut.cutCompIn.currentIndex()
+        self.resultsCutGridLines = self.resultsUiCut.gridLinesIn.isChecked()
+        self.resultsCutInterp = self.resultsUiCut.interpIn.isChecked()
+        self.resultsCutCutValues = self.resultsUiCut.cutValIn.text()
+
     def submitGraph(self):
         """
         Handles the submission of the graph based on selected options.
@@ -1676,7 +1735,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         except Exception as e:
             # Capture the standard error and display it in a popup
             error_message = str(e)
-            QMessageBox.critical(self, "Error", f"An error occurred: {error_message}")
+            QMessageBox.critical(
+                self, "Error", f"An error occurred: {error_message}")
 
     def plotContourDisp(self):
         """
@@ -1707,7 +1767,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self.resultsSelChanged()
 
         # Getting the required parameters
-        dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[self.resultsUiCon.compIn.currentIndex()])
+        dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
+                           self.resultsUiCon.compIn.currentIndex()])
         alpha = float(self.resultsUiCon.alphaIn.text())
         smoothWindow = int(self.resultsUiCon.smoothWinIn.text())
         if self.resultsUiCon.maxValIn.text() == "None" or self.resultsUiCon.maxValIn.text() == "none":
@@ -1723,15 +1784,15 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
 
         # Plotting the graph
         self.figure = sdpp.plotDispContour(self._savePath, imgPair=imgPair, dispComp=dispComp,
-                     alpha=alpha, plotImage=True,
-                     showPlot=False, fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, maxValue=maxVal, minValue=minVal, return_fig=True)
+                                           alpha=alpha, plotImage=True,
+                                           showPlot=False, fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, maxValue=maxVal, minValue=minVal, return_fig=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         toolbar = NavigationToolbar(self.canvas, self)
         self.resultsUi.tempLayout.insertWidget(3, toolbar)
         self.resultsUi.tempLayout.insertWidget(4, self.canvas)
 
-    def plotCutLineDisp(self): 
+    def plotCutLineDisp(self):
         """
         Plots the displacement cut line based on the user-selected parameters.
         This method retrieves user inputs from the GUI, processes them, and generates
@@ -1744,20 +1805,23 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         # Removing any previous graphs
         self.resultsSelChanged()
 
-        # Getting the required parameters   
+        # Getting the required parameters
         imgPair = self.lastImagePair - self.resultsUiCut.imgPairIn.currentIndex()
-        dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[self.resultsUiCut.compIn.currentIndex()])
-        cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[self.resultsUiCut.cutCompIn.currentIndex()])
-        cutValues = [int(i) for i in self.resultsUiCut.cutValIn.text().split(",")]
+        dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
+                           self.resultsUiCut.compIn.currentIndex()])
+        cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[
+                          self.resultsUiCut.cutCompIn.currentIndex()])
+        cutValues = [int(i)
+                     for i in self.resultsUiCut.cutValIn.text().split(",")]
         gridlines = self.resultsUiCut.gridLinesIn.isChecked()
         smoothWindow = int(self.resultsUiCut.smoothWinIn.text())
         smoothOrder = int(self.resultsUiCut.smoothOrderIn.text())
         interpolate = self.resultsUiCut.interpIn.isChecked()
-        
+
         # Plotting the graph
         self.figure = sdpp.plotDispCutLine(self._savePath, imgPair=imgPair, dispComp=dispComp, cutComp=cutComp,
-                     cutValues=cutValues, gridLines=gridlines, showPlot=False,
-                     fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate, return_fig=True)
+                                           cutValues=cutValues, gridLines=gridlines, showPlot=False,
+                                           fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate, return_fig=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         toolbar = NavigationToolbar(self.canvas, self)
@@ -1780,7 +1844,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self.resultsSelChanged()
 
         # Getting the required parameters
-        strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[self.resultsUiCon.compIn.currentIndex()])
+        strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
+                             self.resultsUiCon.compIn.currentIndex()])
         alpha = float(self.resultsUiCon.alphaIn.text())
         smoothWindow = int(self.resultsUiCon.smoothWinIn.text())
         if self.resultsUiCon.maxValIn.text() == "None" or self.resultsUiCon.maxValIn.text() == "none":
@@ -1793,18 +1858,18 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             minVal = float(self.resultsUiCon.minValIn.text())
         smoothOrder = int(self.resultsUiCon.smoothOrderIn.text())
         imgPair = self.lastImagePair - self.resultsUiCon.imgPairIn.currentIndex()
-        
+
         # Plotting the graph
         self.figure = sdpp.plotStrainContour(self._savePath, imgPair=imgPair, strainComp=strainComp,
-                     alpha=alpha, plotImage=True,
-                     showPlot=False, fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, maxValue=maxVal, minValue=minVal, return_fig=True)
+                                             alpha=alpha, plotImage=True,
+                                             showPlot=False, fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, maxValue=maxVal, minValue=minVal, return_fig=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         toolbar = NavigationToolbar(self.canvas, self)
         self.resultsUi.tempLayout.insertWidget(3, toolbar)
         self.resultsUi.tempLayout.insertWidget(4, self.canvas)
 
-    def plotCutLineStrain(self): 
+    def plotCutLineStrain(self):
         """
         Plots the strain cut line based on the user-selected parameters from the GUI.
         This method retrieves the user-selected parameters for the strain cut line plot,
@@ -1820,18 +1885,21 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
 
         # Getting the required parameters
         imgPair = self.lastImagePair - self.resultsUiCut.imgPairIn.currentIndex()
-        strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[self.resultsUiCut.compIn.currentIndex()])
-        cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[self.resultsUiCut.cutCompIn.currentIndex()])
-        cutValues = [int(i) for i in self.resultsUiCut.cutValIn.text().split(",")]
+        strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
+                             self.resultsUiCut.compIn.currentIndex()])
+        cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[
+                          self.resultsUiCut.cutCompIn.currentIndex()])
+        cutValues = [int(i)
+                     for i in self.resultsUiCut.cutValIn.text().split(",")]
         gridlines = self.resultsUiCut.gridLinesIn.isChecked()
         smoothWindow = int(self.resultsUiCut.smoothWinIn.text())
         smoothOrder = int(self.resultsUiCut.smoothOrderIn.text())
         interpolate = self.resultsUiCut.interpIn.isChecked()
-        
+
         # Plotting the graph
         self.figure = sdpp.plotStrainCutLine(self._savePath, imgPair=imgPair, strainComp=strainComp, cutComp=cutComp,
-                     cutValues=cutValues, gridLines=gridlines, showPlot=False,
-                     fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate, return_fig=True)
+                                             cutValues=cutValues, gridLines=gridlines, showPlot=False,
+                                             fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate, return_fig=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         toolbar = NavigationToolbar(self.canvas, self)
@@ -1847,20 +1915,21 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         If the user cancels, the method returns without making any changes.
         """
         if self.flag00 == True and self.flag01 == False:
-            warn = QMessageBox.question(self, "Warning", "You have unsaved changes. Do you want to proceed?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            warn = QMessageBox.question(
+                self, "Warning", "You have unsaved changes. Do you want to proceed?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if warn == QMessageBox.No:
                 return
-        
+
         # If the main frame layout exists, delete it. Prevents multiple layouts from being created.
         if hasattr(self, 'mainFrameLayout'):
             if self.mainFrame.layout() is not None:
                 self.deleteLayout(self.mainFrameLayout)
 
-        self.flag00 = False  
-        self.flag01 = False  
-        self.flag02 = False  
+        self.flag00 = False
+        self.flag01 = False
+        self.flag02 = False
         self.flag03 = False
- 
+
         # Setting default values - NB: Some things need 'translation' as the GUI uses indexes for some items and the settings class uses strings
         self._debugLevel = self._defaultSettings.DebugLevel
         self._imageFolder = self._defaultSettings.ImageFolder
@@ -1900,9 +1969,10 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
+        self._znccTol = self._defaultSettings.NZCCThreshold
 
         self.setWindowTitle("SUN-DIC")
-    
+
     def asave(self):
         """
         Saves the current settings to a file. If results already exist for the file, 
@@ -1960,7 +2030,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         elif self._optAlgor == 1:
             _optAlgor = 'IC-LM'
         elif self._optAlgor == 2:
-            _optAlgor = 'Fast-IC-LM'            
+            _optAlgor = 'Fast-IC-LM'
 
         _datumImage = int(self._datumImage) - 1
         if int(self._targetImage) == -1:
@@ -1987,6 +2057,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         dicSet.OptimizationAlgorithm = _optAlgor
         dicSet.MaxIterations = int(self._maxIter)
         dicSet.ConvergenceThreshold = float(self._convTol)
+        dicSet.NZCCThreshold = float(self._znccTol)
         dicSet.ImageFolder = self._imageFolder
         dicSet.CPUCount = int(self._CPUCount)
 
@@ -2050,7 +2121,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         elif self._optAlgor == 1:
             _optAlgor = 'IC-LM'
         elif self._optAlgor == 2:
-            _optAlgor = 'Fast-IC-LM'            
+            _optAlgor = 'Fast-IC-LM'
 
         _datumImage = int(self._datumImage) - 1
         if int(self._targetImage) == -1:
@@ -2077,6 +2148,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         dicSet.OptimizationAlgorithm = _optAlgor
         dicSet.MaxIterations = int(self._maxIter)
         dicSet.ConvergenceThreshold = float(self._convTol)
+        dicSet.NZCCThreshold = float(self._znccTol)
         dicSet.ImageFolder = self._imageFolder
         dicSet.CPUCount = int(self._CPUCount)
         options = QtWidgets.QFileDialog.Options()
@@ -2127,11 +2199,13 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _optAlgor (int): Optimization algorithm (0 for IC-GN, 1 for IC-LM, 2 for Fast-IC-LM).
             _maxIter (int): Maximum number of iterations from the settings.
             _convTol (float): Convergence threshold from the settings.
+            _znccTol (float): ZNCC tolerance from the settings. 
             flag01 (bool): Flag indicating if the file contains results.
             flag02 (bool): Flag for ROI drawer.
         """
         if self.flag00 == True and self.flag01 == False:
-            warn = QMessageBox.question(self, "Warning", "You have unsaved changes. Do you want to proceed?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            warn = QMessageBox.question(
+                self, "Warning", "You have unsaved changes. Do you want to proceed?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if warn == QMessageBox.No:
                 return
 
@@ -2186,6 +2260,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
 
             self._maxIter = dicSet.MaxIterations
             self._convTol = dicSet.ConvergenceThreshold
+            self._znccTol = dicSet.NZCCThreshold
 
             self.flag02 = True
 
@@ -2228,6 +2303,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _optAlgor (int): Index for optimization algorithm (0 for 'IC-GN', 1 for 'IC-LM', 2 for 'Fast-IC-LM').
             _maxIter (int): Maximum number of iterations for the optimization algorithm.
             _convTol (float): Convergence threshold for the optimization algorithm.
+            _znccTol (float): ZNCC threshold for the analysis.
             settingsUI (object): The UI object containing the GUI elements to be updated.
             flag00 (bool): A flag indicating that there are unsaved changes.
         Updates:
@@ -2269,6 +2345,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
 
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
+        self._znccTol = self._defaultSettings.NZCCThreshold
 
         self.settingsUI.subsetSizeIn.setText(str(self._subSetSize))
         self.settingsUI.stepSizeIn.setText(str(self._stepSize))
@@ -2277,6 +2354,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self.settingsUI.dicTypeBox.setCurrentIndex(self._DICType)
         self.settingsUI.shapeFuncBox.setCurrentIndex(self._shapeFunc)
         self.settingsUI.convergenceIn.setText(str(self._convTol))
+        self.settingsUI.znccTolIn.setText(str(self._znccTol))
         self.settingsUI.refBox.setCurrentIndex(self._refStrat)
         self.settingsUI.algoTypeBox.setCurrentIndex(self._optAlgor)
         self.flag00 = True
@@ -2320,7 +2398,6 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self._increment = self._defaultSettings.Increment
         self._backgroundCutOff = self._defaultSettings.BackgroundCutoff
         #
-        
 
         self.imageSetUi.folderDisp.setText(QStandardPaths.standardLocations(
             QStandardPaths.PicturesLocation)[0])
@@ -2572,6 +2649,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             else:
                 event.ignore()
 
+
 class dicSettings:
     def __init__(self):
         self.DebugLevel = None
@@ -2593,6 +2671,7 @@ class dicSettings:
         self.OptimizationAlgorithm = None
         self.MaxIterations = None
         self.ConvergenceThreshold = None
+
 
 class PlanarDICWorker(QThread):
     """
@@ -2627,11 +2706,11 @@ class PlanarDICWorker(QThread):
             try:
                 print("RUNNING")
                 self.started.emit("RUNNING")
-                #subprocess.run(['ray', 'start', '--head', '--port=6379', f'--num-cpus={self.settings.CPUCount}'])
+                # subprocess.run(['ray', 'start', '--head', '--port=6379', f'--num-cpus={self.settings.CPUCount}'])
                 sd.planarDICLocal(self.settings, self.results_file)
                 print("FINISHED")
                 self.finished.emit("FINISHED")
-                #subprocess.run(['ray', 'stop', '--force'])
+                # subprocess.run(['ray', 'stop', '--force'])
             except Exception as e:
                 print(f"Exception in thread: {e}")
             finally:
@@ -2652,6 +2731,7 @@ class PlanarDICWorker(QThread):
         output = f.getvalue()
         self.progress.emit(output)
 
+
 def main():
     # Make an object of the class and execute it
     app = QApplication(sys.argv)
@@ -2663,6 +2743,7 @@ def main():
 
     # Exit the window cleanly
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
