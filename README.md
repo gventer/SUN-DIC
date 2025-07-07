@@ -12,10 +12,13 @@
 This is an early release of the Stellenbosch University DIC Code, referred to as **SUN-DIC**. The code includes the following features and limitations. If you encounter issues or have suggestions for improvement, please contact the author. Additional documentation will be provided in future updates.
 
 ---
+## Publications
+1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](https://ssrn.com/abstract=5333350) 2025-07-01 -- Venter, Gerhard and Neaves, Melody, *SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*. Pre-print available at SSRN: [https://ssrn.com/abstract=5333350](https://ssrn.com/abstract=5333350) or [http://dx.doi.org/10.2139/ssrn.5333350 ](http://dx.doi.org/10.2139/ssrn.5333350)
 
+   
 ## Presentations
 
-1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](presentations/2025_sundic_mod.pdf) 2025-04-17 MOD Research Group Meeting - Overview of SUN-DIC
+1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](presentations/2025_sundic_mod.pdf) 2025-04-17 -- MOD Research Group Meeting - Overview of SUN-DIC
 
 ---
 
