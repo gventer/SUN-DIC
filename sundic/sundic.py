@@ -1043,6 +1043,10 @@ def _akazeDetect_(adPoints, F, G):
                     adPoints[:, :, CompID.SSSizeID].astype(int)], flags=['multi_index'])
     for x, y, subSetSize in it:
 
+        # Store the current row and column index
+        iRow = it.multi_index[0]
+        iCol = it.multi_index[1]
+
         # Get the keypoints in the query image - keep increasing the subset size until
         # we have enough keypoints
         sizeFactor = IntConst.SIZE_FACTOR
@@ -1060,12 +1064,18 @@ def _akazeDetect_(adPoints, F, G):
             trainImg = origTrainImg[yMin:yMax, xMin:xMax]
             queryImg = origQueryImg[yMin:yMax, xMin:xMax]
 
-            # Setup the akaze detector and the training image - only once
+            # Setup the akaze detector
             akaze = cv.AKAZE_create()
-            kpG, descG = akaze.detectAndCompute(trainImg, None)
 
             # Detect the keypoints and compute the descriptors
-            kpQ, descQ = akaze.detectAndCompute(queryImg, None)
+            try:
+                kpG, descG = akaze.detectAndCompute(trainImg, None)
+                kpQ, descQ = akaze.detectAndCompute(queryImg, None)
+            except:
+                # If we cannot detect keypoints, we will just continue to the next
+                # iteration and try with a larger subset size
+                kpG, descG = [], None
+                kpQ, descQ = [], None
 
             # If we have found at least the minimum number of keypoints, we can
             # break out of the loop
@@ -1095,8 +1105,6 @@ def _akazeDetect_(adPoints, F, G):
                                                 max_trials=100)
 
             # Get the affine transformation homography coefficients
-            iRow = it.multi_index[0]
-            iCol = it.multi_index[1]
             adPoints[iRow, iCol, CompID.XDispID+0] = model_robust.params[0][2]
             adPoints[iRow, iCol, CompID.XDispID +
                      1] = model_robust.params[0][0] - 1.0
@@ -1108,7 +1116,7 @@ def _akazeDetect_(adPoints, F, G):
                      2] = model_robust.params[1][1] - 1.0
 
         except:
-            pass
+            adPoints[iRow, iCol, CompID.XDispID:] = 0.0
 
         # Increment the counter
         iCnt = iCnt + 1
@@ -1676,7 +1684,7 @@ def readImage(imgFile, normalize8Bit=False):
 
     # Use the full range of the image bitrange but keep the same data type
     imgDType = grayImg.dtype
-    maxValue = np.iinfo(imgDType).max + 1
+    maxValue = np.iinfo(imgDType).max
     ratio = np.amax(grayImg) / maxValue
     grayImg = (grayImg/ratio).astype(imgDType)
 
