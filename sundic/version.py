@@ -1,6 +1,9 @@
-__version__ = "0.0.18"
+__version__ = "0.0.19"
 # 0.0.19 - Fixed issue with pure black and white (binary) images during the
 #          Akaze detection 
+#        - Fix subset size that may result in out of bounds subsets relative to the
+#          original image size
+#        - Fixed issue with relative strategy x and y coordinate updates
 # 0.0.18 - Fixed bug to make GUI work with new zncc convergence check
 # 0.0.17 - Added better support of 12 and 16 bit images - these images are now no longer
 #          internally converted to 8 bit as was done in the past

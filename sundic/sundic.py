@@ -33,6 +33,7 @@ class IntConst(IntEnum):
     CNZSSD_MAX = 1000000    # Maximum value for CZNSSD - indicate point has not been set
     SUBSET_PNT_SIZE = 17    # Number of values stored for each subset
     SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
+    MIN_SUBSET_SIZE = 5     # Minimum allowable subset size to use for the analysis
 
 # Define some indices into the subSetPnts array
 
@@ -158,7 +159,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
         stepSize = settings.StepSize
         shapeFn = settings.ShapeFunctions
         subSetPnts = _setupSubSets_(
-            subSetSize, stepSize, shapeFn, ROI, debugLevel=debugLevel)
+            subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel)
 
         # Get the image pair information
         imgDatum = settings.DatumImage
@@ -192,14 +193,15 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
                 safe_ray_init(externalRay, nCpus, debugLevel=debugLevel)
 
         # Loop through all image pairs to perform the local DIC
-        # Start by setting up the return list and the current subset points
         returnData = []
-        prevSubSetPnts = np.copy(subSetPnts)
-        currSubSetPnts = subSetPnts
-        x_init = subSetPnts[:, :, CompID.XCoordID]
-        y_init = subSetPnts[:, :, CompID.YCoordID]
+        x_coordInit = np.copy(subSetPnts[:, :, CompID.XCoordID])
+        y_coordInit = np.copy(subSetPnts[:, :, CompID.YCoordID])
 
         for imgPairIdx, img in enumerate(range(imgDatum, imgTarget, imgIncr)):
+
+            # Store previous iteration displacement values
+            x_dispPrev = np.copy(subSetPnts[:, :, CompID.XDispID])
+            y_dispPrev = np.copy(subSetPnts[:, :, CompID.YDispID])
 
             # Setup the parallel run and wait for all results
             if nCpus > 1:
@@ -208,13 +210,13 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
                 settings.DebugLevel = 0
 
                 # Setup the submatrices - match shape to image if possible
-                nTotRows, nTotCols, _ = currSubSetPnts.shape
+                nTotRows, nTotCols, _ = subSetPnts.shape
                 mRows, mCols = _factorCPUCount_(nCpus, nTotRows/nTotCols)
                 if nDebugOld > 0:
                     print("\n  Splitting matrix into {}x{} submatrices".format(
                         mRows, mCols))
                     print("")
-                subMatrices = _splitMatrix_(currSubSetPnts, mRows, mCols)
+                subMatrices = _splitMatrix_(subSetPnts, mRows, mCols)
 
                 # Track the processes that are being submitted
                 procIDs = []
@@ -248,24 +250,27 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
             # Serial run on one processor
             else:
                 # coefficients at convergence for current (i'th) image pair
-                currSubSetPnts[:] = _icOptimization_(
-                    settings, currSubSetPnts, imgSet, img)
+                subSetPnts[:] = _icOptimization_(
+                    settings, subSetPnts, imgSet, img)
 
             # Update the subset points coordinates if required - we make copies of the
             # current subset points to create a new array of subset points
             if settings.isRelativeStrategy():
-                currSubSetPnts[:] = _updateSubSets_(x_init, y_init, prevSubSetPnts,
-                                                    currSubSetPnts)
+                subSetPnts[:] = _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev,
+                                                    subSetPnts)
 
             # Store the current subset points in the return data
-            returnData.append(currSubSetPnts)
-            df.writeSubSetData(imgPairIdx, currSubSetPnts)
+            subSetPntsOut = np.copy(subSetPnts)
+            subSetPntsOut[:,:, CompID.XCoordID] = x_coordInit
+            subSetPntsOut[:,:, CompID.YCoordID] = y_coordInit
+            returnData.append(subSetPntsOut)
+            df.writeSubSetData(imgPairIdx, subSetPntsOut)
 
-            # Make a copy for the next iteration to work with in the next iteration
-            currSubSetPnts = np.copy(currSubSetPnts)
+            ## Make a copy for the next iteration to work with in the next iteration
+            #currSubSetPnts = np.copy(currSubSetPnts)
 
-            # The currently stored image subsetpoints are now the previous subset points
-            prevSubSetPnts = returnData[imgPairIdx]
+            ## The currently stored image subsetpoints are now the previous subset points
+            #prevSubSetPnts = returnData[imgPairIdx]
 
             # Make some debug output
             if (settings.DebugLevel > 0):
@@ -338,6 +343,10 @@ def _setupROI_(ROI, img0, debugLevel=0):
         img = readImage(img0)
         height, width = img.shape
 
+        # Set the minimum values for the ROI
+        ROI[0] = max(0, ROI[0])  # Ensure xStart is not negative
+        ROI[1] = max(0, ROI[1])  # Ensure yStart is not negative
+
         # Set the x-width
         if (ROI[2] == 0):
             ROI[2] = width - ROI[0]
@@ -345,6 +354,18 @@ def _setupROI_(ROI, img0, debugLevel=0):
         # Set the y height
         if (ROI[3] == 0):
             ROI[3] = height - ROI[1]
+
+        # Set the maximum values for the ROI
+        ROI[2] = min(ROI[2], width - ROI[0])  # Ensure xLength does not exceed image width
+        ROI[3] = min(ROI[3], height - ROI[1])  # Ensure yLength does not exceed image height
+
+        # Check if the ROI is too close to the image edges - it should be at least M pixels away
+        # If it is too close, change the values so that it is M pixels away from the edges
+        M = IntConst.MIN_SUBSET_SIZE
+        ROI[0] = max(ROI[0], M)
+        ROI[1] = max(ROI[1], M)
+        ROI[2] = min(ROI[2], width  - M)
+        ROI[3] = min(ROI[3], height - M)
 
     # Debug print out
     if debugLevel > 0:
@@ -359,7 +380,7 @@ def _setupROI_(ROI, img0, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, debugLevel=0):
+def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     """
     Calculate the center points of subsets within a given region of interest (ROI) based on
     the subset size and step size.
@@ -370,6 +391,7 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, debugLevel=0):
     - shapeFn (string): The order of the shape functions for each subset.
     - ROI (tuple): A tuple containing the origin coordinates (xOrigin, yOrigin)
         and the dimensions (width, height) of the ROI.
+    - img0 (str): The path to the reference image file.
     - debugLevel (int): The level of debug output to print.
 
     Returns:
@@ -378,6 +400,10 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, debugLevel=0):
         nVals are the number of values stored for each point.  These are the x,y coordinates
         followed by the model coeficients.
     """
+    # Read the image and determine the size
+    img = readImage(img0)
+    imgH, imgW = img.shape
+
     # Get DIC bounds to work with based on the ROI definition
     xOrigin = ROI[0]
     yOrigin = ROI[1]
@@ -411,6 +437,26 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, debugLevel=0):
     subSetPnts[:, :, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
     subSetPnts[:, :, CompID.XDispID:] = 0.0
 
+    # ----------------------------------------------------------------------------------------
+    # Check that the subsets are not exceeding the image bounds
+    # ----------------------------------------------------------------------------------------
+    autoFix = False
+    autoFix = _fixSubSetSize_(subSetPnts, CompID.XCoordID, 0, imgW)
+    autoFix = _fixSubSetSize_(subSetPnts, CompID.YCoordID, 0, imgH)
+    
+    # Let the user know we've automatically fixed the subset sizes
+    if autoFix:
+        print('WARNING: Some subset sizes were auto-fixed to fit within the image bounds. ')
+        print('         This warning can be avoided by specifying an appropriate ROI.')
+        if debugLevel > 0:
+            print('         The subset sizes after auto-fixing are:')
+            print(subSetPnts[:,:, CompID.SSSizeID])
+        
+
+    # Ensure that the subset size is not smaller than the minimum subset size
+    subSetPnts[:, :, CompID.SSSizeID] = np.maximum(
+        subSetPnts[:, :, CompID.SSSizeID], IntConst.MIN_SUBSET_SIZE)
+
     # Print debug output if requested
     if debugLevel > 0:
         nSubSets = nRows * nCols
@@ -424,15 +470,62 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def _updateSubSets_(x_init, y_init, prevSubSetPnts, currSubSetPnts):
+def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
+    """
+    Check and fix the subset sizes based on the specified lower and upper image bounds.  If 
+    the subset sizes are out of bounds, they are adjusted to fit within the specified bounds.
+    This function is used to ensure that the subset sizes do not exceed the image bounds.
+
+    Parameters:
+        - subSetPnts (ndarray): The subset points array.
+        - index (int): The index of the coordinate to check (0 for x, 1 for y).
+        - lowerBnd (float): The lower bound for the subset size.
+        - upperBnd (float): The upper bound for the subset size.
+        
+    Returns:
+        - autoFix (bool): A boolean flag indicating if the subset sizes were auto-fixed.
+    """
+
+    # Flag to indicate if we had to auto-fix the subset sizes
+    autoFix = False
+
+    # Get the center point values
+    cntVals = subSetPnts[:, :, index]
+
+    # Check the lower bound
+    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
+    bndLowDiff = (cntVals - M) - lowerBnd
+    outOfBounds = np.where(bndLowDiff < 0)
+    if len(outOfBounds[0]) > 0:
+        autoFix = True
+        subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
+            subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
+            2.0*bndLowDiff[outOfBounds[0], outOfBounds[1]]   
+
+    # Check the upper bound
+    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
+    bndUppDiff = (upperBnd - (cntVals + M))
+    outOfBounds = np.where(bndUppDiff < 0)
+    if len(outOfBounds[0]) > 0:
+        autoFix = True
+        subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
+            subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
+            2.0*bndUppDiff[outOfBounds[0], outOfBounds[1]] - 2 
+
+    return autoFix
+
+
+# --------------------------------------------------------------------------------------------
+def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSetPnts):
     """
     Update the subset points based on the calculated displacement values as we move from one
     image pair to the next.  Only used with the incremental reference strategy.
 
     Parameters:
-    - x_init (ndarray): An array of initial x-coordinates.
-    - y_init (ndarray): An array of initial y-coordinates.
-    - prevSubSetPnts (ndarray): An array of subset points from the previous image pair.
+    - x_coordInit (ndarray): An array of initial x-coordinates.
+    - y_coordInit (ndarray): An array of initial y-coordinates.
+    - x_dispPrev (ndarray): An array of previous displacement values in the x-direction.
+    - y_dispPrev (ndarray): An array of previous displacement values in the y-direction.
     - currSubSetPnts (ndarray): An array of subset points from the current image pair.
 
     Returns:
@@ -442,9 +535,9 @@ def _updateSubSets_(x_init, y_init, prevSubSetPnts, currSubSetPnts):
     # Update the current displacements with the previous displacements to get the total
     # displacements
     currSubSetPnts[:, :, CompID.XDispID] = currSubSetPnts[:, :, CompID.XDispID] + \
-        prevSubSetPnts[:, :, CompID.XDispID]
+        x_dispPrev
     currSubSetPnts[:, :, CompID.YDispID] = currSubSetPnts[:, :, CompID.YDispID] + \
-        prevSubSetPnts[:, :, CompID.YDispID]
+        y_dispPrev
 
     # The total displacement values for the current iteration - we have to fill missing
     # data due to the potential NaN that may have occured in the displacement field
@@ -463,9 +556,9 @@ def _updateSubSets_(x_init, y_init, prevSubSetPnts, currSubSetPnts):
     # Update the subset point locations with the displacement value
     # We update the initial point locations with the total displacements up to
     # this point
-    currSubSetPnts[:, :, CompID.XCoordID] = np.rint(x_init + delX.reshape(
+    currSubSetPnts[:, :, CompID.XCoordID] = np.rint(x_coordInit + delX.reshape(
         currSubSetPnts.shape[0], currSubSetPnts.shape[1], order='F'))
-    currSubSetPnts[:, :, CompID.YCoordID] = np.rint(y_init + delY.reshape(
+    currSubSetPnts[:, :, CompID.YCoordID] = np.rint(y_coordInit + delY.reshape(
         currSubSetPnts.shape[0], currSubSetPnts.shape[1], order='F'))
 
     return currSubSetPnts

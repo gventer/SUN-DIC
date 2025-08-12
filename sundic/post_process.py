@@ -333,8 +333,10 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
+        results[:, DispComp.X_DISP].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + \
+        results[:, DispComp.Y_DISP].reshape(nCols, nRows)
     if dispComp == DispComp.DISP_MAG:
         Z = results[:, DispComp.DISP_MAG].reshape(nCols, nRows)
     elif dispComp == DispComp.X_DISP:
@@ -418,12 +420,16 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     """
 
     # Get the strain results
+    dispResults, nRows, nCols = getDisplacements(
+        resultsFile, imgPair, smoothWindow=0, smoothOrder=2)
     results, nRows, nCols = getStrains(
         resultsFile, imgPair, smoothWindow, smoothOrder)
 
     # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
+        dispResults[:, DispComp.X_DISP].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + \
+        dispResults[:, DispComp.Y_DISP].reshape(nCols, nRows)
 
     if strainComp == StrainComp.SHEAR_STRAIN:
         Z = results[:, StrainComp.SHEAR_STRAIN].reshape(nCols, nRows)
@@ -503,11 +509,15 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
     """
 
     # Get the displacement results
+    dispResults, nRows, nCols = getDisplacements(
+        resultsFile, imgPair, smoothWindow=0, smoothOrder=2)
     Cznssd, nRows, nCols = getCznssd(resultsFile, imgPair)
 
     # Setup the plot arrays
-    X = Cznssd[:, CompID.XCoordID].reshape(nCols, nRows)
-    Y = Cznssd[:, CompID.YCoordID].reshape(nCols, nRows)
+    X = dispResults[:, CompID.XCoordID].reshape(nCols, nRows) + \
+        dispResults[:, DispComp.X_DISP].reshape(nCols, nRows)
+    Y = dispResults[:, CompID.YCoordID].reshape(nCols, nRows) + \
+        dispResults[:, DispComp.Y_DISP].reshape(nCols, nRows)
 
     # Calculate the ZNCC form the stored Cznssd values
     Z = (1. - 0.5*Cznssd[:, -1]).reshape(nCols, nRows)
