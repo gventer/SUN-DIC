@@ -364,8 +364,8 @@ def _setupROI_(ROI, img0, debugLevel=0):
         M = IntConst.MIN_SUBSET_SIZE
         ROI[0] = max(ROI[0], M)
         ROI[1] = max(ROI[1], M)
-        ROI[2] = min(ROI[2], width  - M)
-        ROI[3] = min(ROI[3], height - M)
+        ROI[2] = min(ROI[2], width  - 2*M)
+        ROI[3] = min(ROI[3], height - 2*M)
 
     # Debug print out
     if debugLevel > 0:
@@ -660,9 +660,10 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
     if settings.isAbsoluteStrategy():
         fImgID = imgDatum
     gImgID = img + imgIncr
-    F, FInter, delF, FMax = _processImage_(imgSet, fImgID, [gbSize, gbStdDev],
+    interOrder = settings.InterpolationOrder
+    F, FInter, delF, FMax = _processImage_(imgSet, fImgID, [gbSize, gbStdDev], interOrder,
                                            isDatumImg=True, isNormalized=isNormalized)
-    G, GInter, _, _ = _processImage_(imgSet, gImgID, [gbSize, gbStdDev],
+    G, GInter, _, _ = _processImage_(imgSet, gImgID, [gbSize, gbStdDev], interOrder,
                                      isDatumImg=False, isNormalized=isNormalized)
 
     # Adjust the BGCutOff value for normalized images
@@ -819,7 +820,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                         deltaP[0:3] = delta[0:3]
                         deltaP[6:9] = delta[3:]
                     elif shapeFn == ShapeFN.QUADRATIC:
-                        deltaP[0:11] = delta[:]
+                        deltaP[0:12] = delta[:]
 
                     # Update lambda
                     if cznssd >= cznssd_0:
@@ -862,7 +863,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
 
 # --------------------------------------------------------------------------------------------
-def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
+def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized):
     """
     Process an image to obtain DIC specific parameters.  If this is the datum image
     the gradient of the image is also calculated.  Otherwise, only the image and
@@ -872,6 +873,7 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
         - imgSet (list): A list of image paths.
         - img (int): The index of the image to process.
         - gaussBlur (tuple): Gauss blur size and std dev.
+        - interOrder (int): The order of the interpolation to use.
         - isDatumImg (bool): Indicates whether the image is the
             reference image.
         - isNormalized (bool): Indicates whether the image should be
@@ -930,7 +932,7 @@ def _processImage_(imgSet, img, gaussBlur, isDatumImg, isNormalized):
 
     # Setup the interpolator for this image - needs to pass double precision values
     # for interpolation to work
-    FInter = _fastInterpolation_(F.astype('double'))
+    FInter = _fastInterpolation_(F.astype('double'), interOrder)
 
     return F, FInter, delF, Fmax
 
@@ -1589,7 +1591,7 @@ def _modelCoeffUpdate_(p, dp, shapeFn):
 
 
 # --------------------------------------------------------------------------------------------
-def _fastInterpolation_(image):
+def _fastInterpolation_(image, interOrder):
     """
     Setup the interpolation model for the given image.  A special
     interpolation method is called that is optimized for interpolation
@@ -1598,6 +1600,7 @@ def _fastInterpolation_(image):
 
     Parameters:
     - image (ndarray): The input image to be interpolated.
+    - interOrder (int): The order of the interpolation to be used.
 
     Returns:
     - imgInter (interp2d): The interpolation model that can be called in
@@ -1616,7 +1619,7 @@ def _fastInterpolation_(image):
     # imgInter = RectBivariateSpline(Y, X, image, kx=3, ky=3)
     # --------------------------------------------------------------
     imgInter = interp2d([0, 0], [ny-1, nx-1], [1, 1], image,
-                        k=3, p=[False, False], c=[True, True], e=[1, 1])
+                        k=interOrder, p=[False, False], c=[True, True], e=[1, 1])
 
     return imgInter
 
@@ -1768,6 +1771,8 @@ def readImage(imgFile, normalize8Bit=False):
     """
     # Read the image as is - allow for eg for 16-bit images
     img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
+    if img is None:
+        raise FileNotFoundError(f"Image file {imgFile} not found or cannot be read.")
 
     # Convert to grayscale if color image - will only work with grayscale images
     if len(img.shape) == 3:

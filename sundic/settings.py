@@ -29,6 +29,7 @@ class Settings:
     __defBackgroundCutoff = 25
     __defOptimizationAlgorithm = 'IC-GN'
     __defMaxIterations = 50
+    __defInterpolationOrder = 3
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
 
@@ -56,6 +57,7 @@ class Settings:
         self.BackgroundCutoff = self.__defBackgroundCutoff
         self.OptimizationAlgorithm = self.__defOptimizationAlgorithm
         self.MaxIterations = self.__defMaxIterations
+        self.InterpolationOrder = self.__defInterpolationOrder
         self.ConvergenceThreshold = self.__defConvergenceThreshold
         self.NZCCThreshold = self.__defNZCCThreshold
 
@@ -145,6 +147,8 @@ class Settings:
         retStr += "  %25s : %s\n" % \
             ('Optimization Algorithm', str(self.OptimizationAlgorithm))
         retStr += "  %25s : %s\n" % ('Max Iterations', str(self.MaxIterations))
+        retStr += "  %25s : %s\n" % ('Interpolation Order',
+                                     str(self.InterpolationOrder))
         retStr += "  %25s : %s\n" % \
             ('Convergence Threshold', str(self.ConvergenceThreshold))
         retStr += "  %25s : %s\n" % \
@@ -396,6 +400,12 @@ class Settings:
         if self.MaxIterations < 1:
             raise ValueError(
                 'Config Parser:  MaxIterations must be greater than 0')
+
+        self.InterpolationOrder = cp.getint(
+            'Optimisation', 'InterpolationOrder', fallback=self.__defInterpolationOrder)
+        if self.InterpolationOrder not in [3, 5]:
+            raise ValueError(
+                'Config Parser:  InterpolationOrder must be either 3 or 5')
 
         self.ConvergenceThreshold = cp.getfloat(
             'Optimisation', 'ConvergenceThreshold', fallback=self.__defConvergenceThreshold)

@@ -128,6 +128,9 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     _, _, setDict = inFile.readHeading()
     settings = sdset.Settings.fromMsgPackDict(setDict)
 
+    # Get the stepsize
+    stepSize = settings.StepSize
+
     # Get the data
     subSetPnts = inFile.readSubSetData(imgPair)
 
@@ -162,13 +165,13 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     nRows = subSetPnts.shape[0]
     nCols = subSetPnts.shape[1]
     if smoothWindow > 0:
-        results[:, DispComp.X_DISP] = _smoothResults_(nRows, nCols, results,
+        results[:, DispComp.X_DISP] = _smoothResults_(nRows, nCols, stepSize, results,
                                                       DispComp.X_DISP, smoothWindow=smoothWindow,
                                                       smoothOrder=smoothOrder)
-        results[:, DispComp.Y_DISP] = _smoothResults_(nRows, nCols, results,
+        results[:, DispComp.Y_DISP] = _smoothResults_(nRows, nCols, stepSize, results,
                                                       DispComp.Y_DISP, smoothWindow=smoothWindow,
                                                       smoothOrder=smoothOrder)
-        results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, results,
+        results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, stepSize, results,
                                                         DispComp.DISP_MAG, smoothWindow=smoothWindow,
                                                         smoothOrder=smoothOrder)
 
@@ -264,6 +267,19 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
     if smoothWindow <= 0:
         raise ValueError('smoothWindow must be larger than zero.')
 
+    # Load the results file to get the stepSize
+    inFile = dataFile.DataFile.openReader(resultsFile)
+
+    # Ingore the heading
+    _, _, setDict = inFile.readHeading()
+    settings = sdset.Settings.fromMsgPackDict(setDict)
+
+    # Get the stepsize
+    stepSize = settings.StepSize
+
+    # Close the file
+    inFile.close()
+
     # Get the displacements - no smoothing yet
     disp, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow=0)
 
@@ -277,10 +293,10 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
 
     # Apply Savitzky-Golay smoothing with gradient calculation
     dudy, dudx = _smoothResults_(
-        nRows, nCols, disp, DispComp.X_DISP, smoothWindow=smoothWindow,
+        nRows, nCols, stepSize, disp, DispComp.X_DISP, smoothWindow=smoothWindow,
         smoothOrder=smoothOrder, derivative='both')
     dvdy, dvdx = _smoothResults_(
-        nRows, nCols, disp, DispComp.Y_DISP, smoothWindow=smoothWindow,
+        nRows, nCols, stepSize, disp, DispComp.Y_DISP, smoothWindow=smoothWindow,
         smoothOrder=smoothOrder, derivative='both')
 
     # Store the strain components
@@ -719,7 +735,7 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
 
 # --------------------------------------------------------------------------------------------
-def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
+def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoothOrder=2,
                     derivative='none'):
     """
     Smooths the results of a computation over a grid using Savitzky-Golay smoothing.
@@ -727,6 +743,7 @@ def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
     Parameters:
         - nRows (int): The number of rows in the grid.
         - nCols (int): The number of columns in the grid.
+        - stepSize (float): The step size of the subset grid.
         - results (ndarray): The results matrix from the DIC values.
         - comp (int): The component of the results to smooth.
         - smoothWindow (int, optional): The size of the smoothing window. Defaults to 3.
@@ -772,8 +789,10 @@ def _smoothResults_(nRows, nCols, results, comp, smoothWindow=3, smoothOrder=2,
             nCols, nRows), smoothWindow, smoothOrder, derivative='both')
         drdc[~mask.reshape(nCols, nRows)] = np.nan
         drdr[~mask.reshape(nCols, nRows)] = np.nan
-        drdc = drdc.reshape(-1, order='C')
-        drdr = drdr.reshape(-1, order='C')
+        drdc = drdc.reshape(-1, order='C') / float(stepSize)
+        drdr = drdr.reshape(-1, order='C') / float(stepSize)
+
+        # Correct for subset step size
 
         return drdc, drdr
 

@@ -167,7 +167,7 @@ class DataFile:
         self.__fh__.seek(0)
 
         # Setup the unpacker and ignore the heading
-        unp = msgpack.Unpacker(self.__fh__, raw=False)
+        unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
         _ = unp.unpack()
         _ = unp.unpack()
         _ = unp.unpack()

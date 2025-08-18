@@ -1,4 +1,10 @@
-__version__ = "0.0.19"
+__version__ = "0.0.20"
+# 0.0.20 - Added support for reading results files that are larger than 100MB in size
+#        - Fixed issue with upper bounds of automatic ROI definition
+#        - Fixed issue with using Quadratic shape functions with IC-LM algorithm not working
+#        - Fixed issue with scaling of gradients from Savitzky-Golay filter not accouting
+#          for the stepssize of the subsets
+#        - Added user setting to control the interpolation order (3rd order of 5th order)
 # 0.0.19 - Fixed issue with pure black and white (binary) images during the
 #          Akaze detection 
 #        - Fix subset size that may result in out of bounds subsets relative to the
