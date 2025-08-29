@@ -1160,7 +1160,7 @@ Left click a third time to remove the ROI.""")
         """
         with open(self._savePath, 'rb') as file:
             file.seek(0)
-            unpacker = msgpack.Unpacker(file, raw=False)
+            unpacker = msgpack.Unpacker(file, raw=False, max_buffer_size=0)
             _ = unpacker.unpack()
             _ = unpacker.unpack()
             _ = unpacker.unpack()

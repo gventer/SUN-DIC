@@ -34,6 +34,8 @@ class IntConst(IntEnum):
     SUBSET_PNT_SIZE = 17    # Number of values stored for each subset
     SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
     MIN_SUBSET_SIZE = 5     # Minimum allowable subset size to use for the analysis
+    MAX_CZNSSD_PNTS = 100    # Maximum number of random subset points to use for CZNSSD calculation
+    MAX_NEIGHBORS = 2       # Maximum number of random neighbors to use for next point
 
 # Define some indices into the subSetPnts array
 
@@ -98,16 +100,11 @@ def _getImageList_(imgSubFolder, debugLevel=0):
     # Setup the image folder form the specified subfolder
     image_folder = os.path.join(os.getcwd(), imgSubFolder)
 
-    # Get the filenames of all images in the directory
-    files = os.listdir(image_folder)
-
-    # Do a natural sort on the filenames
-    files = ns.os_sorted(files)
+    # Get the filenames (naturally sorted) of all images in the directory
+    files = ns.os_sorted(os.listdir(image_folder))
 
     # Add the directory back into the filename and store as a list of all files
-    image_set = []
-    for f in files:
-        image_set.append(os.path.join(image_folder, f))
+    image_set = [os.path.join(image_folder, f) for f in files]
 
     # Print debug messages based on debug level
     if debugLevel > 1:
@@ -144,6 +141,9 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
         - ValueError: If an invalid optimization algorithm is specified.
     """
     try:
+        # Let's set a random seed for repeatable results
+        np.random.seed(42)
+        
         # Store the debug level
         debugLevel = settings.DebugLevel
 
@@ -343,29 +343,26 @@ def _setupROI_(ROI, img0, debugLevel=0):
         img = readImage(img0)
         height, width = img.shape
 
-        # Set the minimum values for the ROI
-        ROI[0] = max(0, ROI[0])  # Ensure xStart is not negative
-        ROI[1] = max(0, ROI[1])  # Ensure yStart is not negative
+        # Ensure starts are non-negative
+        xStart = max(0, ROI[0])
+        yStart = max(0, ROI[1])
 
-        # Set the x-width
-        if (ROI[2] == 0):
-            ROI[2] = width - ROI[0]
+        # Calculate lengths
+        xLength = ROI[2] if ROI[2] != 0 else width - xStart
+        yLength = ROI[3] if ROI[3] != 0 else height - yStart
 
-        # Set the y height
-        if (ROI[3] == 0):
-            ROI[3] = height - ROI[1]
+        # Ensure lengths do not exceed image bounds
+        xLength = min(xLength, width - xStart)
+        yLength = min(yLength, height - yStart)
 
-        # Set the maximum values for the ROI
-        ROI[2] = min(ROI[2], width - ROI[0])  # Ensure xLength does not exceed image width
-        ROI[3] = min(ROI[3], height - ROI[1])  # Ensure yLength does not exceed image height
-
-        # Check if the ROI is too close to the image edges - it should be at least M pixels away
-        # If it is too close, change the values so that it is M pixels away from the edges
+        # Ensure ROI is at least M pixels from edges
         M = IntConst.MIN_SUBSET_SIZE
-        ROI[0] = max(ROI[0], M)
-        ROI[1] = max(ROI[1], M)
-        ROI[2] = min(ROI[2], width  - 2*M)
-        ROI[3] = min(ROI[3], height - 2*M)
+        xStart = max(xStart, M)
+        yStart = max(yStart, M)
+        xLength = min(xLength, width - 2*M)
+        yLength = min(yLength, height - 2*M)
+
+        ROI = [xStart, yStart, xLength, yLength]
 
     # Debug print out
     if debugLevel > 0:
@@ -405,10 +402,9 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     imgH, imgW = img.shape
 
     # Get DIC bounds to work with based on the ROI definition
-    xOrigin = ROI[0]
-    yOrigin = ROI[1]
-    xBound = xOrigin + ROI[2]
-    yBound = yOrigin + ROI[3]
+    xOrigin, yOrigin, roiW, roiH = ROI
+    xBound = xOrigin + roiW
+    yBound = yOrigin + roiH
 
     # Now setup the measurement point coordidnates: defined in the reference image,
     # i.e subset centres
@@ -493,24 +489,24 @@ def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
     cntVals = subSetPnts[:, :, index]
 
     # Check the lower bound
-    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
+    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2   
     bndLowDiff = (cntVals - M) - lowerBnd
     outOfBounds = np.where(bndLowDiff < 0)
-    if len(outOfBounds[0]) > 0:
+    if outOfBounds[0].size > 0:
         autoFix = True
         subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
             subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
-            2.0*bndLowDiff[outOfBounds[0], outOfBounds[1]]   
+            2.0*bndLowDiff[outOfBounds]
 
     # Check the upper bound
     M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
     bndUppDiff = (upperBnd - (cntVals + M))
     outOfBounds = np.where(bndUppDiff < 0)
-    if len(outOfBounds[0]) > 0:
+    if outOfBounds[0].size > 0:
         autoFix = True
         subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
             subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
-            2.0*bndUppDiff[outOfBounds[0], outOfBounds[1]] - 2 
+            2.0*bndUppDiff[outOfBounds] - 2 
 
     return autoFix
 
@@ -543,15 +539,21 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
     # data due to the potential NaN that may have occured in the displacement field
     nSubSets = currSubSetPnts.shape[0] * currSubSetPnts.shape[1]
 
+    # Flatten arrays for missing data fill
+    x_coords_flat = currSubSetPnts[:, :, CompID.XCoordID].reshape(nSubSets, order='F')
+    y_coords_flat = currSubSetPnts[:, :, CompID.YCoordID].reshape(nSubSets, order='F')
+
     delX = currSubSetPnts[:, :, CompID.XDispID].reshape(nSubSets, order='F')
     delX = _fillMissingData_(
-        currSubSetPnts[:, :, CompID.XCoordID].reshape(nSubSets, order='F'),
-        currSubSetPnts[:, :, CompID.YCoordID].reshape(nSubSets, order='F'), delX)
-
-    delY = currSubSetPnts[:, :, CompID.YDispID].reshape(nSubSets, order='F')
+        x_coords_flat,
+        y_coords_flat,
+        currSubSetPnts[:, :, CompID.XDispID].reshape(nSubSets, order='F')
+    )
     delY = _fillMissingData_(
-        currSubSetPnts[:, :, CompID.XCoordID].reshape(nSubSets, order='F'),
-        currSubSetPnts[:, :, CompID.YCoordID].reshape(nSubSets, order='F'), delY)
+        x_coords_flat,
+        y_coords_flat,
+        currSubSetPnts[:, :, CompID.YDispID].reshape(nSubSets, order='F')
+    )
 
     # Update the subset point locations with the displacement value
     # We update the initial point locations with the total displacements up to
@@ -574,22 +576,22 @@ def _relativeCoords_(subSetSize):
     - subSetSize (int): The size of the subset.
 
     Returns:
-    - tuple: A tuple containing the xsi and eta coordinates as numpy arrays.
+    - tuple: A tuple containing the sampleIndices, xsi and eta coordinates as numpy arrays.
     """
     # Relative/local coordinates of pixels within the subset (the same for all subsets)
-    [eta, xsi] = np.meshgrid(np.linspace(-0.5*(subSetSize-1),
-                                         0.5*(subSetSize-1),
-                                         subSetSize),
-                             np.linspace(-0.5*(subSetSize-1),
-                                         0.5*(subSetSize-1),
-                                         subSetSize),
-                             indexing='ij')
+    # Create 1D coordinates
+    coords = np.linspace(-0.5*(subSetSize-1), 0.5*(subSetSize-1), subSetSize)
 
-    # Flatten local coordinates to vectors
-    xsi = xsi.reshape(-1, order='F')
-    eta = eta.reshape(-1, order='F')
+    # Create 2D grid of coordinates using meshgrid with 'ij' indexing and flatten
+    eta, xsi = np.meshgrid(coords, coords, indexing='ij')
+    xsi_flat = xsi.flatten(order='F')
+    eta_flat = eta.flatten(order='F')
 
-    return xsi, eta
+    # Randomly select a smaller subset of points to estimate the CZNSSD value
+    nSamplePnts = min(IntConst.MAX_CZNSSD_PNTS, xsi_flat.shape[0])
+    sampleIndices = np.random.choice(xsi_flat.shape[0], size=nSamplePnts, replace=False)
+
+    return sampleIndices, xsi_flat[sampleIndices], eta_flat[sampleIndices]
 
 
 # --------------------------------------------------------------------------------------------
@@ -661,7 +663,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
         fImgID = imgDatum
     gImgID = img + imgIncr
     interOrder = settings.InterpolationOrder
-    F, FInter, delF, FMax = _processImage_(imgSet, fImgID, [gbSize, gbStdDev], interOrder,
+    F, _, delF, FMax = _processImage_(imgSet, fImgID, [gbSize, gbStdDev], interOrder,
                                            isDatumImg=True, isNormalized=isNormalized)
     G, GInter, _, _ = _processImage_(imgSet, gImgID, [gbSize, gbStdDev], interOrder,
                                      isDatumImg=False, isNormalized=isNormalized)
@@ -672,7 +674,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
     # Get the starting point for the optimization
     nextPnt, subSetPnts = _getStartingPnt_(
-        subSetPnts, nGPPoints, F, G, FInter, GInter, nBGCutOff)
+        subSetPnts, nGPPoints, F, G, GInter, nBGCutOff)
 
     # Boolean array to indicate which points have been analyzed - initially all are false
     analyze = np.zeros_like(subSetPnts[:, :, CompID.XCoordID], dtype=bool)
@@ -695,7 +697,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Get the local coordinates for a subset (based on that subset's size)
-        xsi, eta = _relativeCoords_(subSetSize)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
 
         # Subset centre coordinates for current subset
         x0 = int(subSetPnts[iRow, iCol, CompID.XCoordID])
@@ -703,7 +705,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
         # Intensity data for reference subset
         f, f_mean, f_tilde, dfdx, dfdy = _referenceSubSetInfo_(
-            F, delF, x0, y0, subSetSize)
+            F, delF, x0, y0, subSetSize, subSetIndices=sampleIndices)
 
         # Hessian and Jacobian operators for GuassNewton optimization routine,
         # derived from the reference subset intensity gradient data
@@ -738,7 +740,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
                 # Calculate and store the current CZNSSD value
                 subSetPnts[iRow, iCol, CompID.CZNSSDID] = _calcCZNSSD_(nBGCutOff,
-                                                                       f, f_mean, f_tilde, g, g_mean, g_tilde)
+                                f, f_mean, f_tilde, g, g_mean, g_tilde)
 
                 # Check if CZNSSD is at maximum value - indicates point is not found
                 if subSetPnts[iRow, iCol, CompID.CZNSSDID] == IntConst.CNZSSD_MAX:
@@ -783,8 +785,8 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                         xsi_df, eta_df = _relativeDeformedCoords_(
                             deltaP, xsi, eta, shapeFn)
 
-                        df, df_mean, df_tilde = _deformedSubSetInfo_(
-                            FInter, x0, y0, xsi_df, eta_df)
+                        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+                            F, None, x0, y0, subSetSize, subSetIndices=sampleIndices)
 
                     # Get he current CZNSSD value
                     cznssd = _calcCZNSSD_(nBGCutOff, df, df_mean, df_tilde,
@@ -857,7 +859,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
         # Find the next point to iterate to
         nextPnt, subSetPnts = _getNextPnt_(nextPnt, subSetPnts, analyze, F, G,
-                                           FInter, GInter, nBGCutOff)
+                                           GInter, nBGCutOff)
 
     return subSetPnts
 
@@ -866,8 +868,8 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized):
     """
     Process an image to obtain DIC specific parameters.  If this is the datum image
-    the gradient of the image is also calculated.  Otherwise, only the image and
-    the interpolated image is calculated.
+    the gradient of the image is also calculated and no interpolation is setup.  
+    Otherwise, only the image and the interpolated image is calculated.
 
     Paramters:
         - imgSet (list): A list of image paths.
@@ -882,7 +884,8 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
     Returns:
         tuple: A tuple containing the processed image and related data.
             - F (numpy.ndarray): The processed image.
-            - F_interpolated (numpy.ndarray): The interpolated image.
+            - F_interpolated (numpy.ndarray): The interpolated image (or the processed 
+                image if isDatumImg is True).
             - delF (numpy.ndarray or None): The gradient of the image in the
                 x and y directions, or None if isDatumImg is False.
             - Fmax (int): The maximum value of the image.
@@ -894,7 +897,7 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
     F = readImage(imgSet[img])
 
     # Setup the gradients, but only if this is a reference image
-    delF = [0, 0]
+    delF = None
     if (isDatumImg):
         # Gradient of the image in the x and y directions
         # NOTE:  This is a gradient of noisy data and should be carefully approached
@@ -914,10 +917,9 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
         # Using the sobel operator - apply BEFORE the blur operation
         # Use a minimum kernel size for the sobel operator
         ksize = max(3, gfSize)
-        dfy = cv.Sobel(F, ddepth=cv.CV_32F, dx=0, dy=1, ksize=ksize)
-        dfy = dfy/m.pow(2., 2*ksize-1-2)
-        dfx = cv.Sobel(F, ddepth=cv.CV_32F, dx=1, dy=0, ksize=ksize)
-        dfx = dfx/m.pow(2., 2*ksize-1-2)
+        sobel_div = m.pow(2., 2 * ksize - 1 - 2)
+        dfy = cv.Sobel(F, ddepth=cv.CV_32F, dx=0, dy=1, ksize=ksize) / sobel_div
+        dfx = cv.Sobel(F, ddepth=cv.CV_32F, dx=1, dy=0, ksize=ksize) / sobel_div
         delF = [dfy, dfx]
 
     # Blur image with gaussian filter - if specified in settings
@@ -927,18 +929,21 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
     # Normalize the image if requested
     Fmax = np.max(F)
     if isNormalized:
-        F = F/Fmax
-        delF = [delF[0]/Fmax, delF[1]/Fmax]
+        F = F / Fmax
+        if delF is not None:
+            delF = [d / Fmax for d in delF]
 
     # Setup the interpolator for this image - needs to pass double precision values
     # for interpolation to work
-    FInter = _fastInterpolation_(F.astype('double'), interOrder)
+    FInter = None
+    if not isDatumImg:
+        FInter = _fastInterpolation_(F.astype('double'), interOrder)
 
     return F, FInter, delF, Fmax
 
 
 # --------------------------------------------------------------------------------------------
-def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, FInter, GInter,
+def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
                  nBGCutOff):
     """
     Get the next point to analyze in the optimization algorithm.  The next point is
@@ -952,7 +957,6 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, FInter, GInter,
         - analyzed (numpy.ndarray): A boolean array indicating which points have been analyzed.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
-        - FInter (numpy.ndarray): The interpolated query image.
         - GInter (numpy.ndarray): The interpolated train image.
         - nBGCutOff (int): The cutoff value to detect all black backgrounds.
 
@@ -962,26 +966,30 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, FInter, GInter,
     """
     # Get the matrix position of the current point
     iRow, iCol = currentPnt
+    maxRow, maxCol = subSetPnts.shape[0] - 1, subSetPnts.shape[1] - 1
 
-    # Get the four neighbors of the current point
-    maxRow = subSetPnts.shape[0] - 1
-    maxCol = subSetPnts.shape[1] - 1
-    neighbors = np.zeros((4, 2), dtype=int)
-    neighbors[0, 0] = iRow - 1 if iRow > 0 else iRow
-    neighbors[0, 1] = iCol
-    neighbors[1, 0] = iRow + 1 if iRow < maxRow else iRow
-    neighbors[1, 1] = iCol
-    neighbors[2, 0] = iRow
-    neighbors[2, 1] = iCol - 1 if iCol > 0 else iCol
-    neighbors[3, 0] = iRow
-    neighbors[3, 1] = iCol + 1 if iCol < maxCol else iCol
+    # Precompute neighbor indices
+    neighbor_indices = [
+        (max(0, iRow - 1), iCol),
+        (min(maxRow, iRow + 1), iCol),
+        (iRow, max(0, iCol - 1)),
+        (iRow, min(maxCol, iCol + 1)),
+        (max(0, iRow - 1), max(0, iCol - 1)),
+        (max(0, iRow - 1), min(maxCol, iCol + 1)),
+        (min(maxRow, iRow + 1), max(0, iCol - 1)),
+        (min(maxRow, iRow + 1), min(maxCol, iCol + 1))
+    ]
 
-    # Apply the current deformation model to the neighbors and calculate the resulting CZNSSD value
+    neighbors = [(r, c) for r, c in neighbor_indices \
+        if r is not None and c is not None and \
+        not analyzed[r, c]]
+
+    # Shuffle neighbors for randomness
+    neighbors = np.random.permutation(neighbors)
+
+    # Apply the current deformation model to the selected neighbors and calculate the resulting CZNSSD value
     # Update the CZNSSD value and the shape function parameters if the new CZNSSD value is smaller
-    for pnt in neighbors:
-
-        # Current pnt row and col value
-        iRow, iCol = pnt
+    for iRow, iCol in neighbors[:IntConst.MAX_NEIGHBORS]:
 
         # Skip this point if it has already been analyzed
         if analyzed[iRow, iCol]:
@@ -994,14 +1002,17 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, FInter, GInter,
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Local coordinats for this point
-        xsi, eta = _relativeCoords_(subSetSize)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
         xsi_d, eta_d = _relativeDeformedCoords_(
             subSetPnts[iRow, iCol, CompID.XDispID:], xsi, eta, shapeFn)
-        f, f_mean, f_tilde = _deformedSubSetInfo_(FInter, x0, y0, xsi, eta)
-        g, g_mean, g_tilde = _deformedSubSetInfo_(GInter, x0, y0, xsi_d, eta_d)
+
+        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+            F, None, x0, y0, subSetSize, subSetIndices=sampleIndices)
+        g, g_mean, g_tilde = _deformedSubSetInfo_(
+            GInter, x0, y0, xsi_d, eta_d)
 
         # Get the CZNSSD value for the current point
         oldCZNSSD = subSetPnts[iRow, iCol, CompID.CZNSSDID]
@@ -1016,16 +1027,16 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, FInter, GInter,
 
     # Find the index of the best point that has not been analyzed yet using a masked
     # array to ignore the analyzed points
-    maskedArray = np.ma.masked_array(
-        subSetPnts[:, :, CompID.CZNSSDID], mask=analyzed)
-    nextPnt = np.unravel_index(np.argmin(maskedArray), maskedArray.shape)
+    cznssd_arr = subSetPnts[:, :, CompID.CZNSSDID]
+    masked_cznssd = np.where(~analyzed, cznssd_arr, np.inf)
+    nextPnt = np.unravel_index(np.argmin(masked_cznssd), masked_cznssd.shape)
 
     # Return the next point to analyze
     return nextPnt, subSetPnts
 
 
 # --------------------------------------------------------------------------------------------
-def _getStartingPnt_(subSetPnts, nGQPoints, F, G, FInter, GInter, nBGCutOff):
+def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
     """
     Get the starting point for the optimization algorithm.  This is done by detecting
     keypoints in a selection of subset points located at Gauss Quadrature points spread
@@ -1040,7 +1051,6 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, FInter, GInter, nBGCutOff):
         - nGQPoints (int): The number of Gauss Quadrature points to use as starting points.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
-        - FInter (numpy.ndarray): The interpolated query image.
         - GInter (numpy.ndarray): The interpolated train image.
         - nBGCutOff (int): The cutoff value to detect all black backgrounds.
 
@@ -1053,36 +1063,40 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, FInter, GInter, nBGCutOff):
 
     # Scale the points to the desired ranges in terms of the rows and cols
     # int the subSetPnts matrix
-    nRow = subSetPnts.shape[0]
-    nCol = subSetPnts.shape[1]
+    nRow, nCol = subSetPnts.shape[:2]
     xPnts = np.round(((nCol/2 - 1) * (1 + gqPnts))).astype(int)
     yPnts = np.round(((nRow/2 - 1) * (1 + gqPnts))).astype(int)
 
     # Extract the points to use in the Akaze detect
     # Do broadcasting to get all the required points not just a diagonal
     # Note: We are now using fancy indexing so we have a copy of the data in adPoints
-    adPoints = subSetPnts[yPnts[:, np.newaxis], xPnts, :]
+    adPoints = subSetPnts[np.ix_(yPnts, xPnts)].copy()
 
     # Do the Akaze detect for all the test points and get back the parameter
     # vector
     adPoints = _akazeDetect_(adPoints, F, G)
 
     # Store the parameters with the CZNSSD value in the shapeFnCoeff matrix
-    it = np.nditer([adPoints[:, :, CompID.XCoordID], adPoints[:, :, CompID.YCoordID],
-                    adPoints[:, :, CompID.SSSizeID].astype(int),
-                    adPoints[:, :, CompID.ShapeFnID].astype(int)], flags=['multi_index'])
+    xcoord, ycoord = CompID.XCoordID, CompID.YCoordID
+    sssize, shapeFn = CompID.SSSizeID, CompID.ShapeFnID
+    xdisp = CompID.XDispID
+    cznssd_idx = CompID.CZNSSDID
+    it = np.nditer([adPoints[:, :, xcoord], adPoints[:, :, ycoord],
+                    adPoints[:, :, sssize].astype(int),
+                    adPoints[:, :, shapeFn].astype(int)], flags=['multi_index'])
     for x0, y0, subSetSize, shapeFn in it:
 
         # Get the local coordinates for this subset
-        xsi, eta = _relativeCoords_(subSetSize)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
-        iRow = it.multi_index[0]
-        iCol = it.multi_index[1]
+        iRow, iCol = it.multi_index
         xsi_df, eta_df = _relativeDeformedCoords_(
-            adPoints[iRow, iCol, CompID.XDispID:], xsi, eta, shapeFn)
-        f, f_mean, f_tilde = _deformedSubSetInfo_(FInter, x0, y0, xsi, eta)
+            adPoints[iRow, iCol, xdisp:], xsi, eta, shapeFn)
+
+        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+            F, None, int(x0), int(y0), subSetSize, subSetIndices=sampleIndices)
         g, g_mean, g_tilde = _deformedSubSetInfo_(
             GInter, x0, y0, xsi_df, eta_df)
 
@@ -1091,17 +1105,17 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, FInter, GInter, nBGCutOff):
                               f_tilde, g, g_mean, g_tilde)
 
         # Store the CZNSSD value in the last element of the parameter vector
-        adPoints[iRow, iCol, CompID.CZNSSDID] = cznssd
+        adPoints[iRow, iCol, cznssd_idx] = cznssd
 
     # Update the original data structure - remember adPoints was a copy due to fancy
     # indexing
-    subSetPnts[yPnts[:, np.newaxis], xPnts, :] = adPoints
+    subSetPnts[np.ix_(yPnts, xPnts)] = adPoints
 
     # We can actually setup a mask to search as we do for the getNextPoint operation,
     # however it seems faster to just directly search for the minimum value and it is
     # only done once
     startIdx = np.unravel_index(
-        np.argmin(subSetPnts[:, :, CompID.CZNSSDID]), subSetPnts[:, :, CompID.CZNSSDID].shape)
+        np.argmin(subSetPnts[:, :, cznssd_idx]), subSetPnts[:, :, cznssd_idx].shape)
 
     return startIdx, subSetPnts
 
@@ -1130,97 +1144,101 @@ def _akazeDetect_(adPoints, F, G):
     origQueryImg = cv.normalize(
         F, None, 0, 255, cv.NORM_MINMAX).astype('uint8')
 
+    # Setup the akaze detector
+    akaze = cv.AKAZE_create()
+
+    # Subset data to work with
+    X = adPoints[:, :, CompID.XCoordID]
+    Y = adPoints[:, :, CompID.YCoordID]
+    SS = adPoints[:, :, CompID.SSSizeID].astype(int)
+    rows, cols = X.shape
+
     # Now detect the keypoints in each subset and compute the descriptors for the
     # query image and train image for all the subsets
     # Loop through all the points and perform Akaze detection for each
-    iCnt = 0
-    it = np.nditer([adPoints[:, :, CompID.XCoordID], adPoints[:, :, CompID.YCoordID],
-                    adPoints[:, :, CompID.SSSizeID].astype(int)], flags=['multi_index'])
-    for x, y, subSetSize in it:
+    for iRow in range(rows):
+        for iCol in range(cols):
+            
+            # Get Subset info and reset the size factor
+            x, y, subSetSize = X[iRow, iCol], Y[iRow, iCol], SS[iRow, iCol]
+            sizeFactor = IntConst.SIZE_FACTOR
 
-        # Store the current row and column index
-        iRow = it.multi_index[0]
-        iCol = it.multi_index[1]
+            # Get the keypoints in the query image - keep increasing the subset size until
+            # we have enough keypoints
+            for _ in range(IntConst.AKAZE_MIN_PNTS):
 
-        # Get the keypoints in the query image - keep increasing the subset size until
-        # we have enough keypoints
-        sizeFactor = IntConst.SIZE_FACTOR
-        for i in range(0, IntConst.AKAZE_MIN_PNTS):
+                # Setup the subset bounds - we use twice the subset size to
+                # increase the number of keypoints we detect
+                hw = sizeFactor*(subSetSize - 1) / 2
+                yMin = max(0, int(y - hw))
+                yMax = min(int(y + hw), origQueryImg.shape[0])
+                xMin = max(0, int(x - hw))
+                xMax = min(int(x + hw), origQueryImg.shape[1])
 
-            # Setup the subset bounds - we use twice the subset size to
-            # increase the number of keypoints we detect
-            hw = sizeFactor*(subSetSize - 1) / 2
-            yMin = max(0, int(y - hw))
-            yMax = min(int(y + hw), origQueryImg.shape[0])
-            xMin = max(0, int(x - hw))
-            xMax = min(int(x + hw), origQueryImg.shape[1])
+                # Slice the query image around the current subset from F
+                trainImg = origTrainImg[yMin:yMax, xMin:xMax]
+                queryImg = origQueryImg[yMin:yMax, xMin:xMax]
 
-            # Slice the query image around the current subset from F
-            trainImg = origTrainImg[yMin:yMax, xMin:xMax]
-            queryImg = origQueryImg[yMin:yMax, xMin:xMax]
+                # Detect the keypoints and compute the descriptors
+                try:
+                    kpG, descG = akaze.detectAndCompute(trainImg, None)
+                    kpQ, descQ = akaze.detectAndCompute(queryImg, None)
+                except Exception:
+                    # If we cannot detect keypoints, we will just continue to the next
+                    # iteration and try with a larger subset size
+                    kpG, descG = [], None
+                    kpQ, descQ = [], None
 
-            # Setup the akaze detector
-            akaze = cv.AKAZE_create()
+                if descQ is not None and descG is not None \
+                        and len(kpQ) > IntConst.AKAZE_MIN_PNTS \
+                        and len(kpG) > IntConst.AKAZE_MIN_PNTS:
+                    break
+                sizeFactor += 1
 
-            # Detect the keypoints and compute the descriptors
+            # Match keypoints if possible
+            if descQ is None or descG is None or len(kpQ) == 0 or len(kpG) == 0:
+                adPoints[iRow, iCol, CompID.XDispID:] = 0.0
+                continue
+
+            # Setup the matcher to detect keypoint matches in the query and G images
             try:
-                kpG, descG = akaze.detectAndCompute(trainImg, None)
-                kpQ, descQ = akaze.detectAndCompute(queryImg, None)
-            except:
-                # If we cannot detect keypoints, we will just continue to the next
-                # iteration and try with a larger subset size
-                kpG, descG = [], None
-                kpQ, descQ = [], None
+                matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
+                matches = matcher.match(descQ, descG)  # query then train
 
-            # If we have found at least the minimum number of keypoints, we can
-            # break out of the loop
-            if (len(kpQ) > IntConst.AKAZE_MIN_PNTS) and (len(kpG) > IntConst.AKAZE_MIN_PNTS):
-                break
+                # Store the x and y coordinates of the keypoints
+                nTop = len(matches)
+                coordQ = np.zeros([2, nTop])
+                coordG = np.zeros([2, nTop])
+                for idx, m in enumerate(matches[:nTop]):
+                    coordQ[:, idx] = kpQ[m.queryIdx].pt[:]
+                    coordG[:, idx] = kpG[m.trainIdx].pt[:]
 
-            # Otherwise, increase the subset size factor and try again
-            sizeFactor += 1
+                # Do a ransac to find the best affine transformation based on the
+                # keypoint coordinates stored in coordQ and coordG
+                model_robust, _ = sk.measure.ransac((coordQ.T, coordG.T), 
+                                sk.transform.AffineTransform,
+                                min_samples=3, residual_threshold=2,
+                                max_trials=100)
 
-        # Setup the matcher to detect keypoint matches in the query and G images
-        try:
-            matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
-            matches = matcher.match(descQ, descG)  # query then train
+                # Get the affine transformation homography coefficients
+                adPoints[iRow, iCol, CompID.XDispID+0] = model_robust.params[0][2]
+                adPoints[iRow, iCol, CompID.XDispID +
+                        1] = model_robust.params[0][0] - 1.0
+                adPoints[iRow, iCol, CompID.XDispID+2] = model_robust.params[0][1]
 
-            # Store the x and y coordinates of the keypoints
-            nTop = len(matches)
-            coordQ = np.zeros([2, nTop])
-            coordG = np.zeros([2, nTop])
-            for idx, m in enumerate(matches[:nTop]):
-                coordQ[:, idx] = kpQ[m.queryIdx].pt[:]
-                coordG[:, idx] = kpG[m.trainIdx].pt[:]
+                adPoints[iRow, iCol, CompID.YDispID+0] = model_robust.params[1][2]
+                adPoints[iRow, iCol, CompID.YDispID+1] = model_robust.params[1][0]
+                adPoints[iRow, iCol, CompID.YDispID +
+                        2] = model_robust.params[1][1] - 1.0
 
-            # Do a ransac to find the best affine transformation based on the
-            # keypoint coordinates stored in coordQ and coordG
-            model_robust, _ = sk.measure.ransac((coordQ.T, coordG.T), sk.transform.AffineTransform,
-                                                min_samples=3, residual_threshold=2,
-                                                max_trials=100)
-
-            # Get the affine transformation homography coefficients
-            adPoints[iRow, iCol, CompID.XDispID+0] = model_robust.params[0][2]
-            adPoints[iRow, iCol, CompID.XDispID +
-                     1] = model_robust.params[0][0] - 1.0
-            adPoints[iRow, iCol, CompID.XDispID+2] = model_robust.params[0][1]
-
-            adPoints[iRow, iCol, CompID.YDispID+0] = model_robust.params[1][2]
-            adPoints[iRow, iCol, CompID.YDispID+1] = model_robust.params[1][0]
-            adPoints[iRow, iCol, CompID.YDispID +
-                     2] = model_robust.params[1][1] - 1.0
-
-        except:
-            adPoints[iRow, iCol, CompID.XDispID:] = 0.0
-
-        # Increment the counter
-        iCnt = iCnt + 1
-
+            except Exception:
+                adPoints[iRow, iCol, CompID.XDispID:] = 0.0
+    
     return adPoints
 
 
 # --------------------------------------------------------------------------------------------
-def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize):
+def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize, subSetIndices=None):
     """
     Extracts subset information from the reference image that is needed as part of the
     optimizatn run.  This inclue the subset intensity values, the mean intensity, the
@@ -1232,12 +1250,16 @@ def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize):
     - delF: tuple of numpy.ndarray
         The gradient information of the mother image. delF[0] represents the gradient in
         the y-direction (Fy), and delF[1] represents the gradient in the x-direction (Fx).
+        If None no gradient information is extracted.
     - x0: int
         The x-coordinate of the subset center.
     - y0: int
         The y-coordinate of the subset center.
     - subSetSize: int
         The size of the subset.
+    - subSetIndices: numpy.ndarray or None
+        An optional array of indices to select a subset of points from the full subset.
+        If None, all points in the subset are used.
 
     Returns:
     - f: numpy.ndarray
@@ -1255,17 +1277,27 @@ def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize):
     # reference image
     bound = int(0.5*(subSetSize-1))
 
-    # Extract  refrence subset intensity values, f, from mother image, F,
+    # Extract  reference subset intensity values, f, from mother image, F,
     f = F[y0-bound:y0+bound+1, x0-bound:x0+bound+1]
     f = f.reshape(-1, 1, order='F')
+    if subSetIndices is not None:
+        f = f[subSetIndices]
 
     # Extract the gradient information
     # Note: Fy = delF[0], Fx = delF[1]
-    dfdy = delF[0][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
-    dfdy = dfdy.reshape(-1, order='F')
+    # Check if delF is None - this will be the case if we are
+    if (delF is not None):
+        dfdy = delF[0][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
+        dfdy = dfdy.reshape(-1, order='F')
+        if subSetIndices is not None:
+            dfdy = dfdy[subSetIndices]
 
-    dfdx = delF[1][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
-    dfdx = dfdx.reshape(-1, order='F')
+        dfdx = delF[1][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
+        dfdx = dfdx.reshape(-1, order='F')
+        if subSetIndices is not None:
+            dfdx = dfdx[subSetIndices]
+    else:
+        dfdx = dfdy = 0
 
     # Average subset intensity, and normalised sum of squared differences
     f_mean = f.mean()
@@ -1284,6 +1316,7 @@ def _getHessianInfo_(dfdx, dfdy, xsi, eta, subSetSize, shapeFn, isNormalized):
     - dfdy (numpy.ndarray): Array of partial derivatives of the function with respect to y.
     - xsi (numpy.ndarray): Array of xsi values.
     - eta (numpy.ndarray): Array of eta values.
+    - subSetSize (int): Size of the subset.
     - shapeFn (int): Type of shape functions to use.
     - isNormalized (bool): Indicates whether the coordinates are normalized.
 
@@ -1300,32 +1333,32 @@ def _getHessianInfo_(dfdx, dfdy, xsi, eta, subSetSize, shapeFn, isNormalized):
 
     # Affine transformation
     if shapeFn == ShapeFN.AFFINE:
-        jacobian = np.array([dfdx,
+        jacobian = np.column_stack([dfdx,
                              dfdx*xsi,
                              dfdx*eta,
                              dfdy,
                              dfdy*xsi,
-                             dfdy*eta]).T
+                             dfdy*eta])
 
     elif shapeFn == ShapeFN.QUADRATIC:
-        jacobian = np.array([dfdx,
+        jacobian = np.column_stack([dfdx,
                              dfdx*xsi,
                              dfdx*eta,
-                             dfdx*0.5*xsi**2,
+                             0.5*dfdx*xsi**2,
                              dfdx*xsi*eta,
-                             dfdx*0.5*eta**2,
+                             0.5*dfdx*eta**2,
                              dfdy,
                              dfdy*xsi,
                              dfdy*eta,
-                             dfdy*0.5*xsi**2,
+                             0.5*dfdy*xsi**2,
                              dfdy*xsi*eta,
-                             dfdy*0.5*eta**2]).T
+                             0.5*dfdy*eta**2])
     else:
         raise ValueError(
             'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
 
     # Setup the Hessian as the dot product of the Jacobian array with its transpose
-    hessian = np.dot(jacobian.T, jacobian)
+    hessian = jacobian.T @ jacobian
 
     return hessian, jacobian
 
@@ -1365,10 +1398,15 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
     elif shapeFn == ShapeFN.QUADRATIC:
         # order of SFP's p[j]: 0   1   2   3   4   5   6   7   8   9   10   11
         #                      u   ux  uy  uxx uxy uyy v   vx  vy  vxx vxy  vyy
-        xsi_d = 0.5*p[3]*xsi**2 + p[4]*xsi*eta + 0.5 * \
-            p[5]*eta**2 + (1+p[1])*xsi + p[2]*eta + p[0]
-        eta_d = 0.5*p[9]*xsi**2 + p[10]*xsi*eta + 0.5 * \
-            p[11]*eta**2 + p[7]*xsi + (1+p[8])*eta + p[6]
+        
+        xsiSquared = xsi*xsi
+        etaSquared = eta*eta
+        xsiEta = xsi*eta
+
+        xsi_d = 0.5*p[3]*xsiSquared + p[4]*xsiEta + 0.5 * \
+            p[5]*etaSquared + (1+p[1])*xsi + p[2]*eta + p[0]
+        eta_d = 0.5*p[9]*xsiSquared + p[10]*xsiEta + 0.5 * \
+            p[11]*etaSquared + p[7]*xsi + (1+p[8])*eta + p[6]
 
     # Invalid model
     else:
@@ -1381,11 +1419,13 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
 # --------------------------------------------------------------------------------------------
 def _deformedSubSetInfo_(GInter, x0, y0, xsi_d, eta_d):
     """
-    Calculate deformed subset intensity information.
+    Calculate deformed subset intensity information.  We use the same function for the
+    datum and deformed image subsets.  For the datum image the interpolation function is
+    just the image itself.
 
     Parameters:
     - GInter: A function that interpolates the intensity values from the mother
-        image at sub-pixel coordinates.
+        image at sub-pixel coordinates. For the datum image this is just the image itself.
     - x0: The x-coordinate of the original subset.
     - y0: The y-coordinate of the original subset.
     - eta_d: The displacement in the y-direction of the deformed subset.
@@ -1399,16 +1439,12 @@ def _deformedSubSetInfo_(GInter, x0, y0, xsi_d, eta_d):
     # Deformed subset coordinates
     yd = y0 + eta_d
     xd = x0 + xsi_d
-
-    # Extract  deformed subset intensity values, g, from mother image
-    # at sub-pixel coordinates using interpolation
-    nRows = yd.shape[0]
-
+    
     # --------------------------------------------------------------
     # -- Build-in interpolation function in Python
     # g = GInter.ev(yd.reshape(nRows, 1), xd.reshape(nRows, 1))
     # --------------------------------------------------------------
-    g = GInter(yd.reshape(nRows, 1), xd.reshape(nRows, 1))
+    g = GInter(yd.reshape(-1, 1), xd.reshape(-1, 1))
 
     # Determine average intensity value of subset g,
     # and normalised sum of squared differences of subset, g_tilde
@@ -1435,9 +1471,8 @@ def _isConverged_(convergenceThreshold, nzccThreshold, deltaP, nzssd):
     """
 
     # Map the indices to use for the convergence check.  We ultimately only look at the
-    # L2 norm of the two displacement components
-    idx = np.zeros_like(deltaP, dtype=bool)
-    idx[0] = idx[6] = True
+    # L2 norm of the two displacement components - indices 0 and 6 in the deltaP array
+    idx = [0, 6]
 
     # Calculate the delta disp
     exitCriteria = np.linalg.norm(deltaP[idx])
@@ -1643,13 +1678,13 @@ def _calcCZNSSD_(nBGCutOff, f, f_mean, f_tilde, g, g_mean, g_tilde):
     """
     # Deal with cases where the image is all black
     if (f_mean < nBGCutOff) or (g_mean < nBGCutOff):
-        cznssd = IntConst.CNZSSD_MAX
+        return IntConst.CNZSSD_MAX
 
     # Otherwise calculate the CZNSSD value
-    else:
-        tmpArray = np.squeeze((f-f_mean)/f_tilde) - \
-            np.squeeze((g-g_mean)/g_tilde)
-        cznssd = np.dot(tmpArray, tmpArray)
+    norm_f = (f - f_mean) / f_tilde
+    norm_g = (g - g_mean) / g_tilde
+    diff = norm_f - norm_g
+    cznssd = np.sum(diff * diff)
 
     return cznssd
 
