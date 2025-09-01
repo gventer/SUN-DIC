@@ -34,8 +34,7 @@ class IntConst(IntEnum):
     SUBSET_PNT_SIZE = 17    # Number of values stored for each subset
     SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
     MIN_SUBSET_SIZE = 5     # Minimum allowable subset size to use for the analysis
-    MAX_CZNSSD_PNTS = 100    # Maximum number of random subset points to use for CZNSSD calculation
-    MAX_NEIGHBORS = 2       # Maximum number of random neighbors to use for next point
+    MAX_NEIGHBORS = 4       # Maximum number of random neighbors to use for next point
 
 # Define some indices into the subSetPnts array
 
@@ -567,13 +566,14 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
 
 
 # --------------------------------------------------------------------------------------------
-def _relativeCoords_(subSetSize):
+def _relativeCoords_(subSetSize, fraction=1.0):
     """
     Generate relative/local coordinates of pixels within the subset.  The coordinates are
     generated based on the subset size with one point for each pixel in the subset.
 
     Parameters:
     - subSetSize (int): The size of the subset.
+    - fraction (float): The fraction of points to randomly select for CZNSSD calculation.
 
     Returns:
     - tuple: A tuple containing the sampleIndices, xsi and eta coordinates as numpy arrays.
@@ -587,11 +587,15 @@ def _relativeCoords_(subSetSize):
     xsi_flat = xsi.flatten(order='F')
     eta_flat = eta.flatten(order='F')
 
-    # Randomly select a smaller subset of points to estimate the CZNSSD value
-    nSamplePnts = min(IntConst.MAX_CZNSSD_PNTS, xsi_flat.shape[0])
-    sampleIndices = np.random.choice(xsi_flat.shape[0], size=nSamplePnts, replace=False)
+    # Randomly select a smaller subset of points to estimate the CZNSSD value    
+    # if a fraction < 1.0 is specified
+    if fraction < 1.0:
+        nSubSetPnts = xsi_flat.shape[0]
+        nSamplePnts = min(int(fraction*nSubSetPnts), nSubSetPnts)
+        sampleIndices = np.random.choice(nSubSetPnts, size=nSamplePnts, replace=False)
+        return sampleIndices, xsi_flat[sampleIndices], eta_flat[sampleIndices]
 
-    return sampleIndices, xsi_flat[sampleIndices], eta_flat[sampleIndices]
+    return None, xsi_flat, eta_flat
 
 
 # --------------------------------------------------------------------------------------------
@@ -697,7 +701,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Get the local coordinates for a subset (based on that subset's size)
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
+        _, xsi, eta = _relativeCoords_(subSetSize)
 
         # Subset centre coordinates for current subset
         x0 = int(subSetPnts[iRow, iCol, CompID.XCoordID])
@@ -705,7 +709,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
         # Intensity data for reference subset
         f, f_mean, f_tilde, dfdx, dfdy = _referenceSubSetInfo_(
-            F, delF, x0, y0, subSetSize, subSetIndices=sampleIndices)
+            F, delF, x0, y0, subSetSize, subSetIndices=None)
 
         # Hessian and Jacobian operators for GuassNewton optimization routine,
         # derived from the reference subset intensity gradient data
@@ -786,7 +790,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                             deltaP, xsi, eta, shapeFn)
 
                         f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
-                            F, None, x0, y0, subSetSize, subSetIndices=sampleIndices)
+                            F, None, x0, y0, subSetSize, subSetIndices=None)
 
                     # Get he current CZNSSD value
                     cznssd = _calcCZNSSD_(nBGCutOff, df, df_mean, df_tilde,
@@ -1002,7 +1006,7 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Local coordinats for this point
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize, fraction=0.5)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
@@ -1087,7 +1091,7 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
     for x0, y0, subSetSize, shapeFn in it:
 
         # Get the local coordinates for this subset
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize)
+        _, xsi, eta = _relativeCoords_(subSetSize)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
@@ -1096,7 +1100,7 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
             adPoints[iRow, iCol, xdisp:], xsi, eta, shapeFn)
 
         f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
-            F, None, int(x0), int(y0), subSetSize, subSetIndices=sampleIndices)
+            F, None, int(x0), int(y0), subSetSize, subSetIndices=None)
         g, g_mean, g_tilde = _deformedSubSetInfo_(
             GInter, x0, y0, xsi_df, eta_df)
 
