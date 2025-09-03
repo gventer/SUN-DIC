@@ -29,7 +29,7 @@ class Settings:
     __defBackgroundCutoff = 25
     __defOptimizationAlgorithm = 'IC-GN'
     __defMaxIterations = 50
-    __defInterpolationOrder = 3
+    __defInterpolationOrder = 5
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
 

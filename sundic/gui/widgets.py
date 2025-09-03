@@ -25,7 +25,7 @@ class settingsUI(QWidget):
         font.setPointSize(11)
         self.startingPIn.setFont(font)
         self.startingPIn.setObjectName("startingPIn")
-        self.gridLayout.addWidget(self.startingPIn, 4, 3, 1, 1)
+        self.gridLayout.addWidget(self.startingPIn, 5, 3, 1, 1)
 
         self.subsetSizeIn = QtWidgets.QLineEdit(self)
         font = QtGui.QFont()
@@ -48,7 +48,7 @@ class settingsUI(QWidget):
         font.setPointSize(11)
         self.label_9.setFont(font)
         self.label_9.setObjectName("label_9")
-        self.gridLayout.addWidget(self.label_9, 4, 2, 1, 1)
+        self.gridLayout.addWidget(self.label_9, 5, 2, 1, 1)
 
         self.refStartLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
@@ -119,6 +119,14 @@ class settingsUI(QWidget):
         self.znccTolIn.setObjectName("znccTolIn")
         self.gridLayout.addWidget(self.znccTolIn, 3, 3, 1, 1)
 
+        self.interpOrderIn = QtWidgets.QLineEdit(self)
+        font = QtGui.QFont()
+        font.setFamily("Figtree Light")
+        font.setPointSize(11)
+        self.interpOrderIn.setFont(font)
+        self.interpOrderIn.setObjectName("interpOrderIn")
+        self.gridLayout.addWidget(self.interpOrderIn, 4, 3, 1, 1)
+
         self.shapeFuncLab = QtWidgets.QLabel(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -160,6 +168,14 @@ class settingsUI(QWidget):
         self.znccTolLab.setObjectName("znccTolLab")
         self.gridLayout.addWidget(self.znccTolLab, 3, 2, 1, 1)
 
+        self.interpOrderLab = QtWidgets.QLabel(self)
+        font = QtGui.QFont()
+        font.setFamily("Figtree Light")
+        font.setPointSize(11)
+        self.interpOrderLab.setFont(font)
+        self.interpOrderLab.setObjectName("interpOrderLab")
+        self.gridLayout.addWidget(self.interpOrderLab, 4, 2, 1, 1)
+
         self.shapeFuncBox = QtWidgets.QComboBox(self)
         font = QtGui.QFont()
         font.setFamily("Figtree Light")
@@ -188,6 +204,7 @@ class settingsUI(QWidget):
         self.dicTypeLab.setText("DIC Type")
         self.converLab.setText("Convergence:")
         self.znccTolLab.setText("ZNCC Tolerance:")
+        self.interpOrderLab.setText("Interpolation Order:")
         self.shapeFuncBox.setItemText(0, "Affine")
         self.shapeFuncBox.setItemText(1, "Quadratic")
         self.algorLab.setText("Algorithm")

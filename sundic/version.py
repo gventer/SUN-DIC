@@ -1,6 +1,8 @@
-__version__ = "0.0.20"
+__version__ = "0.0.21"
 # 0.0.21 - Major overhaul with efficiency improvements as focus.  Functionality should not 
 #          have changed, but performance should be better.
+#        - Set default interpolation order to 5th order - not much slower but more accurate
+#        - Updated GUI to contain interpolation order selection
 # 0.0.20 - Added support for reading results files that are larger than 100MB in size
 #        - Fixed issue with upper bounds of automatic ROI definition
 #        - Fixed issue with using Quadratic shape functions with IC-LM algorithm not working

@@ -371,6 +371,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
             _maxIter (int): Maximum number of iterations.
             _convTol (float): Convergence tolerance.
             _znccTol (float): ZNCC tolerance for convergence.
+            _interOrder (int): Interpolation order.
             flag00 (bool): Indicates if settings have been changed since the last save.
             flag01 (bool): Indicates if the file has results.
             flag02 (bool): Tracks the state of the ROI painter.
@@ -434,6 +435,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self._maxIter = None
         self._convTol = None
         self._znccTol = None  # ZNCC tolerance for convergence
+        self._interOrder = None  # Interpolation order
 
         defSettings = sdset.Settings()
         self._defaultSettings = defSettings
@@ -498,6 +500,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self._convTol = self._defaultSettings.ConvergenceThreshold
         # ZNCC tolerance for convergence
         self._znccTol = self._defaultSettings.NZCCThreshold
+        self._interOrder = self._defaultSettings.InterpolationOrder
 
     def settings(self):
         """
@@ -546,6 +549,7 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self.settingsUI.convergenceIn.setText(str(self._convTol))
         # ZNCC tolerance for convergence
         self.settingsUI.znccTolIn.setText(str(self._znccTol))
+        self.settingsUI.interpOrderIn.setText(str(self._interOrder))
         self.settingsUI.refBox.setCurrentIndex(self._refStrat)
         self.settingsUI.algoTypeBox.setCurrentIndex(self._optAlgor)
 
@@ -564,6 +568,8 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self.settingsUI.startingPIn.setValidator(PositiveIntValidator())
         self.settingsUI.maxItIn.setValidator(PositiveIntValidator())
         self.settingsUI.convergenceIn.setValidator(PositiveDoubleValidator())
+        self.settingsUI.znccTolIn.setValidator(PositiveDoubleValidator())
+        self.settingsUI.interpOrderIn.setValidator(PositiveIntValidator())
 
         # Connecting the input fields to the changedSettings method to save the user input
         self.settingsUI.subsetSizeIn.editingFinished.connect(
@@ -582,6 +588,10 @@ class mainProgram(QMainWindow, Ui_MainWindow):
         self.settingsUI.refBox.currentIndexChanged.connect(
             self.changedSettings)
         self.settingsUI.algoTypeBox.currentIndexChanged.connect(
+            self.changedSettings)
+        self.settingsUI.znccTolIn.editingFinished.connect(
+            self.changedSettings)
+        self.settingsUI.interpOrderIn.editingFinished.connect(
             self.changedSettings)
 
         # Adding tooltips
@@ -604,6 +614,10 @@ The default value is set conservatively high and should only be changed when ins
 Relative - The reference image is the previous image - ROI is updated for each image pair.  Useful for large deformations.""")
         self.settingsUI.algoTypeBox.setToolTip("""The optimization algorithm to use. IC-GN - Use the Incremental Gauss Newton algorithm.
 IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the Fast Incremental Levenberg-Marquardt algorithm.""")
+        self.settingsUI.znccTolIn.setToolTip(
+            "The ZNCC tolerance for convergence. Must be larger than 0")
+        self.settingsUI.interpOrderIn.setToolTip(
+            "The interpolation order to use. Must be 1, 3 or 5")
 
     def changedSettings(self):  # Saving User Input
         """
@@ -624,6 +638,7 @@ IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the 
             _maxIter (str): Text input for the maximum number of iterations.
             _convTol (str): Text input for the convergence tolerance.
             _znccTol (str): Text input for the ZNCC tolerance for convergence.
+            _interOrder (str): Text input for the interpolation order.
             _startingPoints (str): Text input for the starting points.
 
         Sets:
@@ -642,6 +657,7 @@ IC-LM - Use the Incremental Levenberg-Marquardt algorithm. Fast-IC-LM - Use the 
         self._convTol = (self.settingsUI.convergenceIn.text())
         # ZNCC tolerance for convergence
         self._znccTol = (self.settingsUI.znccTolIn.text())
+        self._interOrder = (self.settingsUI.interpOrderIn.text())
         self._startingPoints = (self.settingsUI.startingPIn.text())
         self.flag00 = True
         self.showUnsaved()
@@ -1970,6 +1986,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
         self._znccTol = self._defaultSettings.NZCCThreshold
+        self._interOrder = self._defaultSettings.InterpolationOrder
 
         self.setWindowTitle("SUN-DIC")
 
@@ -2058,6 +2075,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         dicSet.MaxIterations = int(self._maxIter)
         dicSet.ConvergenceThreshold = float(self._convTol)
         dicSet.NZCCThreshold = float(self._znccTol)
+        dicSet.InterpolationOrder = int(self._interOrder)
         dicSet.ImageFolder = self._imageFolder
         dicSet.CPUCount = int(self._CPUCount)
 
@@ -2149,6 +2167,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         dicSet.MaxIterations = int(self._maxIter)
         dicSet.ConvergenceThreshold = float(self._convTol)
         dicSet.NZCCThreshold = float(self._znccTol)
+        dicSet.InterpolationOrder = int(self._interOrder)
         dicSet.ImageFolder = self._imageFolder
         dicSet.CPUCount = int(self._CPUCount)
         options = QtWidgets.QFileDialog.Options()
@@ -2200,6 +2219,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _maxIter (int): Maximum number of iterations from the settings.
             _convTol (float): Convergence threshold from the settings.
             _znccTol (float): ZNCC tolerance from the settings. 
+            _interOrder (int): Interpolation order from the settings.
             flag01 (bool): Flag indicating if the file contains results.
             flag02 (bool): Flag for ROI drawer.
         """
@@ -2261,6 +2281,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             self._maxIter = dicSet.MaxIterations
             self._convTol = dicSet.ConvergenceThreshold
             self._znccTol = dicSet.NZCCThreshold
+            self._interOrder = dicSet.InterpolationOrder
 
             self.flag02 = True
 
@@ -2304,6 +2325,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
             _maxIter (int): Maximum number of iterations for the optimization algorithm.
             _convTol (float): Convergence threshold for the optimization algorithm.
             _znccTol (float): ZNCC threshold for the analysis.
+            _interOrder (int): Interpolation order for the analysis.
             settingsUI (object): The UI object containing the GUI elements to be updated.
             flag00 (bool): A flag indicating that there are unsaved changes.
         Updates:
@@ -2346,6 +2368,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self._maxIter = self._defaultSettings.MaxIterations
         self._convTol = self._defaultSettings.ConvergenceThreshold
         self._znccTol = self._defaultSettings.NZCCThreshold
+        self._interOrder = self._defaultSettings.InterpolationOrder
 
         self.settingsUI.subsetSizeIn.setText(str(self._subSetSize))
         self.settingsUI.stepSizeIn.setText(str(self._stepSize))
@@ -2355,6 +2378,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement gra
         self.settingsUI.shapeFuncBox.setCurrentIndex(self._shapeFunc)
         self.settingsUI.convergenceIn.setText(str(self._convTol))
         self.settingsUI.znccTolIn.setText(str(self._znccTol))
+        self.settingsUI.interpOrderIn.setText(str(self._interOrder))
         self.settingsUI.refBox.setCurrentIndex(self._refStrat)
         self.settingsUI.algoTypeBox.setCurrentIndex(self._optAlgor)
         self.flag00 = True
@@ -2671,6 +2695,8 @@ class dicSettings:
         self.OptimizationAlgorithm = None
         self.MaxIterations = None
         self.ConvergenceThreshold = None
+        self.ZNCCThreshold = None
+        self.InterpOrder = None
 
 
 class PlanarDICWorker(QThread):

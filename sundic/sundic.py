@@ -13,9 +13,10 @@ import natsort as ns
 import time
 import cv2 as cv
 import numpy as np
-from enum import IntEnum
+from enum import IntEnum, Enum
 import skimage as sk
 import ray as ray
+#import numba
 from sundic.util.fast_interp import interp2d
 import sundic.util.datafile as dataFile
 from scipy.interpolate import NearestNDInterpolator
@@ -24,21 +25,23 @@ from sundic.util.savitsky_golay import sgolay2d
 # --------------------------------------------------------------------------------------------
 # Constants that does not make sense to set in the settings file
 # --------------------------------------------------------------------------------------------
-
-
+# Define integer constants
 class IntConst(IntEnum):
     ICLM_LAMBDA_0 = 100     # Initial value for lambda in IC-LM
     ICLM_CZNSSD_0 = 4       # Initial value for CZNSSD in IC-LM
     AKAZE_MIN_PNTS = 10     # Minimum number of keypoints to detect
     CNZSSD_MAX = 1000000    # Maximum value for CZNSSD - indicate point has not been set
     SUBSET_PNT_SIZE = 17    # Number of values stored for each subset
-    SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
     MIN_SUBSET_SIZE = 5     # Minimum allowable subset size to use for the analysis
     MAX_NEIGHBORS = 4       # Maximum number of random neighbors to use for next point
 
+# Define floating point constants
+class FloatConst(float, Enum):
+    SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
+    ZCNSSD_PNT_FRACTION = 0.5  # Fraction of points in subset to use for approximate CZNSSD calculation
+                               # This is only used to determine the starting and next points
+
 # Define some indices into the subSetPnts array
-
-
 class CompID(IntEnum):
     XCoordID = 0   # The x-coordinate of the subset center point
     YCoordID = 1   # The y-coordinate of the subset center point
@@ -49,8 +52,6 @@ class CompID(IntEnum):
     YDispID = 11  # The y-displacement of the subset point - start of y model coefficients
 
 # Define the affine and shape function constants
-
-
 class ShapeFN(IntEnum):
     AFFINE = 0      # Affine shape function
     QUADRATIC = 1   # Quadratic shape function
@@ -566,6 +567,33 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
 
 
 # --------------------------------------------------------------------------------------------
+#@numba.njit
+def _meshgrid_flat_2d_(x):
+    """
+    Generates a 3D flattened meshgrid from a 1D array.
+
+    This function creates two 1D arrays representing the y-coordinates and 
+    x-coordinates of a 3D meshgrid, flattened into 1D arrays. It is optimized 
+    using Numba's `njit` for performance.
+
+    Parameters:
+        x (numpy.ndarray): A 1D array of values to generate the meshgrid from.
+
+    Returns:
+        tuple: A tuple containing two 1D numpy arrays:
+            - yy (numpy.ndarray): The y-coordinates of the flattened meshgrid.
+            - xx (numpy.ndarray): The x-coordinates of the flattened meshgrid.
+    """
+    xx = np.empty(shape=(x.size * x.size), dtype=x.dtype)
+    yy = np.empty_like(xx)
+    for i in range(x.size):
+        for j in range(x.size):
+                xx[i*x.size + j] = x[i]
+                yy[i*x.size + j] = x[j]  
+    return yy, xx
+
+
+# --------------------------------------------------------------------------------------------
 def _relativeCoords_(subSetSize, fraction=1.0):
     """
     Generate relative/local coordinates of pixels within the subset.  The coordinates are
@@ -586,6 +614,7 @@ def _relativeCoords_(subSetSize, fraction=1.0):
     eta, xsi = np.meshgrid(coords, coords, indexing='ij')
     xsi_flat = xsi.flatten(order='F')
     eta_flat = eta.flatten(order='F')
+    #eta_flat, xsi_flat = _meshgrid_flat_2d_(coords)
 
     # Randomly select a smaller subset of points to estimate the CZNSSD value    
     # if a fraction < 1.0 is specified
@@ -1006,7 +1035,8 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Local coordinats for this point
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize, fraction=0.5)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize, 
+                fraction=FloatConst.ZCNSSD_PNT_FRACTION)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
@@ -1165,7 +1195,7 @@ def _akazeDetect_(adPoints, F, G):
             
             # Get Subset info and reset the size factor
             x, y, subSetSize = X[iRow, iCol], Y[iRow, iCol], SS[iRow, iCol]
-            sizeFactor = IntConst.SIZE_FACTOR
+            sizeFactor = FloatConst.SIZE_FACTOR
 
             # Get the keypoints in the query image - keep increasing the subset size until
             # we have enough keypoints
@@ -1476,7 +1506,9 @@ def _isConverged_(convergenceThreshold, nzccThreshold, deltaP, nzssd):
 
     # Map the indices to use for the convergence check.  We ultimately only look at the
     # L2 norm of the two displacement components - indices 0 and 6 in the deltaP array
-    idx = [0, 6]
+    idx = np.zeros(deltaP.shape, dtype=np.bool_)
+    idx[0] = True
+    idx[6] = True
 
     # Calculate the delta disp
     exitCriteria = np.linalg.norm(deltaP[idx])
@@ -1485,10 +1517,7 @@ def _isConverged_(convergenceThreshold, nzccThreshold, deltaP, nzssd):
     nzcc = 1.0 - 0.5*nzssd
 
     # Perform the convergence check
-    if (exitCriteria < convergenceThreshold) or (nzcc > nzccThreshold):
-        return True
-    else:
-        return False
+    return (exitCriteria < convergenceThreshold) or (nzcc > nzccThreshold)
 
 
 # --------------------------------------------------------------------------------------------
@@ -1685,12 +1714,8 @@ def _calcCZNSSD_(nBGCutOff, f, f_mean, f_tilde, g, g_mean, g_tilde):
         return IntConst.CNZSSD_MAX
 
     # Otherwise calculate the CZNSSD value
-    norm_f = (f - f_mean) / f_tilde
-    norm_g = (g - g_mean) / g_tilde
-    diff = norm_f - norm_g
-    cznssd = np.sum(diff * diff)
-
-    return cznssd
+    tmpArray = (f - f_mean) / f_tilde - (g - g_mean) / g_tilde
+    return np.sum(tmpArray * tmpArray)
 
 
 # -----------------------------------------------------------------------------
