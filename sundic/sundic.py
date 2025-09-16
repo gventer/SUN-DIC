@@ -16,7 +16,7 @@ import numpy as np
 from enum import IntEnum, Enum
 import skimage as sk
 import ray as ray
-#import numba
+# import numba
 from sundic.util.fast_interp import interp2d
 import sundic.util.datafile as dataFile
 from scipy.interpolate import NearestNDInterpolator
@@ -26,6 +26,8 @@ from sundic.util.savitsky_golay import sgolay2d
 # Constants that does not make sense to set in the settings file
 # --------------------------------------------------------------------------------------------
 # Define integer constants
+
+
 class IntConst(IntEnum):
     ICLM_LAMBDA_0 = 100     # Initial value for lambda in IC-LM
     ICLM_CZNSSD_0 = 4       # Initial value for CZNSSD in IC-LM
@@ -36,12 +38,17 @@ class IntConst(IntEnum):
     MAX_NEIGHBORS = 4       # Maximum number of random neighbors to use for next point
 
 # Define floating point constants
+
+
 class FloatConst(float, Enum):
     SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
-    ZCNSSD_PNT_FRACTION = 0.5  # Fraction of points in subset to use for approximate CZNSSD calculation
-                               # This is only used to determine the starting and next points
+    # Fraction of points in subset to use for approximate CZNSSD calculation
+    ZCNSSD_PNT_FRACTION = 0.5
+    # This is only used to determine the starting and next points
 
 # Define some indices into the subSetPnts array
+
+
 class CompID(IntEnum):
     XCoordID = 0   # The x-coordinate of the subset center point
     YCoordID = 1   # The y-coordinate of the subset center point
@@ -52,6 +59,8 @@ class CompID(IntEnum):
     YDispID = 11  # The y-displacement of the subset point - start of y model coefficients
 
 # Define the affine and shape function constants
+
+
 class ShapeFN(IntEnum):
     AFFINE = 0      # Affine shape function
     QUADRATIC = 1   # Quadratic shape function
@@ -117,7 +126,7 @@ def _getImageList_(imgSubFolder, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def planarDICLocal(settings, resultsFile, externalRay=False):
+def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
     """
     Perform local planar (2D) Digital Image Correlation (DIC) analysis.
 
@@ -129,6 +138,8 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
         - settings: A Settings object containing the settings for the DIC analysis.
         - resultsFile: The name of the file to store the results in.
         - externalRay: A boolean indicating whether to use an external ray server or not.
+        - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to 
+                    cleanly stop the analysis if requested from the GUI.
 
     Returns:
         - returnData (list): A list of subSetPoint arrays. Each subSetPoint array is a
@@ -143,7 +154,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
     try:
         # Let's set a random seed for repeatable results
         np.random.seed(42)
-        
+
         # Store the debug level
         debugLevel = settings.DebugLevel
 
@@ -173,7 +184,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
         if debugLevel > 0:
             print('\nImage Pair Information :')
             print('---------------------------------')
-            print('  Number of image pairs: ', imgPairs)
+            print('  Number of image pairs : {}'.format(imgPairs))
 
         # Setup serialization of the data to msgpack binary file
         df = dataFile.DataFile.openWriter(resultsFile)
@@ -190,7 +201,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
                     print('  Using external ray server')
 
                 # Init ray with restarts
-                safe_ray_init(externalRay, nCpus, debugLevel=debugLevel)
+                _safeRayInit_(externalRay, nCpus, debugLevel=debugLevel)
 
         # Loop through all image pairs to perform the local DIC
         returnData = []
@@ -223,7 +234,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
                 for i in range(mRows*mCols):
                     iRow, iCol = np.unravel_index(i, (mRows, mCols))
                     procIDs.append(_rmt_icOptimization_.remote(
-                        settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img))
+                        settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
 
                     if nDebugOld > 0:
                         print("  Starting remote process for submatrix {} {}".
@@ -238,7 +249,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
                     done_id, procIDs = ray.wait(procIDs)
 
                     # Launch ray tasks with retries
-                    iRow, iCol, rsltMatrix = safe_ray_launch(
+                    iRow, iCol, rsltMatrix = _safeRayLaunch_(
                         done_id[0], debugLevel=nDebugOld)
                     (subMatrices[iRow][iCol])[:] = rsltMatrix
                     if nDebugOld > 0:
@@ -251,26 +262,26 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
             else:
                 # coefficients at convergence for current (i'th) image pair
                 subSetPnts[:] = _icOptimization_(
-                    settings, subSetPnts, imgSet, img)
+                    settings, subSetPnts, imgSet, img, guiThread=guiThread)
 
             # Update the subset points coordinates if required - we make copies of the
             # current subset points to create a new array of subset points
             if settings.isRelativeStrategy():
                 subSetPnts[:] = _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev,
-                                                    subSetPnts)
+                                                subSetPnts)
 
             # Store the current subset points in the return data
             subSetPntsOut = np.copy(subSetPnts)
-            subSetPntsOut[:,:, CompID.XCoordID] = x_coordInit
-            subSetPntsOut[:,:, CompID.YCoordID] = y_coordInit
+            subSetPntsOut[:, :, CompID.XCoordID] = x_coordInit
+            subSetPntsOut[:, :, CompID.YCoordID] = y_coordInit
             returnData.append(subSetPntsOut)
             df.writeSubSetData(imgPairIdx, subSetPntsOut)
 
-            ## Make a copy for the next iteration to work with in the next iteration
-            #currSubSetPnts = np.copy(currSubSetPnts)
+            # Make a copy for the next iteration to work with in the next iteration
+            # currSubSetPnts = np.copy(currSubSetPnts)
 
-            ## The currently stored image subsetpoints are now the previous subset points
-            #prevSubSetPnts = returnData[imgPairIdx]
+            # The currently stored image subsetpoints are now the previous subset points
+            # prevSubSetPnts = returnData[imgPairIdx]
 
             # Make some debug output
             if (settings.DebugLevel > 0):
@@ -285,7 +296,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
 
         # Shutdown the parallel environment if required
         if settings.CPUCount > 1:
-            safe_ray_shutdown(externalRay, debugLevel=debugLevel)
+            _safeRayShutdown_(externalRay, debugLevel=debugLevel)
         # Close the file
         df.close()
 
@@ -294,13 +305,13 @@ def planarDICLocal(settings, resultsFile, externalRay=False):
     # Handle exceptions and shutdown ray if required
     except Exception as e:
         if settings.CPUCount > 1:
-            safe_ray_shutdown(externalRay, debugLevel=debugLevel)
+            _safeRayShutdown_(externalRay, debugLevel=debugLevel)
         raise e
 
 
 # --------------------------------------------------------------------------------------------
 @ray.remote
-def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img):
+def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img, guiThread=None):
     """
     Perform the IC optimization for a subset of points in a parallel environment.  This is a
     very thin wrapper for the icOptimization function that allows the function to be called
@@ -313,11 +324,14 @@ def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img):
         - subSetPnts (ndarray): The subset points to optimize.
         - imgSet (ndarray): The array of images.
         - img (int): The index of the image to process.
+        - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to
+                    cleanly stop the analysis if requested from the GUI.
 
     Returns:
         - tuple: A tuple containing the row index, column index, and the updated subset points.
     """
-    rslt = _icOptimization_(settings, np.copy(subSetPnts), imgSet, img)
+    rslt = _icOptimization_(settings, np.copy(
+        subSetPnts), imgSet, img, guiThread=guiThread)
     return iRowID, iColID, rslt
 
 
@@ -439,15 +453,14 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     autoFix = False
     autoFix = _fixSubSetSize_(subSetPnts, CompID.XCoordID, 0, imgW)
     autoFix = _fixSubSetSize_(subSetPnts, CompID.YCoordID, 0, imgH)
-    
+
     # Let the user know we've automatically fixed the subset sizes
     if autoFix:
         print('WARNING: Some subset sizes were auto-fixed to fit within the image bounds. ')
         print('         This warning can be avoided by specifying an appropriate ROI.')
         if debugLevel > 0:
             print('         The subset sizes after auto-fixing are:')
-            print(subSetPnts[:,:, CompID.SSSizeID])
-        
+            print(subSetPnts[:, :, CompID.SSSizeID])
 
     # Ensure that the subset size is not smaller than the minimum subset size
     subSetPnts[:, :, CompID.SSSizeID] = np.maximum(
@@ -458,9 +471,9 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
         nSubSets = nRows * nCols
         print('\nSubset Information : ')
         print('---------------------------------')
-        print('         Number of subsets defined :'+str(nSubSets))
-        print('     Number of rows in subset grid :'+str(nRows))
-        print('  Number of columns in subset grid :'+str(nCols))
+        print('         Number of subsets defined : '+str(nSubSets))
+        print('     Number of rows in subset grid : '+str(nRows))
+        print('  Number of columns in subset grid : '+str(nCols))
 
     return subSetPnts
 
@@ -477,7 +490,7 @@ def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
         - index (int): The index of the coordinate to check (0 for x, 1 for y).
         - lowerBnd (float): The lower bound for the subset size.
         - upperBnd (float): The upper bound for the subset size.
-        
+
     Returns:
         - autoFix (bool): A boolean flag indicating if the subset sizes were auto-fixed.
     """
@@ -489,7 +502,7 @@ def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
     cntVals = subSetPnts[:, :, index]
 
     # Check the lower bound
-    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2   
+    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
     bndLowDiff = (cntVals - M) - lowerBnd
     outOfBounds = np.where(bndLowDiff < 0)
     if outOfBounds[0].size > 0:
@@ -506,7 +519,7 @@ def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
         autoFix = True
         subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
             subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
-            2.0*bndUppDiff[outOfBounds] - 2 
+            2.0*bndUppDiff[outOfBounds] - 2
 
     return autoFix
 
@@ -540,8 +553,10 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
     nSubSets = currSubSetPnts.shape[0] * currSubSetPnts.shape[1]
 
     # Flatten arrays for missing data fill
-    x_coords_flat = currSubSetPnts[:, :, CompID.XCoordID].reshape(nSubSets, order='F')
-    y_coords_flat = currSubSetPnts[:, :, CompID.YCoordID].reshape(nSubSets, order='F')
+    x_coords_flat = currSubSetPnts[:, :,
+                                   CompID.XCoordID].reshape(nSubSets, order='F')
+    y_coords_flat = currSubSetPnts[:, :,
+                                   CompID.YCoordID].reshape(nSubSets, order='F')
 
     delX = currSubSetPnts[:, :, CompID.XDispID].reshape(nSubSets, order='F')
     delX = _fillMissingData_(
@@ -567,7 +582,7 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
 
 
 # --------------------------------------------------------------------------------------------
-#@numba.njit
+# @numba.njit
 def _meshgrid_flat_2d_(x):
     """
     Generates a 3D flattened meshgrid from a 1D array.
@@ -588,8 +603,8 @@ def _meshgrid_flat_2d_(x):
     yy = np.empty_like(xx)
     for i in range(x.size):
         for j in range(x.size):
-                xx[i*x.size + j] = x[i]
-                yy[i*x.size + j] = x[j]  
+            xx[i*x.size + j] = x[i]
+            yy[i*x.size + j] = x[j]
     return yy, xx
 
 
@@ -614,21 +629,22 @@ def _relativeCoords_(subSetSize, fraction=1.0):
     eta, xsi = np.meshgrid(coords, coords, indexing='ij')
     xsi_flat = xsi.flatten(order='F')
     eta_flat = eta.flatten(order='F')
-    #eta_flat, xsi_flat = _meshgrid_flat_2d_(coords)
+    # eta_flat, xsi_flat = _meshgrid_flat_2d_(coords)
 
-    # Randomly select a smaller subset of points to estimate the CZNSSD value    
+    # Randomly select a smaller subset of points to estimate the CZNSSD value
     # if a fraction < 1.0 is specified
     if fraction < 1.0:
         nSubSetPnts = xsi_flat.shape[0]
         nSamplePnts = min(int(fraction*nSubSetPnts), nSubSetPnts)
-        sampleIndices = np.random.choice(nSubSetPnts, size=nSamplePnts, replace=False)
+        sampleIndices = np.random.choice(
+            nSubSetPnts, size=nSamplePnts, replace=False)
         return sampleIndices, xsi_flat[sampleIndices], eta_flat[sampleIndices]
 
     return None, xsi_flat, eta_flat
 
 
 # --------------------------------------------------------------------------------------------
-def _icOptimization_(settings, subSetPnts, imgSet, img):
+def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
     """
     Perform IC (inverse compositional update) optimization for image correlation.  Currently
     two optimization algorithms are supported - IC-GN (Gauss Newton) or
@@ -639,6 +655,8 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
         - subSetPnts (ndarray): 3D Array of subset point information.
         - imgSet (ndarray): Array of reference images.
         - img (int): Target image - index into the imgSet array.
+        - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to
+                    cleanly stop the analysis if requested from the GUI.
 
     Returns:
         - subSetPnts: 3D Array of updated subSetPnt information (shape function coefficients).
@@ -697,7 +715,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
     gImgID = img + imgIncr
     interOrder = settings.InterpolationOrder
     F, _, delF, FMax = _processImage_(imgSet, fImgID, [gbSize, gbStdDev], interOrder,
-                                           isDatumImg=True, isNormalized=isNormalized)
+                                      isDatumImg=True, isNormalized=isNormalized)
     G, GInter, _, _ = _processImage_(imgSet, gImgID, [gbSize, gbStdDev], interOrder,
                                      isDatumImg=False, isNormalized=isNormalized)
 
@@ -721,6 +739,14 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
     # for each subset independently - the order is determined by the next best
     # point to optimize
     for iSubSet in range(0, nSubSets):
+
+        # Check if we need to stop the analysis - only if running from the GUI
+        if guiThread is not None and guiThread.isRunning() is False:
+            if settings.DebugLevel > 0:
+                print('\n-----------------------------------------------------')
+                print('-- Stopping analysis as requested from GUI  ---------')
+                print('-----------------------------------------------------')
+            break
 
         # Current point to work with
         iRow, iCol = nextPnt
@@ -773,7 +799,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
 
                 # Calculate and store the current CZNSSD value
                 subSetPnts[iRow, iCol, CompID.CZNSSDID] = _calcCZNSSD_(nBGCutOff,
-                                f, f_mean, f_tilde, g, g_mean, g_tilde)
+                                                                       f, f_mean, f_tilde, g, g_mean, g_tilde)
 
                 # Check if CZNSSD is at maximum value - indicates point is not found
                 if subSetPnts[iRow, iCol, CompID.CZNSSDID] == IntConst.CNZSSD_MAX:
@@ -818,7 +844,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img):
                         xsi_df, eta_df = _relativeDeformedCoords_(
                             deltaP, xsi, eta, shapeFn)
 
-                        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+                        f, f_mean, f_tilde, _, _ = _referenceSubSetInfo_(
                             F, None, x0, y0, subSetSize, subSetIndices=None)
 
                     # Get he current CZNSSD value
@@ -951,8 +977,10 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
         # Use a minimum kernel size for the sobel operator
         ksize = max(3, gfSize)
         sobel_div = m.pow(2., 2 * ksize - 1 - 2)
-        dfy = cv.Sobel(F, ddepth=cv.CV_32F, dx=0, dy=1, ksize=ksize) / sobel_div
-        dfx = cv.Sobel(F, ddepth=cv.CV_32F, dx=1, dy=0, ksize=ksize) / sobel_div
+        dfy = cv.Sobel(F, ddepth=cv.CV_32F, dx=0,
+                       dy=1, ksize=ksize) / sobel_div
+        dfx = cv.Sobel(F, ddepth=cv.CV_32F, dx=1,
+                       dy=0, ksize=ksize) / sobel_div
         delF = [dfy, dfx]
 
     # Blur image with gaussian filter - if specified in settings
@@ -1013,9 +1041,9 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         (min(maxRow, iRow + 1), min(maxCol, iCol + 1))
     ]
 
-    neighbors = [(r, c) for r, c in neighbor_indices \
-        if r is not None and c is not None and \
-        not analyzed[r, c]]
+    neighbors = [(r, c) for r, c in neighbor_indices
+                 if r is not None and c is not None and
+                 not analyzed[r, c]]
 
     # Shuffle neighbors for randomness
     neighbors = np.random.permutation(neighbors)
@@ -1035,15 +1063,15 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Local coordinats for this point
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize, 
-                fraction=FloatConst.ZCNSSD_PNT_FRACTION)
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize,
+                                                   fraction=FloatConst.ZCNSSD_PNT_FRACTION)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
         xsi_d, eta_d = _relativeDeformedCoords_(
             subSetPnts[iRow, iCol, CompID.XDispID:], xsi, eta, shapeFn)
 
-        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+        f, f_mean, f_tilde, _, _ = _referenceSubSetInfo_(
             F, None, x0, y0, subSetSize, subSetIndices=sampleIndices)
         g, g_mean, g_tilde = _deformedSubSetInfo_(
             GInter, x0, y0, xsi_d, eta_d)
@@ -1129,7 +1157,7 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
         xsi_df, eta_df = _relativeDeformedCoords_(
             adPoints[iRow, iCol, xdisp:], xsi, eta, shapeFn)
 
-        f, f_mean, f_tilde, _ , _ = _referenceSubSetInfo_(
+        f, f_mean, f_tilde, _, _ = _referenceSubSetInfo_(
             F, None, int(x0), int(y0), subSetSize, subSetIndices=None)
         g, g_mean, g_tilde = _deformedSubSetInfo_(
             GInter, x0, y0, xsi_df, eta_df)
@@ -1192,7 +1220,7 @@ def _akazeDetect_(adPoints, F, G):
     # Loop through all the points and perform Akaze detection for each
     for iRow in range(rows):
         for iCol in range(cols):
-            
+
             # Get Subset info and reset the size factor
             x, y, subSetSize = X[iRow, iCol], Y[iRow, iCol], SS[iRow, iCol]
             sizeFactor = FloatConst.SIZE_FACTOR
@@ -1249,25 +1277,29 @@ def _akazeDetect_(adPoints, F, G):
 
                 # Do a ransac to find the best affine transformation based on the
                 # keypoint coordinates stored in coordQ and coordG
-                model_robust, _ = sk.measure.ransac((coordQ.T, coordG.T), 
-                                sk.transform.AffineTransform,
-                                min_samples=3, residual_threshold=2,
-                                max_trials=100)
+                model_robust, _ = sk.measure.ransac((coordQ.T, coordG.T),
+                                                    sk.transform.AffineTransform,
+                                                    min_samples=3, residual_threshold=2,
+                                                    max_trials=100)
 
                 # Get the affine transformation homography coefficients
-                adPoints[iRow, iCol, CompID.XDispID+0] = model_robust.params[0][2]
                 adPoints[iRow, iCol, CompID.XDispID +
-                        1] = model_robust.params[0][0] - 1.0
-                adPoints[iRow, iCol, CompID.XDispID+2] = model_robust.params[0][1]
+                         0] = model_robust.params[0][2]
+                adPoints[iRow, iCol, CompID.XDispID +
+                         1] = model_robust.params[0][0] - 1.0
+                adPoints[iRow, iCol, CompID.XDispID +
+                         2] = model_robust.params[0][1]
 
-                adPoints[iRow, iCol, CompID.YDispID+0] = model_robust.params[1][2]
-                adPoints[iRow, iCol, CompID.YDispID+1] = model_robust.params[1][0]
                 adPoints[iRow, iCol, CompID.YDispID +
-                        2] = model_robust.params[1][1] - 1.0
+                         0] = model_robust.params[1][2]
+                adPoints[iRow, iCol, CompID.YDispID +
+                         1] = model_robust.params[1][0]
+                adPoints[iRow, iCol, CompID.YDispID +
+                         2] = model_robust.params[1][1] - 1.0
 
             except Exception:
                 adPoints[iRow, iCol, CompID.XDispID:] = 0.0
-    
+
     return adPoints
 
 
@@ -1368,25 +1400,25 @@ def _getHessianInfo_(dfdx, dfdy, xsi, eta, subSetSize, shapeFn, isNormalized):
     # Affine transformation
     if shapeFn == ShapeFN.AFFINE:
         jacobian = np.column_stack([dfdx,
-                             dfdx*xsi,
-                             dfdx*eta,
-                             dfdy,
-                             dfdy*xsi,
-                             dfdy*eta])
+                                    dfdx*xsi,
+                                    dfdx*eta,
+                                    dfdy,
+                                    dfdy*xsi,
+                                    dfdy*eta])
 
     elif shapeFn == ShapeFN.QUADRATIC:
         jacobian = np.column_stack([dfdx,
-                             dfdx*xsi,
-                             dfdx*eta,
-                             0.5*dfdx*xsi**2,
-                             dfdx*xsi*eta,
-                             0.5*dfdx*eta**2,
-                             dfdy,
-                             dfdy*xsi,
-                             dfdy*eta,
-                             0.5*dfdy*xsi**2,
-                             dfdy*xsi*eta,
-                             0.5*dfdy*eta**2])
+                                    dfdx*xsi,
+                                    dfdx*eta,
+                                    0.5*dfdx*xsi**2,
+                                    dfdx*xsi*eta,
+                                    0.5*dfdx*eta**2,
+                                    dfdy,
+                                    dfdy*xsi,
+                                    dfdy*eta,
+                                    0.5*dfdy*xsi**2,
+                                    dfdy*xsi*eta,
+                                    0.5*dfdy*eta**2])
     else:
         raise ValueError(
             'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
@@ -1432,7 +1464,7 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
     elif shapeFn == ShapeFN.QUADRATIC:
         # order of SFP's p[j]: 0   1   2   3   4   5   6   7   8   9   10   11
         #                      u   ux  uy  uxx uxy uyy v   vx  vy  vxx vxy  vyy
-        
+
         xsiSquared = xsi*xsi
         etaSquared = eta*eta
         xsiEta = xsi*eta
@@ -1473,7 +1505,7 @@ def _deformedSubSetInfo_(GInter, x0, y0, xsi_d, eta_d):
     # Deformed subset coordinates
     yd = y0 + eta_d
     xd = x0 + xsi_d
-    
+
     # --------------------------------------------------------------
     # -- Build-in interpolation function in Python
     # g = GInter.ev(yd.reshape(nRows, 1), xd.reshape(nRows, 1))
@@ -1836,7 +1868,8 @@ def readImage(imgFile, normalize8Bit=False):
     # Read the image as is - allow for eg for 16-bit images
     img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
     if img is None:
-        raise FileNotFoundError(f"Image file {imgFile} not found or cannot be read.")
+        raise FileNotFoundError(
+            f"Image file {imgFile} not found or cannot be read.")
 
     # Convert to grayscale if color image - will only work with grayscale images
     if len(img.shape) == 3:
@@ -1859,7 +1892,7 @@ def readImage(imgFile, normalize8Bit=False):
 
 
 # ---------------------------------------------------------------------------------------------
-def safe_ray_init(externalRay, nCpus, debugLevel=0):
+def _safeRayInit_(externalRay, nCpus, debugLevel=0):
     """
     Initialize the ray environment with retries to make it more robust.
 
@@ -1890,7 +1923,7 @@ def safe_ray_init(externalRay, nCpus, debugLevel=0):
 
 
 # ---------------------------------------------------------------------------------------------
-def safe_ray_launch(func, debugLevel=0):
+def _safeRayLaunch_(func, debugLevel=0):
     """
     Launch a Ray task with retries to make it more robust.
 
@@ -1918,7 +1951,7 @@ def safe_ray_launch(func, debugLevel=0):
 
 
 # ---------------------------------------------------------------------------------------------
-def safe_ray_shutdown(externalRay, debugLevel=0):
+def _safeRayShutdown_(externalRay, debugLevel=0):
     """
     Shutdown the Ray environment with retries to make it more robust.
 

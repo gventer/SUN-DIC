@@ -1,5 +1,11 @@
-__version__ = "0.0.21"
-# 0.0.21 - Major overhaul with efficiency improvements as focus.  Functionality should not 
+__version__ = "0.0.22"
+# 0.0.22 - Major refactor of the GUI code with future extensibility and maintainability
+#          as focus.  Little change in functionality
+#        - Upgraded GUI to PyQt6
+#        - Add functionality to cleanly stop the runPlanarDIC thread from the GUI
+#        - Added correlation contour plot output to the GUI
+#        - Updated the requirements.txt file
+# 0.0.21 - Major overhaul with efficiency improvements as focus.  Functionality should not
 #          have changed, but performance should be better.
 #        - Set default interpolation order to 5th order - not much slower but more accurate
 #        - Updated GUI to contain interpolation order selection
@@ -10,7 +16,7 @@ __version__ = "0.0.21"
 #          for the stepssize of the subsets
 #        - Added user setting to control the interpolation order (3rd order of 5th order)
 # 0.0.19 - Fixed issue with pure black and white (binary) images during the
-#          Akaze detection 
+#          Akaze detection
 #        - Fix subset size that may result in out of bounds subsets relative to the
 #          original image size
 #        - Fixed issue with relative strategy x and y coordinate updates

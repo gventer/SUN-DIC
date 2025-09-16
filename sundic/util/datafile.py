@@ -7,6 +7,7 @@ import msgpack_numpy as msgp_np
 # Setup the msgpack_numpy environment
 msgp_np.patch()
 
+
 class DataFile:
     """
     Class to handle the reading and writing of data files
@@ -46,7 +47,7 @@ class DataFile:
     def openWriter(cls, filename):
         """
         Open the data file for writing
-        
+
         args:
             filename (str) The name of the file to open
         """
@@ -54,17 +55,17 @@ class DataFile:
         super(DataFile, obj).__init__()
         obj.__fh__ = open(filename, "wb")
         return obj
-    
 
     # --------------------------------------------------------------------------
+
     def __delattr__(self):
         """
         Close the data file when the object is deleted
         """
         self.__fh__.close()
 
-
     # --------------------------------------------------------------------------
+
     @classmethod
     def close(cls):
         """
@@ -83,7 +84,7 @@ class DataFile:
             settings (dict) The settings dictionary to write to the file
         """
         # Write the version number
-        pVersion = msgpack.packb( version.__version__ )
+        pVersion = msgpack.packb(version.__version__)
         self.__fh__.write(pVersion)
 
         # Write the date and time
@@ -95,8 +96,8 @@ class DataFile:
         pSettings = msgpack.packb(settings.__dict__)
         self.__fh__.write(pSettings)
 
-
     # --------------------------------------------------------------------------
+
     def writeSubSetData(self, imgPair, data):
         """
         Write the subset data to the data file
@@ -114,9 +115,9 @@ class DataFile:
         self.__fh__.write(pDim)
 
         # Write the data
-        #--------------------------------------------------------------
+        # --------------------------------------------------------------
         # NB all data output from the dic analysis is dumped - this
-        # contains the x and y displacment data as well as all the 
+        # contains the x and y displacment data as well as all the
         # other shape function data.  The shape function data is not
         # used in the post processing so it is not necessary to write
         # it to the file.  For now the data is preserved in case there
@@ -126,8 +127,8 @@ class DataFile:
         pData = msgpack.packb(np.ravel(data))
         self.__fh__.write(pData)
 
-
     # --------------------------------------------------------------------------
+
     def readHeading(self):
         """
         Read the heading from the data file
@@ -142,7 +143,7 @@ class DataFile:
 
         # Setup the unpacker
         unp = msgpack.Unpacker(self.__fh__, raw=False)
-        
+
         # Get the heading data
         date = unp.unpack()
         version = unp.unpack()
@@ -150,7 +151,6 @@ class DataFile:
 
         return version, date, settings
 
-    
     # --------------------------------------------------------------------------
     def readSubSetData(self, imgPair):
         """
@@ -173,7 +173,7 @@ class DataFile:
         _ = unp.unpack()
 
         # Loop through the file to find the data
-        try :
+        try:
             while True:
                 currImgPair = unp.unpack()
                 dim = unp.unpack()
@@ -184,3 +184,70 @@ class DataFile:
             pass
 
         return data
+
+    # --------------------------------------------------------------------------
+    def containsResults(self):
+        """
+        Check if the data file contains any results
+
+        returns:
+            bool (bool) True if the file contains results, False otherwise
+        """
+        # Loop through the file to find the data
+        try:
+
+            # Go to the start of the file - always do this so that we know where we are
+            self.__fh__.seek(0)
+
+            # Setup the unpacker and ignore the heading
+            unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
+            _ = unp.unpack()
+            _ = unp.unpack()
+            _ = unp.unpack()
+
+            # Check if there is any image data results
+            while True:
+                currImgPair = unp.unpack()
+                dim = unp.unpack()
+                data = unp.unpack().reshape(dim)
+                return True
+
+        except msgpack.OutOfData:
+            pass
+
+        return False
+
+    # --------------------------------------------------------------------------
+    def getNumImagePairs(self):
+        """
+        Get the number of image pairs in the data file
+
+        returns:
+            numImgPairs (int) The number of image pairs in the file
+        """
+
+        # Loop through the file to find the data
+        numImgPairs = 0
+        try:
+            # Go to the start of the file - always do this so that we know where we are
+            self.__fh__.seek(0)
+
+            # Setup the unpacker and ignore the heading
+            unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
+            _ = unp.unpack()
+            _ = unp.unpack()
+            _ = unp.unpack()
+
+            # Count the image pairs
+            while True:
+                currImgPair = unp.unpack()
+                dim = unp.unpack()
+                data = unp.unpack().reshape(dim)
+                numImgPairs = numImgPairs + 1
+
+        # Handle any exceptions - like end of the file
+        except msgpack.OutOfData:
+            pass
+
+        # Return the number of image pairs found
+        return numImgPairs

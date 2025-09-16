@@ -26,7 +26,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "sundic = sundic.gui.sundic_gui:main",
+            "sundic = sundic.gui.mainWindow:main",
             "copy-examples = sundic.copy_examples:copy_examples",
         ]
     },
