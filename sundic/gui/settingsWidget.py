@@ -227,6 +227,11 @@ The default value (50) is set conservatively high and should rarely be changed."
     # ------------------------------------------------------------------------------
     # Function to get the data from this class and store it in the settings object
     def setData(self, settings):
+        self.dicTypeBox.blockSignals(True)
+        self.shapeFuncBox.blockSignals(True)
+        self.refBox.blockSignals(True)
+        self.algoTypeBox.blockSignals(True)
+
         self.dicTypeBox.setCurrentIndex(
             self.dicTypeBox.findText(settings.DICType))
         self.shapeFuncBox.setCurrentIndex(
@@ -242,6 +247,11 @@ The default value (50) is set conservatively high and should rarely be changed."
         self.znccTolIn.setText(str(settings.NZCCThreshold))
         self.interpOrderIn.setText(str(settings.InterpolationOrder))
         self.maxIterIn.setText(str(settings.MaxIterations))
+
+        self.dicTypeBox.blockSignals(False)
+        self.shapeFuncBox.blockSignals(False)
+        self.refBox.blockSignals(False)
+        self.algoTypeBox.blockSignals(False)
 
     # ------------------------------------------------------------------------------
     # Function that is called to indicate that the data was changed by the user

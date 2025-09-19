@@ -92,6 +92,8 @@ class ROIDefUI(QWidget):
 
         # Add the photo viewer for the ROI selection
         self.roiViewer = PhotoViewer(self)
+        self.roiViewer.setFrameShape(QFrame.Shape.Panel)
+        self.roiViewer.setFrameShadow(QFrame.Shadow.Plain)
         self.roiViewer.setToolTip("""Left Click+Drag to select the ROI.
 Left Click+Shift+Drag to pan the image.
 Use the mouse wheel to zoom in and out.""")

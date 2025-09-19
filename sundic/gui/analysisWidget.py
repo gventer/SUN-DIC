@@ -83,7 +83,7 @@ Must be larger than or equal to 1.""")
         self.statusLab1.setText("Status: ")
         horizontalLayout_2.addWidget(self.statusLab1)
         self.statusLab2 = QLabel(self)
-        self.statusLab2.setText("--")
+        self.statusLab2.setText(" ")
         horizontalLayout_2.addWidget(self.statusLab2)
 
         font = QtGui.QFont()
@@ -148,9 +148,11 @@ Must be larger than or equal to 1.""")
     # Function to get the data from this class and store it in the settings object
     def setData(self, settings):
         self.debugIn.blockSignals(True)
+
         self.debugIn.setCurrentIndex(settings.DebugLevel)
-        self.debugIn.blockSignals(False)
         self.cpuIn.setText(str(settings.CPUCount))
+
+        self.debugIn.blockSignals(False)
 
     # ------------------------------------------------------------------------------
     # Function that is called to indicate that the data was changed by the user
@@ -241,7 +243,7 @@ Must be larger than or equal to 1.""")
         self.startBut.setEnabled(True)
         self.stopBut.setEnabled(False)
 
-        self.statusLab2.setText("--Analysis Stopped--")
+        self.statusLab2.setText("Analysis Stopped")
         self.statusLab2.setStyleSheet("color: red")
 
         # Create a new and updated resultsUI
@@ -284,7 +286,7 @@ class PlanarDICWorker(QThread):
             if self.settings.CPUCount > 1:
                 self.externalRay = self.isRayRunning()
 
-            self.started.emit("-- RUNNING --")
+            self.started.emit("RUNNING")
 
             if self.settings.CPUCount > 1:
                 sd.planarDICLocal(self.settings, self.resultsFile,
@@ -292,7 +294,7 @@ class PlanarDICWorker(QThread):
             else:
                 sd.planarDICLocal(self.settings, self.resultsFile,
                                   externalRay=False, guiThread=self)
-            self.finished.emit("-- FINISHED --")
+            self.finished.emit("FINISHED")
         except Exception as e:
             self.finished.emit(f"Exception in thread: {e}")
         finally:

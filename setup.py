@@ -1,7 +1,7 @@
 import io
 from setuptools import setup
 
-requirements = {}
+requirements = []
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
@@ -15,13 +15,16 @@ setup(
     description='Stellenbosch University Digital Image Correlation Library',
     author='Gerhard Venter',
     author_email='gventer@sun.ac.za',
-    packages=['sundic', 'sundic.util', 'sundic.gui'],
+    packages=['sundic', 'sundic.util', 'sundic.tools', 'sundic.gui'],
     include_package_data=True,
     package_data={
         "sundic": [
             "examples/settings.ini",
             "examples/test_sundic.ipynb",
             "examples/planar_images/*",
+            "gui/icons/*",
+            "gui/Fonts/Figtree/*",
+            "gui/Fonts/Figtree/static/*",
         ],
     },
     entry_points={
@@ -40,5 +43,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
     ],
-    python_requires=">3.11",
+    python_requires=">=3.11",
 )

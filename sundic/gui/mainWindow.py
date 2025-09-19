@@ -1,11 +1,14 @@
 import os
 import sys
+import time
 from enum import IntEnum
 
-from PyQt6 import QtCore, QtWidgets, QtGui
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt, QTimer, QSize, QRect
+from PyQt6.QtGui import QPainter, QAction, QPixmap, QIcon, QFont, QFontDatabase
 from PyQt6.QtWidgets import (
-    QMainWindow, QApplication, QFileDialog, QMessageBox, QStyle, QStackedLayout
+    QMainWindow, QApplication, QFileDialog, QMessageBox, QStyle, QStackedLayout,
+    QSplashScreen, QPushButton, QMenuBar, QMenu, QStatusBar, QWidget, QFrame,
+    QGridLayout, QVBoxLayout, QSpacerItem, QSizePolicy, QTabWidget
 )
 
 from sundic.gui.settingsWidget import SettingsUI
@@ -14,6 +17,7 @@ from sundic.gui.roiDefWidget import ROIDefUI
 from sundic.gui.analysisWidget import AnalysisUI
 from sundic.gui.resultsWidget import ResultsUI
 from sundic.gui.aboutWidget import AboutDialog
+from sundic.gui.buttonWidget import LeftIconButton
 
 import sundic.settings as sdset
 import sundic.util.datafile as dataFile
@@ -40,6 +44,13 @@ class UIMainWindow(object):
 
         self.parent = parent
 
+        # Set a constant for the icon size
+        ICON_SIZE = 32
+
+        # Get the path to the icons
+        scriptDir = os.path.dirname(os.path.abspath(__file__))
+        iconPath = os.path.join(scriptDir, "icons")
+
         # Define custom bottom style for buttons
         buttonStyle = "QPushButton{\n" +\
             "border: 2px  solid  rgb(0, 0, 0);\n" +\
@@ -48,6 +59,8 @@ class UIMainWindow(object):
             "border-width: 1px 1px 1px 1px;\n" +\
             "border-radius: 0px;\n" +\
             "color: black;\n" +\
+            "text-align:left;\n" +\
+            "padding-left: 20px;\n" +\
             "padding: 5px 5px 5px 5px;   \n" +\
             "}\n" +\
             "QPushButton:checked {\n" +\
@@ -72,18 +85,19 @@ class UIMainWindow(object):
         self.parent.setWindowTitle("SUN DIC")
 
         # Setup the font for the application
-        QtGui.QFontDatabase.addApplicationFont(
-            "Fonts/Figtree/Figtree-Light.ttf")
-        font = QtGui.QFont()
+        fontPath = os.path.join(
+            scriptDir, "Fonts", "Figtree", "Figtree-Light.ttf")
+        QFontDatabase.addApplicationFont(fontPath)
+        font = QFont()
         font.setFamily("Figtree Light")
         font.setPointSize(12)
         self.parent.setFont(font)
         QApplication.setFont(font)
 
         # Create a larger font for the buttons
-        buttonFont = QtGui.QFont()
+        buttonFont = QFont()
         buttonFont.setFamily("Figtree Light")
-        buttonFont.setPointSize(18)
+        buttonFont.setPointSize(16)
 
         # Set window properties
         self.parent.setWindowOpacity(1.0)
@@ -91,22 +105,23 @@ class UIMainWindow(object):
         self.parent.setStyleSheet("QMainWindow{\n"
                                   "background-color: rgb(255, 255, 255);\n"
                                   "}")
-        self.parent.setTabShape(QtWidgets.QTabWidget.TabShape.Rounded)
+        self.parent.setTabShape(QTabWidget.TabShape.Rounded)
 
         # Central widget
-        centralwidget = QtWidgets.QWidget(self.parent)
+        centralwidget = QWidget(self.parent)
         centralwidget.setEnabled(True)
 
         # The main layout
-        gridLayout_2 = QtWidgets.QGridLayout(centralwidget)
-        gridLayout = QtWidgets.QGridLayout()
+        gridLayout_2 = QGridLayout(centralwidget)
+        gridLayout = QGridLayout()
         gridLayout.setContentsMargins(0, 0, 0, 0)
         gridLayout.setSpacing(0)
-        verticalLayout = QtWidgets.QVBoxLayout()
+        verticalLayout = QVBoxLayout()
         verticalLayout.setSpacing(0)
 
         # Define the settings button
-        self.settingsBut = QtWidgets.QPushButton(centralwidget)
+        self.settingsBut = LeftIconButton(
+            centralwidget, stylesheet=buttonStyle)
         self.settingsBut.setText("Settings")
         self.settingsBut.setEnabled(True)
         self.settingsBut.setFont(buttonFont)
@@ -115,73 +130,89 @@ class UIMainWindow(object):
         self.settingsBut.setCheckable(True)
         self.settingsBut.setAutoExclusive(True)
         self.settingsBut.clicked.connect(self.settingsAction)
+        self.settingsBut.setIcon(
+            QIcon(os.path.join(iconPath, "settings.png")))
+        self.settingsBut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         verticalLayout.addWidget(self.settingsBut)
 
         # Define the image set button
-        self.imageSetBut = QtWidgets.QPushButton(centralwidget)
+        self.imageSetBut = LeftIconButton(
+            centralwidget, stylesheet=buttonStyle)
         self.imageSetBut.setText("Image Set")
         self.imageSetBut.setFont(buttonFont)
         self.imageSetBut.setStyleSheet(buttonStyle)
         self.imageSetBut.setCheckable(True)
         self.imageSetBut.setAutoExclusive(True)
+        self.imageSetBut.setIcon(
+            QIcon(os.path.join(iconPath, "imageSet.png")))
+        self.imageSetBut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.imageSetBut.clicked.connect(self.imageSetAction)
         verticalLayout.addWidget(self.imageSetBut)
 
         # Define the ROI button
-        self.roiBut = QtWidgets.QPushButton(centralwidget)
+        self.roiBut = LeftIconButton(
+            centralwidget, stylesheet=buttonStyle)
         self.roiBut.setText("ROI Definition")
         self.roiBut.setFont(buttonFont)
         self.roiBut.setStyleSheet(buttonStyle)
         self.roiBut.setCheckable(True)
         self.roiBut.setAutoExclusive(True)
+        self.roiBut.setIcon(
+            QIcon(os.path.join(iconPath, "roi.png")))
+        self.roiBut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.roiBut.clicked.connect(self.roiDefAction)
         verticalLayout.addWidget(self.roiBut)
 
         # Define the analysis button
-        self.analysisBut = QtWidgets.QPushButton(centralwidget)
+        self.analysisBut = LeftIconButton(
+            centralwidget, stylesheet=buttonStyle)
         self.analysisBut.setText("Analysis")
         self.analysisBut.setFont(buttonFont)
         self.analysisBut.setStyleSheet(buttonStyle)
         self.analysisBut.setCheckable(True)
         self.analysisBut.setAutoExclusive(True)
+        self.analysisBut.setIcon(
+            QIcon(os.path.join(iconPath, "analysis.png")))
+        self.analysisBut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.analysisBut.clicked.connect(self.analysisAction)
         verticalLayout.addWidget(self.analysisBut)
 
         # Define the results button
-        self.resultsBut = QtWidgets.QPushButton(centralwidget)
+        self.resultsBut = LeftIconButton(
+            centralwidget, stylesheet=buttonStyle)
         self.resultsBut.setText("Results")
         self.resultsBut.setFont(buttonFont)
         self.resultsBut.setStyleSheet(buttonStyle)
         self.resultsBut.setCheckable(True)
         self.resultsBut.setAutoExclusive(True)
+        self.resultsBut.setIcon(
+            QIcon(os.path.join(iconPath, "results.png")))
+        self.resultsBut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.resultsBut.clicked.connect(self.resultsAction)
         verticalLayout.addWidget(self.resultsBut)
 
         # Some spacers
-        spacerItem = QtWidgets.QSpacerItem(20, 40,
-                                           QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem = QSpacerItem(20, 40,
+                                 QSizePolicy.Policy.Minimum,
+                                 QSizePolicy.Policy.Expanding)
         verticalLayout.addItem(spacerItem)
 
         gridLayout.addLayout(verticalLayout, 0, 0, 1, 1)
 
         # The main frame where the other widgets will be placed
-        self.mainFrame = QtWidgets.QFrame(centralwidget)
+        self.mainFrame = QFrame(centralwidget)
         self.mainFrame.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,
-                                           QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding,
+                                 QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
             self.mainFrame.sizePolicy().hasHeightForWidth())
         self.mainFrame.setSizePolicy(sizePolicy)
-        self.mainFrame.setMinimumSize(QtCore.QSize(800, 4))
+        self.mainFrame.setMinimumSize(QSize(800, 4))
         self.mainFrame.setAutoFillBackground(False)
-        self.mainFrame.setStyleSheet("Qframe{\n"
-                                     "border-width: 1px;\n"
-                                     "border-style: outset;\n"
-                                     "}")
-        self.mainFrame.setFrameShape(QtWidgets.QFrame.Shape.Panel)
-        self.mainFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)
+        self.mainFrame.setFrameShape(QFrame.Shape.Panel)
+        self.mainFrame.setFrameShadow(QFrame.Shadow.Plain)
         self.mainFrame.setLineWidth(1)
 
         gridLayout.addWidget(self.mainFrame, 0, 1, 1, 1)
@@ -191,17 +222,17 @@ class UIMainWindow(object):
         self.parent.setCentralWidget(centralwidget)
 
         # Setup the menu bar
-        menubar = QtWidgets.QMenuBar(self.parent)
+        menubar = QMenuBar(self.parent)
         self.parent.setMenuBar(menubar)
 
         # Setup the menus
-        menuFile = QtWidgets.QMenu(menubar)
+        menuFile = QMenu(menubar)
         menuFile.setTitle("File")
-        menuAbout = QtWidgets.QMenu(menubar)
+        menuAbout = QMenu(menubar)
         menuAbout.setTitle("About")
 
         # Setup the status bar
-        statusbar = QtWidgets.QStatusBar(self.parent)
+        statusbar = QStatusBar(self.parent)
         self.parent.setStatusBar(statusbar)
 
         # Create the actions
@@ -218,9 +249,6 @@ class UIMainWindow(object):
 
         self.actionSave_as = QAction(self.parent)
         self.actionSave_as.setText("Save as")
-        saveAsIcon = self.style().standardIcon(
-            QStyle.StandardPixmap.SP_DialogSaveButton)
-        self.actionSave_as.setIcon(saveAsIcon)
         self.actionSave_as.triggered.connect(self.saveAsAction)
 
         self.actionNew = QAction(self.parent)
@@ -253,10 +281,9 @@ class UIMainWindow(object):
         menubar.addAction(menuFile.menuAction())
         menubar.addAction(menuAbout.menuAction())
 
-        QtCore.QMetaObject.connectSlotsByName(self.parent)
-
     # ------------------------------------------------------------------------------
     # Show the Settings tab
+
     def settingsAction(self):
         self.parent.settingsUI.setData(self.parent.settings)
         self.stackedLayout.setCurrentIndex(IntConst.SETTINGS_TAB)
@@ -361,8 +388,8 @@ class UIMainWindow(object):
     def saveAsAction(self):
 
         # Now ask the user to select a file for saving
-        fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self.parent,
-                                                            "Save File", "", "SUNDIC Binary File(*.sdic)")
+        fileName, _ = QFileDialog.getSaveFileName(self.parent,
+                                                  "Save File", "", "SUNDIC Binary File(*.sdic)")
 
         # Check if we got a filename
         if fileName:
@@ -481,7 +508,13 @@ class mainProgram(QMainWindow, UIMainWindow):
 
         # Inherit from the aforementioned class and set up the gui
         super().__init__()
+
         self.setupMainUI(self)
+
+        # Process events to make sure the splash screen is shown
+        QApplication.processEvents()
+
+        # Now show the main window
         self.show()
 
         # The default settings object
@@ -538,11 +571,10 @@ class mainProgram(QMainWindow, UIMainWindow):
         # Stop and wait for the analysis thread if it's running
         if hasattr(self, 'analysisUI') and hasattr(self.analysisUI, 'worker'):
             worker = self.analysisUI.worker
-            if worker.isRunning():
+            if worker is not None and worker.isRunning():
                 worker.stop()
-                worker.wait()  # Block until the thread exits
+                worker.wait()
 
-        print("Exiting SUN-DIC...")
         super().closeEvent(event)
 
     # ------------------------------------------------------------------------------
@@ -588,9 +620,27 @@ def main():
     # Make an object of the class and execute it
     app = QApplication(sys.argv)
 
-    # Make an object and call the functions
-    win = mainProgram()
-    win.show()
+    # Load splash image
+    scriptDir = os.path.dirname(os.path.abspath(__file__))
+    iconsPath = os.path.join(scriptDir, "icons", "splashScreen.png")
+    splash = QSplashScreen(QPixmap(iconsPath),
+                           Qt.WindowType.WindowStaysOnTopHint)
+    splash.show()
+    # Increase the font size for the splash screen
+    font = splash.font()
+    font.setPointSize(16)
+    splash.setFont(font)
+    splash.showMessage(
+        "Version "+sd.version.__version__,
+        alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight,
+        color=Qt.GlobalColor.black
+    )
+
+    # Create and show the main window
+    window = mainProgram()
+    window.show()
+    time.sleep(1.5)
+    splash.finish(window)
 
     # Exit the window cleanly
     return app.exec()

@@ -1,4 +1,7 @@
-__version__ = "0.0.22"
+__version__ = "0.0.23"
+# 0.0.23 - And we have some icons!!!
+#        - Added icons to the GUI
+#        - Minor improvements to the newly reworked GUI
 # 0.0.22 - Major refactor of the GUI code with future extensibility and maintainability
 #          as focus.  Little change in functionality
 #        - Upgraded GUI to PyQt6

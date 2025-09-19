@@ -267,7 +267,7 @@ Must be an integer between 0 and 255.""")
         # Setup the ItemModel from the start, end and increment values
         self.imageModel.clear()
         start = int(self.startIn.text()) - 1
-        end = None
+        end = int(self.endIn.text())
         inc = int(self.incIn.text())
 
         # Get the files to show and add to the model
@@ -275,9 +275,6 @@ Must be an integer between 0 and 255.""")
             files = files[start:end:inc]
             for f in files:
                 self.imageModel.appendRow(QStandardItem(f))
-
-            # Set the target image value based on the available files
-            self.endIn.setText(str(len(files)))
         else:
             self.endIn.setText("2")
 
@@ -310,17 +307,21 @@ Must be an integer between 0 and 255.""")
         # If a directory was selected, update the folder display and image list
         if directory:
             self.folderDisp.setText(directory)
+            self.startIn.setText("1")
+            self.setMaxTargetImage()
+            self.incIn.setText("1")
             self.updateImageList()
             self.changedImageSet()
 
     # ------------------------------------------------------------------------------
     # Function to get the number of images in the selected folder
+
     def getNumImages(self):
         try:
             files = os.listdir(self.folderDisp.text())
             return len(files)
         except Exception as e:
-            return 0
+            return 2
 
     # ------------------------------------------------------------------------------
     # Function to set the target image to the maximum available in the folder
