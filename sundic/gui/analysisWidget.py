@@ -88,7 +88,6 @@ Must be larger than or equal to 1.""")
 
         font = QtGui.QFont()
         font.setFamily("Courier New")
-        font.setPointSize(11)
         self.progOut = QTextEdit(self)
         self.progOut.setFrameShape(QFrame.Shape.Panel)
         self.progOut.setFrameShadow(QFrame.Shadow.Plain)

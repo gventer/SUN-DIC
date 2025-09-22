@@ -86,18 +86,18 @@ class UIMainWindow(object):
 
         # Setup the font for the application
         fontPath = os.path.join(
-            scriptDir, "Fonts", "Figtree", "Figtree-Light.ttf")
+            scriptDir, "Fonts", "Figtree", "Figtree-VariableFont_wght.ttf")
         QFontDatabase.addApplicationFont(fontPath)
         font = QFont()
         font.setFamily("Figtree Light")
-        font.setPointSize(12)
+        fontSize = font.pointSize()
         self.parent.setFont(font)
         QApplication.setFont(font)
 
         # Create a larger font for the buttons
         buttonFont = QFont()
         buttonFont.setFamily("Figtree Light")
-        buttonFont.setPointSize(16)
+        buttonFont.setPointSize(int(1.33*fontSize))
 
         # Set window properties
         self.parent.setWindowOpacity(1.0)

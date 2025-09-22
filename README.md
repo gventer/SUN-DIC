@@ -12,10 +12,11 @@
 This is an early release of the Stellenbosch University DIC Code, referred to as **SUN-DIC**. The code includes the following features and limitations. If you encounter issues or have suggestions for improvement, please contact the author. Additional documentation will be provided in future updates.
 
 ---
-## Publications
-1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](https://ssrn.com/abstract=5333350) 2025-07-01 -- Venter, Gerhard and Neaves, Melody, *SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*. Pre-print available at SSRN: [https://ssrn.com/abstract=5333350](https://ssrn.com/abstract=5333350) or [http://dx.doi.org/10.2139/ssrn.5333350 ](http://dx.doi.org/10.2139/ssrn.5333350)
 
-   
+## Publications
+
+1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](https://ssrn.com/abstract=5333350) 2025-07-01 -- Venter, Gerhard and Neaves, Melody, *SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*. Pre-print available at SSRN: [https://ssrn.com/abstract=5333350](https://ssrn.com/abstract=5333350) or [http://dx.doi.org/10.2139/ssrn.5333350](http://dx.doi.org/10.2139/ssrn.5333350)
+
 ## Presentations
 
 1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](presentations/2025_sundic_mod.pdf) 2025-04-17 -- MOD Research Group Meeting - Overview of SUN-DIC
@@ -66,51 +67,69 @@ Although installation can be performed without creating a virtual environment, i
 ### Using `pip`
 
 1. Create a virtual environment (e.g., `sundic`):
+
    ```
    python3.11 -m venv sundic
    ```
+
 2. Activate the virtual environment:
+
    ```
    source sundic/bin/activate
    ```
+
 3. Install the package:
+
    ```
    pip install SUN-DIC
    ```
+
 4. Copy the example problem:
+
    ```
    copy-examples
    ```
+
 ---
 
 ### Using `conda`
 
 1. Create a virtual environment (e.g., `sundic`) with Python pre-installed:
+
    ```
    conda create -n sundic python=3.11
    ```
+
 2. Activate the virtual environment:
+
    ```
    conda activate sundic
    ```
+
 3. Install the package:
+
    ```
    pip install SUN-DIC
    ```
+
 4. . Copy the example problem:
+
    ```
    copy-examples
    ```
+
 ---
 
 ### Installing Directly from GitHub (Advanced users only)
 
 1. Create and activate a virtual environment using either `pip` or `conda` as outlined above.
 2. Clone the repository and install the package:
+
    ```
    git clone https://github.com/gventer/SUN-DIC.git
    pip install ./SUN-DIC
    ```
+
 3. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
 
 ---
@@ -155,7 +174,8 @@ Detailed API documentation is available at:
 - **SUN-DIC Analysis Code**: Based on work by Ed Brisley as part of his MEng degree at Stellenbosch University. His thesis is available at the [Stellenbosch University Library](https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a).
 - **Interpolator**: Utilizes `fast_interp` by David Stein, licensed under Apache 2.0. Repository: [fast_interp](https://github.com/dbstein/fast_interp).
 - **Smoothing Algorithm**: Implements the 2D Savitzky-Golay algorithm from the [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html).
-- **GUI Development**: Developed by [Elijah Stockhall](https://github.com/EMStockhall/).
+- **GUI Development**: Initial development by [Elijah Stockhall](https://github.com/EMStockhall/).
+- **Graphical Design**:  Dr Melody Neaves
 
 ---
 
