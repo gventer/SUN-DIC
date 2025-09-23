@@ -142,55 +142,46 @@ Starts from 1.""")
         groupBox.setTitle("Advanced Settings")
         groupBox.setEnabled(True)
         sizePolicy = QSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(
-            groupBox.sizePolicy().hasHeightForWidth())
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         groupBox.setSizePolicy(sizePolicy)
         groupBox.setStyleSheet("QGroupBox { background-color: white; }")
-        groupBox.setMaximumSize(QtCore.QSize(16777215, 5*row_height))
-        gridLayoutWidget = QWidget(groupBox)
 
-        gridLayoutWidget.setGeometry(QtCore.QRect(0, 10, 671, 81))
-        gridLayoutWidget.setContentsMargins(10, 10, 10, 10)
-        gridLayout_2 = QGridLayout(gridLayoutWidget)
-        gridLayout_2.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
-        gridLayout_2.setContentsMargins(0, 10, 0, 0)
+        # Set layout directly on the groupbox
+        gridLayout = QGridLayout()
+        gridLayout.setContentsMargins(10, 10, 10, 10)
 
         spacerItem3 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        gridLayout_2.addItem(spacerItem3, 0, 2, 1, 1)
+        gridLayout.addItem(spacerItem3, 0, 2, 1, 1)
 
         # The gaussian blur input and label
-        gausLab = QLabel(gridLayoutWidget)
-        gausLab.setText("Gaussian Blur:")
-        gridLayout_2.addWidget(gausLab, 0, 0, 1, 1)
+        gausLab = QLabel("Gaussian Blur:")
+        gridLayout.addWidget(gausLab, 0, 0, 1, 1)
 
-        self.gausIn = QLineEdit(gridLayoutWidget)
+        self.gausIn = QLineEdit()
         gaussInValidator = OddNumberValidator(0, None)
         self.gausIn.setValidator(gaussInValidator)
         self.gausIn.setToolTip("""The size of the Gaussian blur to apply to the images. 
-Must be an odd number larger than or equal to 0.""")
-        gridLayout_2.addWidget(self.gausIn, 0, 1, 1, 1)
+        Must be an odd number larger than or equal to 0.""")
+        gridLayout.addWidget(self.gausIn, 0, 1, 1, 1)
 
         # The background/cutoff input and label
-        backLab = QLabel(gridLayoutWidget)
-        backLab.setText("Background/Cutoff:")
-        gridLayout_2.addWidget(backLab, 1, 0, 1, 1)
+        backLab = QLabel("Background/Cutoff:")
+        gridLayout.addWidget(backLab, 1, 0, 1, 1)
 
-        self.backIn = QLineEdit(gridLayoutWidget)
+        self.backIn = QLineEdit()
         backValidator = ClampingIntValidator()
         backValidator.setBottom(0)
         backValidator.setTop(255)
         self.backIn.setValidator(backValidator)
         self.backIn.setToolTip("""Cutoff value to detect all black background in an image.
-This value will be used to detect all black (< Cutoff) areas in the image.
-This is useful for automatically removing unwanted areas from the image,
-eg a hole in the sample. However, the background MUST be black.
-Must be an integer between 0 and 255.""")
-        gridLayout_2.addWidget(self.backIn, 1, 1, 1, 1)
+        This value will be used to detect all black (< Cutoff) areas in the image.
+        This is useful for automatically removing unwanted areas from the image,
+        eg a hole in the sample. However, the background MUST be black.
+        Must be an integer between 0 and 255.""")
+        gridLayout.addWidget(self.backIn, 1, 1, 1, 1)
 
+        groupBox.setLayout(gridLayout)
         verticalLayout.addWidget(groupBox)
 
         spacerItemV1 = QSpacerItem(

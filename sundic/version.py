@@ -1,4 +1,7 @@
-__version__ = "0.0.23"
+__version__ = "0.0.24"
+# 0.0.24 - Fixed some layout issue with the GUI on Windows
+#        - Decided to go with the fusion look and feel for the GUI on all platforms
+#          to have a consistent look and feel
 # 0.0.23 - And we have some icons!!!
 #        - Added icons to the GUI
 #        - Minor improvements to the newly reworked GUI

@@ -618,6 +618,7 @@ class mainProgram(QMainWindow, UIMainWindow):
 # The main function that gets called when the program is executed
 def main():
     # Make an object of the class and execute it
+    QApplication.setStyle("fusion")
     app = QApplication(sys.argv)
 
     # Load splash image
