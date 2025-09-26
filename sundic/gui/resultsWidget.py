@@ -347,12 +347,12 @@ If this value is greater than 0, then it must be larger than the smooth order.""
                 results = strainDataFrame
 
             # Saving the data to a CSV file
-            savePath, _ = QFileDialog.getSaveFileName(
+            csvPath, _ = QFileDialog.getSaveFileName(
                 self, "Save File", "", "CSV Files (*.csv)")
-            if savePath:
-                if not savePath.endswith(".csv"):
-                    savePath = savePath + ".csv"
-                results.to_csv(savePath, index=False)
+            if csvPath:
+                if not csvPath.endswith(".csv"):
+                    csvPath = csvPath + ".csv"
+                results.to_csv(csvPath, index=False)
         except Exception as e:
             # Capture the standard error and display it in a popup
             error_message = str(e)

@@ -1866,16 +1866,20 @@ def readImage(imgFile, normalize8Bit=False):
         numpy.ndarray: The grayscale image.
     """
     # Read the image as is - allow for eg for 16-bit images
-    img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
-    if img is None:
-        raise FileNotFoundError(
-            f"Image file {imgFile} not found or cannot be read.")
+    try:
+        img = cv.imread(imgFile, cv.IMREAD_UNCHANGED)
+        if img is None:
+            raise FileNotFoundError(
+                f"Image file {imgFile} not found, cannot be read or is not a valid image file.")
 
-    # Convert to grayscale if color image - will only work with grayscale images
-    if len(img.shape) == 3:
-        grayImg = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    else:
-        grayImg = img
+        # Convert to grayscale if color image - will only work with grayscale images
+        if len(img.shape) == 3:
+            grayImg = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        else:
+            grayImg = img
+
+    except Exception as e:
+        raise RuntimeError(f"Error reading image file {imgFile}: {e}")
 
     # Use the full range of the image bitrange but keep the same data type
     imgDType = grayImg.dtype
