@@ -15,7 +15,7 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 
 ## Publications
 
-1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](https://www.sciencedirect.com/science/article/pii/S0965997825001814) 2025-10-14 -- Venter, Gerhard and Neaves, Melody, [*SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*](https://www.sciencedirect.com/science/article/pii/S0965997825001814)
+1. [![Download PDF](https://img.shields.io/badge/Download-PDF-blue)](https://www.sciencedirect.com/science/article/pii/S0965997825001814) 2025-10-14 -- Venter, Gerhard and Neaves, Melody, [*SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*](https://www.sciencedirect.com/science/article/pii/S0965997825001814), Advances in Engineering Software, Volume 211, 2025.
 
 ## Presentations
 
