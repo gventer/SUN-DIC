@@ -314,29 +314,35 @@ If this value is greater than 0, then it must be larger than the smooth order.""
         try:
             # Saving the settings in correct data format
             imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
-            smoothWindow = int(self.resultsSumSmoothWindow)
-            smoothOrder = int(self.resultsSumSmoothOrder)
-            removeNan = self.resultsSumRemoveNan
-            incDisp = self.resultsSumIncDisp
-            incStrain = self.resultsSumIncStrain
+            smoothWindow = int(self.smoothWindowIn.text())
+            smoothOrder = int(self.smoothOrderIn.text())
 
             # Getting required data
-            dispResults, _, _ = sdpp.getDisplacements(
-                self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
-            strainResults, _, _ = sdpp.getStrains(
-                self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+            if self.incDispIn.isChecked():
+                dispResults, _, _ = sdpp.getDisplacements(
+                    self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder)
+            if self.incStrainsIn.isChecked():
+                strainResults, _, _ = sdpp.getStrains(
+                    self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder)
 
             # Optional remove NaN
             if self.removeNanIn.isChecked():
-                dispResults = dispResults[~np.isnan(dispResults).any(axis=1)]
-                strainResults = strainResults[~np.isnan(
-                    strainResults).any(axis=1)]
+                if self.incDispIn.isChecked():
+                    dispResults = dispResults[~np.isnan(
+                        dispResults).any(axis=1)]
+                if self.incStrainsIn.isChecked():
+                    strainResults = strainResults[~np.isnan(
+                        strainResults).any(axis=1)]
 
             # Saving the data as data frames
-            dispDataFrame = pd.DataFrame(dispResults, columns=[
-                "X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
-            strainDataFrame = pd.DataFrame(strainResults, columns=[
-                "X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
+            if self.incDispIn.isChecked():
+                dispDataFrame = pd.DataFrame(dispResults, columns=[
+                    "X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
+            if self.incStrainsIn.isChecked():
+                strainDataFrame = pd.DataFrame(strainResults, columns=[
+                    "X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
 
             if self.incDispIn.isChecked() and self.incStrainsIn.isChecked():
                 results = pd.merge(dispDataFrame, strainDataFrame, how="right", on=[
@@ -344,7 +350,7 @@ If this value is greater than 0, then it must be larger than the smooth order.""
             elif self.incDispIn.isChecked():
                 results = dispDataFrame
             elif self.incStrainsIn.isChecked():
-                results = strainDataFrame
+                results = strainDataFrameS
 
             # Saving the data to a CSV file
             csvPath, _ = QFileDialog.getSaveFileName(
@@ -357,7 +363,7 @@ If this value is greater than 0, then it must be larger than the smooth order.""
             # Capture the standard error and display it in a popup
             error_message = str(e)
             QMessageBox.critical(
-                self, "Error", f"An error occurred: {error_message}")
+                self, "Error", f"{error_message}")
 
 
 class ResultsUIContour(QWidget):
