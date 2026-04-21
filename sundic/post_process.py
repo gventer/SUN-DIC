@@ -93,7 +93,7 @@ class CompID(IntEnum):
 # --------------------------------------------------------------------------------------------
 def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     """
-    Calculate and return the displacements based on the results file created by 
+    Calculate and return the displacements based on the results file created by
     SUN-DIC.
 
     Parameters:
@@ -101,9 +101,9 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
      - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-        smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
+        smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
         Default is 0.
-     - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
+     - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
         Default is 2.
 
     Returns:
@@ -181,7 +181,7 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
 # --------------------------------------------------------------------------------------------
 def getCznssd(resultsFile, imgPair):
     """
-    Calculate and return the Cznssd values for each subset based on the results file created by 
+    Calculate and return the Cznssd values for each subset based on the results file created by
     SUN-DIC.
 
     Parameters:
@@ -235,7 +235,7 @@ def getCznssd(resultsFile, imgPair):
 # --------------------------------------------------------------------------------------------
 def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
     """
-    Calculate and return the strains based on the subset points and coefficients.  For now only 
+    Calculate and return the strains based on the subset points and coefficients.  For now only
     Engineering Strain is calculated.
 
     Parameters:
@@ -244,7 +244,7 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
                     Use -1 for final/last pair.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number larger than 0.  Default is 3.
-     - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
+     - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
         Default is 2.
 
     Returns:
@@ -257,7 +257,7 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
             - Column 5: xy/shear strain component.
             - Column 6: Von Mises strain.
     - nRows: int.  The number of rows of subsets.
-    - nCols: int.  The number of columns of subsets.            
+    - nCols: int.  The number of columns of subsets.
 
     Raises:
      - ValueError: If an invalid smoothFactor argument is provided.
@@ -323,21 +323,21 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         - resultsFile (string): Results file from sundic.
         - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
-        - dispComp (Comp, optional): Component of the displacement to plot. 
+        - dispComp (Comp, optional): Component of the displacement to plot.
                     Default is DispComp.DISP_MAG.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
         - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-          smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
+          smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 0.
-        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - maxValue (float, optional): Maximum value to plot.  Default is None.
         - minValue (float, optional): Minimum value to plot.  Default is None.
 
-    Returns: 
+    Returns:
         - fig: The matplotlib plot object.
 
     Raises:
@@ -414,7 +414,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - resultsFile (string): Results file from sundic.
         - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
-        - strainComp (Comp, optional): Component of the strain to plot. 
+        - strainComp (Comp, optional): Component of the strain to plot.
                     Default is StrainComp.VM_STRAIN.
         - alpha (float, optional): Transparency of the contour plot. Default is 0.75.
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
@@ -422,13 +422,13 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
         - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
           smoothing.  Must be an odd number larger than zero.  Default is 3.
-        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial. 
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - maxValue (float, optional): Maximum value to plot.  Default is None.
         - minValue (float, optional): Minimum value to plot.  Default is None.
         - return_fig (bool, optional): Flag to return the figure object. Default is False.
 
-    Returns: 
+    Returns:
         - fig: The matplotlib plot object.
 
     Raises:
@@ -517,7 +517,7 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
         - minValue (float, optional): Minimum value to plot.  Default is None.
         - return_fig (bool, optional): Flag to return the figure object. Default is False.
 
-    Returns: 
+    Returns:
         - fig: The matplotlib plot object.
 
     Raises:
@@ -591,7 +591,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
         - resultsFile (string): Results file from sundic.
         - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
-        - dispComp (Comp, optional): Component of the displacement to plot. 
+        - dispComp (Comp, optional): Component of the displacement to plot.
             Default is DispComp.DISP_MAG.
         - cutComp (Comp, optional): Component of the cut line. Default is CompID.YCoordID.
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
@@ -599,14 +599,14 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
         - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-          smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
+          smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 0.
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False
           in which case the nearest neighbor is used.
 
-    Returns: 
+    Returns:
         - fig: The matplotlib plot object.
 
     Raises:
@@ -667,22 +667,22 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - resultsFile (string): Results file from sundic.
         - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
-        - strainComp (Comp, optional): Component of the displacement to plot. 
+        - strainComp (Comp, optional): Component of the displacement to plot.
             Default is StrainComp.VM_STRAIN
-        - cutComp (Comp, optional): Component of the cut line. 
+        - cutComp (Comp, optional): Component of the cut line.
             Default is CompID.YCoordID
         - cutValues (list, optional): List of values to plot the cut line at. Default is [0].
         - gridLines (bool, optional): Flag to plot grid lines. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
         - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-          smoothing.  Must be an odd number and a value of 0 indicates no smoothing. 
+          smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 9.
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - interpolate (bool, optional): Flag to interpolate the cut line. Default is False.
 
-    Returns: 
+    Returns:
         - fig: The matplotlib plot object.
 
     Raises:
@@ -751,7 +751,7 @@ def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoot
         - derivative (str, optional): The type of derivative to compute. Defaults to 'none'.
 
     Returns:
-        - ndarray or tuple: The smoothed results or the derivatives, 
+        - ndarray or tuple: The smoothed results or the derivatives,
           depending on the value of `derivative`.
 
     Raises:
@@ -819,17 +819,25 @@ def _fillMissingData_(dataX, dataY, dataVal):
 
     # Check if there are NaN values to interpolate
     if np.isnan(dataVal).any():
+        try:
+            # Get a mask for the values that are not NaN
+            mask = ~np.isnan(dataVal)
 
-        # Get a mask for the values that are not NaN
-        mask = ~np.isnan(dataVal)
+            # Setup the nearest neighbor interpolator
+            # interp = LinearNDInterpolator(
+            interp = NearestNDInterpolator(
+                list(zip(dataX[mask], dataY[mask])), dataVal[mask])
 
-        # Setup the nearest neighbor interpolator
-        # interp = LinearNDInterpolator(
-        interp = NearestNDInterpolator(
-            list(zip(dataX[mask], dataY[mask])), dataVal[mask])
+            # Interpoloate all nan values
+            dataVal[~mask] = interp(dataX[~mask], dataY[~mask])
 
-        # Interpoloate all nan values
-        dataVal[~mask] = interp(dataX[~mask], dataY[~mask])
+        except Exception as e:
+            newMsg = 'Not enough matched subsets for smoothing.  For displacement data, '
+            newMsg += 'smoothing can be turned off by setting smoothWindow=0.  For strain data, '
+            newMsg += 'smoothing is required.  Try increasing the subset size or decreasing '
+            newMsg += 'the step size.'
+
+            raise Exception(newMsg) from e
 
     return dataVal
 

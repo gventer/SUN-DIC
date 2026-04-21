@@ -1,4 +1,8 @@
-__version__ = "0.0.24"
+__version__ = "0.0.25"
+# 0.0.25 - Fixed bug in post-processing that caused an exception when
+#          not enough matched subsets were found for smoothing
+#        - Added cache for to reduce number of function calls and speedup of the code
+#        - Cache added for CZNSSD values and relative coordinates in the optimization loop
 # 0.0.24 - Fixed some layout issue with the GUI on Windows
 #        - Decided to go with the fusion look and feel for the GUI on all platforms
 #          to have a consistent look and feel

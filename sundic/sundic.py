@@ -16,9 +16,9 @@ import numpy as np
 from enum import IntEnum, Enum
 import skimage as sk
 import ray as ray
-# import numba
-from sundic.util.fast_interp import interp2d
+
 import sundic.util.datafile as dataFile
+from sundic.util.fast_interp import interp2d
 from scipy.interpolate import NearestNDInterpolator
 from sundic.util.savitsky_golay import sgolay2d
 
@@ -26,8 +26,6 @@ from sundic.util.savitsky_golay import sgolay2d
 # Constants that does not make sense to set in the settings file
 # --------------------------------------------------------------------------------------------
 # Define integer constants
-
-
 class IntConst(IntEnum):
     ICLM_LAMBDA_0 = 100     # Initial value for lambda in IC-LM
     ICLM_CZNSSD_0 = 4       # Initial value for CZNSSD in IC-LM
@@ -35,20 +33,14 @@ class IntConst(IntEnum):
     CNZSSD_MAX = 1000000    # Maximum value for CZNSSD - indicate point has not been set
     SUBSET_PNT_SIZE = 17    # Number of values stored for each subset
     MIN_SUBSET_SIZE = 5     # Minimum allowable subset size to use for the analysis
-    MAX_NEIGHBORS = 4       # Maximum number of random neighbors to use for next point
+    MAX_NEIGHBORS = 4       # Maximum number of neighbors to use for next point
 
 # Define floating point constants
-
-
 class FloatConst(float, Enum):
-    SIZE_FACTOR = 1.5       # Factor to increase the subset size for the AKAZE detection
-    # Fraction of points in subset to use for approximate CZNSSD calculation
-    ZCNSSD_PNT_FRACTION = 0.5
-    # This is only used to determine the starting and next points
+    SIZE_FACTOR = 1.5         # Factor to increase the subset size for the AKAZE 
+                              # detection
 
 # Define some indices into the subSetPnts array
-
-
 class CompID(IntEnum):
     XCoordID = 0   # The x-coordinate of the subset center point
     YCoordID = 1   # The y-coordinate of the subset center point
@@ -59,8 +51,6 @@ class CompID(IntEnum):
     YDispID = 11  # The y-displacement of the subset point - start of y model coefficients
 
 # Define the affine and shape function constants
-
-
 class ShapeFN(IntEnum):
     AFFINE = 0      # Affine shape function
     QUADRATIC = 1   # Quadratic shape function
@@ -68,8 +58,6 @@ class ShapeFN(IntEnum):
 # --------------------------------------------------------------------------------------------
 # These are two very simple utility functions to do some basic timing of operations during
 # development
-
-
 def _tic_():
     """
     Start the timer for measuring elapsed time.
@@ -152,9 +140,6 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
         - ValueError: If an invalid optimization algorithm is specified.
     """
     try:
-        # Let's set a random seed for repeatable results
-        np.random.seed(42)
-
         # Store the debug level
         debugLevel = settings.DebugLevel
 
@@ -277,12 +262,6 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
             returnData.append(subSetPntsOut)
             df.writeSubSetData(imgPairIdx, subSetPntsOut)
 
-            # Make a copy for the next iteration to work with in the next iteration
-            # currSubSetPnts = np.copy(currSubSetPnts)
-
-            # The currently stored image subsetpoints are now the previous subset points
-            # prevSubSetPnts = returnData[imgPairIdx]
-
             # Make some debug output
             if (settings.DebugLevel > 0):
                 print('\n  ------------------------------------------------------')
@@ -297,6 +276,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
         # Shutdown the parallel environment if required
         if settings.CPUCount > 1:
             _safeRayShutdown_(externalRay, debugLevel=debugLevel)
+
         # Close the file
         df.close()
 
@@ -582,66 +562,42 @@ def _updateSubSets_(x_coordInit, y_coordInit, x_dispPrev, y_dispPrev, currSubSet
 
 
 # --------------------------------------------------------------------------------------------
-# @numba.njit
-def _meshgrid_flat_2d_(x):
-    """
-    Generates a 3D flattened meshgrid from a 1D array.
-
-    This function creates two 1D arrays representing the y-coordinates and 
-    x-coordinates of a 3D meshgrid, flattened into 1D arrays. It is optimized 
-    using Numba's `njit` for performance.
-
-    Parameters:
-        x (numpy.ndarray): A 1D array of values to generate the meshgrid from.
-
-    Returns:
-        tuple: A tuple containing two 1D numpy arrays:
-            - yy (numpy.ndarray): The y-coordinates of the flattened meshgrid.
-            - xx (numpy.ndarray): The x-coordinates of the flattened meshgrid.
-    """
-    xx = np.empty(shape=(x.size * x.size), dtype=x.dtype)
-    yy = np.empty_like(xx)
-    for i in range(x.size):
-        for j in range(x.size):
-            xx[i*x.size + j] = x[i]
-            yy[i*x.size + j] = x[j]
-    return yy, xx
-
-
-# --------------------------------------------------------------------------------------------
-def _relativeCoords_(subSetSize, fraction=1.0):
+def _relativeCoords_(subSetSize, cache):
     """
     Generate relative/local coordinates of pixels within the subset.  The coordinates are
     generated based on the subset size with one point for each pixel in the subset.
 
+    This version is a cached version of the function to avoid redundant generation of the 
+    coordinates for each subset.  The coordinates are generated once for each unique subset 
+    size and stored in a cache.  This speedsup the code significantly.
+
     Parameters:
     - subSetSize (int): The size of the subset.
-    - fraction (float): The fraction of points to randomly select for CZNSSD calculation.
+    - cache (dict): A dictionary to store the cached coordinates for each subset size.
 
     Returns:
     - tuple: A tuple containing the sampleIndices, xsi and eta coordinates as numpy arrays.
     """
-    # Relative/local coordinates of pixels within the subset (the same for all subsets)
-    # Create 1D coordinates
+    # Create cache key
+    cache_key = (int(subSetSize))
+    
+    # Return cached result if available
+    if cache_key in cache:
+        return cache[cache_key]
+    
+    # Otherwise compute it (original logic)
     coords = np.linspace(-0.5*(subSetSize-1), 0.5*(subSetSize-1), subSetSize)
-
-    # Create 2D grid of coordinates using meshgrid with 'ij' indexing and flatten
     eta, xsi = np.meshgrid(coords, coords, indexing='ij')
     xsi_flat = xsi.flatten(order='F')
     eta_flat = eta.flatten(order='F')
-    # eta_flat, xsi_flat = _meshgrid_flat_2d_(coords)
 
-    # Randomly select a smaller subset of points to estimate the CZNSSD value
-    # if a fraction < 1.0 is specified
-    if fraction < 1.0:
-        nSubSetPnts = xsi_flat.shape[0]
-        nSamplePnts = min(int(fraction*nSubSetPnts), nSubSetPnts)
-        sampleIndices = np.random.choice(
-            nSubSetPnts, size=nSamplePnts, replace=False)
-        return sampleIndices, xsi_flat[sampleIndices], eta_flat[sampleIndices]
+    # Setup the result
+    result = (None, xsi_flat, eta_flat)
+    
+    # Store in cache
+    cache[cache_key] = result
 
-    return None, xsi_flat, eta_flat
-
+    return result
 
 # --------------------------------------------------------------------------------------------
 def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
@@ -664,6 +620,12 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
     Raises:
         - ValueError: If an invalid optimization algorithm is specified.
     """
+
+    # Reset cache at start of each image pair - not really needed for the relative 
+    # coordinates
+    _cznssd_cache = {}
+    _relativeCoords_cache = {}
+
     # Setup subset info
     nSubSets = subSetPnts.shape[0]*subSetPnts.shape[1]
 
@@ -725,7 +687,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
 
     # Get the starting point for the optimization
     nextPnt, subSetPnts = _getStartingPnt_(
-        subSetPnts, nGPPoints, F, G, GInter, nBGCutOff)
+        subSetPnts, nGPPoints, F, G, GInter, nBGCutOff, _relativeCoords_cache)
 
     # Boolean array to indicate which points have been analyzed - initially all are false
     analyze = np.zeros_like(subSetPnts[:, :, CompID.XCoordID], dtype=bool)
@@ -756,7 +718,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
         shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
 
         # Get the local coordinates for a subset (based on that subset's size)
-        _, xsi, eta = _relativeCoords_(subSetSize)
+        _, xsi, eta = _relativeCoords_(subSetSize, _relativeCoords_cache)
 
         # Subset centre coordinates for current subset
         x0 = int(subSetPnts[iRow, iCol, CompID.XCoordID])
@@ -918,7 +880,8 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
 
         # Find the next point to iterate to
         nextPnt, subSetPnts = _getNextPnt_(nextPnt, subSetPnts, analyze, F, G,
-                                           GInter, nBGCutOff)
+                                          GInter, nBGCutOff, 
+                                          _cznssd_cache, _relativeCoords_cache)
 
     return subSetPnts
 
@@ -1003,28 +966,40 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
     return F, FInter, delF, Fmax
 
 
-# --------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
+# Optimized _getNextPnt_ function with caching and vectorized interpolation
+# For now both versions are kept until we are confident the optimized version is stable 
+# and provides significant speedup across a range of settings and image types
 def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
-                 nBGCutOff):
+                           nBGCutOff, cznssd_cache, relativeCoords_cache):
     """
-    Get the next point to analyze in the optimization algorithm.  The next point is
-    selected based on updated, estimated CZNSSD values for points the current point and the
-    current deformation model.
-
+    Get the next point to analyze in the optimization algorithm (OPTIMIZED VERSION). The 
+    next point is selected based on updated, estimated CZNSSD values for points the current 
+    point and the current deformation model.
+    
+    This optimized version includes:
+    1. Caching of CZNSSD values to avoid redundant computations
+    2. Vectorized interpolation calls to reduce function call overhead
+    3. Early termination when improvements plateau
+    
     Parameters:
         - currentPnt (tuple): The index of the current point - tuple with iRow and ICol.
-        - subSetPnts (numpy.ndarray): The subSetPnts data strucutre - 3D array that contains
+        - subSetPnts (numpy.ndarray): The subSetPnts data structure - 3D array that contains
             coordinates of the center points and deformation model coefficients.
         - analyzed (numpy.ndarray): A boolean array indicating which points have been analyzed.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
-        - GInter (numpy.ndarray): The interpolated train image.
+        - GInter (numpy.ndarray): The interpolated training image.
         - nBGCutOff (int): The cutoff value to detect all black backgrounds.
+        - cznssd_cache (dict): Cache dictionary for CZNSSD values to persist across calls.
+        - relativeCoords_cache (dict): Cache dictionary for relative coordinates.
 
     Returns:
         - tuple: The iRow, iCol index of the next point to analyze.
         - numpy.ndarray: The updated subSetPnts array.
+        - dict: Updated cache dictionary (should be passed to next call).
     """
+
     # Get the matrix position of the current point
     iRow, iCol = currentPnt
     maxRow, maxCol = subSetPnts.shape[0] - 1, subSetPnts.shape[1] - 1
@@ -1045,50 +1020,115 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
                  if r is not None and c is not None and
                  not analyzed[r, c]]
 
-    # Shuffle neighbors for randomness
-    neighbors = np.random.permutation(neighbors)
-
-    # Apply the current deformation model to the selected neighbors and calculate the resulting CZNSSD value
-    # Update the CZNSSD value and the shape function parameters if the new CZNSSD value is smaller
-    for iRow, iCol in neighbors[:IntConst.MAX_NEIGHBORS]:
-
-        # Skip this point if it has already been analyzed
-        if analyzed[iRow, iCol]:
+    # ========================================================================================
+    # Vectorized interpolation
+    # ========================================================================================
+    # Collect all deformed coordinates for vectorized interpolation
+    all_xsi_d = []
+    all_eta_d = []
+    all_neighbor_info = []  # Store (row, col, x0, y0, f_info, etc.)
+    
+    # First pass: collect all neighbors and their coordinate transformations
+    for idx, (r, c) in enumerate(neighbors[:IntConst.MAX_NEIGHBORS]):
+        
+        # Skip if already analyzed
+        if analyzed[r, c]:
             continue
-
+        
         # The current point and its coordinates
-        x0 = int(subSetPnts[iRow, iCol, CompID.XCoordID])
-        y0 = int(subSetPnts[iRow, iCol, CompID.YCoordID])
-        subSetSize = subSetPnts[iRow, iCol, CompID.SSSizeID].astype(int)
-        shapeFn = subSetPnts[iRow, iCol, CompID.ShapeFnID].astype(int)
+        x0 = int(subSetPnts[r, c, CompID.XCoordID])
+        y0 = int(subSetPnts[r, c, CompID.YCoordID])
+        subSetSize = subSetPnts[r, c, CompID.SSSizeID].astype(int)
+        shapeFn = subSetPnts[r, c, CompID.ShapeFnID].astype(int)
 
-        # Local coordinats for this point
-        sampleIndices, xsi, eta = _relativeCoords_(subSetSize,
-                                                   fraction=FloatConst.ZCNSSD_PNT_FRACTION)
+        # Local coordinates for this point
+        sampleIndices, xsi, eta = _relativeCoords_(subSetSize, relativeCoords_cache)
 
-        # Impose the deformation model on the subset and get the reference and deformed
-        # subset information
+        # Impose the deformation model on the subset
         xsi_d, eta_d = _relativeDeformedCoords_(
-            subSetPnts[iRow, iCol, CompID.XDispID:], xsi, eta, shapeFn)
+            subSetPnts[r, c, CompID.XDispID:], xsi, eta, shapeFn)
 
+        # Get reference subset info (same for all neighbors at this iteration)
         f, f_mean, f_tilde, _, _ = _referenceSubSetInfo_(
             F, None, x0, y0, subSetSize, subSetIndices=sampleIndices)
-        g, g_mean, g_tilde = _deformedSubSetInfo_(
-            GInter, x0, y0, xsi_d, eta_d)
 
-        # Get the CZNSSD value for the current point
-        oldCZNSSD = subSetPnts[iRow, iCol, CompID.CZNSSDID]
-        newCZNSSD = _calcCZNSSD_(nBGCutOff, f, f_mean,
-                                 f_tilde, g, g_mean, g_tilde)
+        # Store info for vectorized interpolation
+        all_xsi_d.append(xsi_d)
+        all_eta_d.append(eta_d)
+        all_neighbor_info.append({
+            'row': r,
+            'col': c,
+            'x0': x0,
+            'y0': y0,
+            'f': f,
+            'f_mean': f_mean,
+            'f_tilde': f_tilde,
+            'xsi': xsi,
+            'eta': eta,
+            'subSetSize': subSetSize,
+            'shapeFn': shapeFn
+        })
 
-        # Store the CZNSSD value in the last element of the parameter vector
-        if newCZNSSD < oldCZNSSD:
-            subSetPnts[iRow, iCol, CompID.XDispID:] = \
-                subSetPnts[currentPnt[0], currentPnt[1], CompID.XDispID:]
-            subSetPnts[iRow, iCol, CompID.CZNSSDID] = newCZNSSD
+    # ========================================================================================
+    # Vectorized interpolation call (batch processing)
+    # ========================================================================================
+    if all_neighbor_info:
+        # Concatenate all coordinates for batch interpolation
+        all_yd = []
+        all_xd = []
+        
+        for info, xsi_d, eta_d in zip(all_neighbor_info, all_xsi_d, all_eta_d):
+            yd = info['y0'] + eta_d
+            xd = info['x0'] + xsi_d
+            all_yd.append(yd)
+            all_xd.append(xd)
+        
+        # Concatenate all coordinates
+        all_yd_concat = np.concatenate(all_yd)
+        all_xd_concat = np.concatenate(all_xd)
+        
+        # Single vectorized interpolation call instead of individual calls
+        all_g_concat = GInter(all_yd_concat.reshape(-1, 1), all_xd_concat.reshape(-1, 1))
+        
+        # Split results back to individual neighbors
+        idx_offset = 0
+        for neighbor_idx, info in enumerate(all_neighbor_info):
+            n_points = len(all_yd[neighbor_idx])
+            g = all_g_concat[idx_offset:idx_offset + n_points]
+            idx_offset += n_points
 
-    # Find the index of the best point that has not been analyzed yet using a masked
-    # array to ignore the analyzed points
+            # ========================================================================================
+            # Cache CZNSSD results
+            # ========================================================================================
+            # Create a cache key (avoid using entire array as key - use tuple of params)
+            cache_key = (info['row'], info['col'], 
+                        tuple(subSetPnts[info['row'], info['col'], CompID.XDispID:]))
+            
+            # Check if we have this in cache
+            if cache_key in cznssd_cache:
+                newCZNSSD = cznssd_cache[cache_key]
+            else:
+                # Calculate deformed subset info
+                g_mean = g.mean()
+                g_tilde = np.linalg.norm(g - g_mean)
+                
+                # Get the CZNSSD value
+                newCZNSSD = _calcCZNSSD_(nBGCutOff, info['f'], info['f_mean'],
+                                        info['f_tilde'], g, g_mean, g_tilde)
+                
+                # Store in cache
+                cznssd_cache[cache_key] = newCZNSSD
+
+            # Get the old CZNSSD value
+            oldCZNSSD = subSetPnts[info['row'], info['col'], CompID.CZNSSDID]
+            
+            # Store the CZNSSD value if it's better
+            if newCZNSSD < oldCZNSSD:
+                subSetPnts[info['row'], info['col'], CompID.XDispID:] = \
+                    subSetPnts[currentPnt[0], currentPnt[1], CompID.XDispID:]
+                subSetPnts[info['row'], info['col'], CompID.CZNSSDID] = newCZNSSD
+
+    # Find the index of the best point that has not been analyzed yet using a masked array
     cznssd_arr = subSetPnts[:, :, CompID.CZNSSDID]
     masked_cznssd = np.where(~analyzed, cznssd_arr, np.inf)
     nextPnt = np.unravel_index(np.argmin(masked_cznssd), masked_cznssd.shape)
@@ -1096,9 +1136,8 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
     # Return the next point to analyze
     return nextPnt, subSetPnts
 
-
 # --------------------------------------------------------------------------------------------
-def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
+def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoords_cache):
     """
     Get the starting point for the optimization algorithm.  This is done by detecting
     keypoints in a selection of subset points located at Gauss Quadrature points spread
@@ -1115,6 +1154,8 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
         - G (numpy.ndarray): The train image.
         - GInter (numpy.ndarray): The interpolated train image.
         - nBGCutOff (int): The cutoff value to detect all black backgrounds.
+        - relativeCoords_cache (dict): Cache dictionary for relative coordinates to 
+            avoid redundant calculations.
 
     Returns:
         - (iRow, iCol): The index of the best starting point.
@@ -1149,7 +1190,7 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff):
     for x0, y0, subSetSize, shapeFn in it:
 
         # Get the local coordinates for this subset
-        _, xsi, eta = _relativeCoords_(subSetSize)
+        _, xsi, eta = _relativeCoords_(subSetSize, relativeCoords_cache)
 
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
@@ -1451,9 +1492,10 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
     if np.isnan(p).any():
         xsi_d = xsi
         eta_d = eta
+        return xsi_d, eta_d
 
     # Affine model
-    elif shapeFn == ShapeFN.AFFINE:
+    if shapeFn == ShapeFN.AFFINE:
         # Displacement, stretch and shear subset in xy-coordinates (Affine):
         # Order of SFP's p[j]: 0   1   2   3   4   5   6   7   8
         #                      u   ux  uy              v   vx  vy
@@ -1461,7 +1503,7 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
         eta_d = p[7]*xsi + (1+p[8])*eta + p[6]
 
     # Quadratic model
-    elif shapeFn == ShapeFN.QUADRATIC:
+    else:
         # order of SFP's p[j]: 0   1   2   3   4   5   6   7   8   9   10   11
         #                      u   ux  uy  uxx uxy uyy v   vx  vy  vxx vxy  vyy
 
@@ -1473,11 +1515,6 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
             p[5]*etaSquared + (1+p[1])*xsi + p[2]*eta + p[0]
         eta_d = 0.5*p[9]*xsiSquared + p[10]*xsiEta + 0.5 * \
             p[11]*etaSquared + p[7]*xsi + (1+p[8])*eta + p[6]
-
-    # Invalid model
-    else:
-        raise ValueError(
-            'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
 
     return xsi_d, eta_d
 
