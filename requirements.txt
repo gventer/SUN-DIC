@@ -8,4 +8,4 @@ msgpack-numpy>=0.4.8
 matplotlib>=3.10.9
 jupyter>=1.1.1
 pandas>=3.0.2
-PyQT6>=6.9
+PyQT6>=6.11.0
