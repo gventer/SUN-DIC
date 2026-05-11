@@ -1,4 +1,6 @@
-__version__ = "0.0.25"
+__version__ = "0.0.26"
+# 0.0.26 - Updated requirements file and added pyproject.toml installation 
+#          support
 # 0.0.25 - Fixed bug in post-processing that caused an exception when
 #          not enough matched subsets were found for smoothing
 #        - Added cache for to reduce number of function calls and speedup of the code
