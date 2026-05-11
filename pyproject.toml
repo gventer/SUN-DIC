@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SUN-DIC"
+dynamic = ["version", "dependencies"]
+description = "Stellenbosch University Digital Image Correlation Library"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT License"}
+authors = [
+    {name = "Gerhard Venter", email = "gventer@sun.ac.za"}
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/gventer/SUN-DIC"
+
+[project.scripts]
+sundic = "sundic.gui.mainWindow:main"
+copy-examples = "sundic.copy_examples:copy_examples"
+
+[tool.setuptools]
+packages = ["sundic"]
+
+[tool.setuptools.dynamic]
+version = {attr = "sundic.version.__version__"}
+
+[tool.setuptools.dynamic.dependencies]
+file = ["requirements.txt"]
+
+[tool.setuptools.package-data]
+sundic = [
+    "examples/settings.ini",
+    "examples/test_sundic.ipynb",
+    "examples/planar_images/*",
+    "gui/icons/*",
+    "gui/Fonts/Figtree/*",
+    "gui/Fonts/Figtree/static/*",
+]
