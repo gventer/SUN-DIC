@@ -199,6 +199,7 @@ class ResultsUIExport(QWidget):
     resultsSumRemoveNan = True
     resultsSumIncDisp = True
     resultsSumIncStrain = True
+    resultsSumDilation = 0
 
     # ------------------------------------------------------------------------------
     # Initialize the results summary UI
@@ -240,14 +241,29 @@ If only exporting displacement data, then this value can be 0.
 If this value is greater than 0, then it must be larger than the smooth order.""")
         gridLayout.addWidget(self.smoothWindowIn, 1, 1, 1, 1)
 
+        # The dilation input and label
+        dilationLab = QLabel(self)
+        dilationLab.setText("Dilation:")
+        gridLayout.addWidget(dilationLab, 2, 0, 1, 1)
+
+        self.dilationIn = QLineEdit(self)
+        self.dilationIn.setText(str(self.resultsSumDilation))
+        dilationValidator = ClampingIntValidator()
+        dilationValidator.setBottom(0)
+        self.dilationIn.setValidator(dilationValidator)
+        self.dilationIn.setToolTip("""The amount of dilation to apply to the results. Zero or positive integer.
+This is used to help create an exclusion zone around automatically detected
+boundaries in the ROI (eg holes) where the results may be unreliable.""")
+        gridLayout.addWidget(self.dilationIn, 2, 1, 1, 1)
+
         # The include displacements checkbox and label
         incDispLab = QLabel(self)
         incDispLab.setText("Include Displacements:")
-        gridLayout.addWidget(incDispLab, 2, 0, 1, 1)
+        gridLayout.addWidget(incDispLab, 3, 0, 1, 1)
 
         self.incDispIn = QCheckBox(self)
         self.incDispIn.setChecked(bool(self.resultsSumIncDisp))
-        gridLayout.addWidget(self.incDispIn, 2, 1, 1, 1)
+        gridLayout.addWidget(self.incDispIn, 3, 1, 1, 1)
 
         # The remove NaN's checkbox and label
         removeNanLab = QLabel(self)
@@ -277,11 +293,11 @@ If this value is greater than 0, then it must be larger than the smooth order.""
         # The include strains checkbox and label
         incStrainsLab = QLabel(self)
         incStrainsLab.setText("Include Strains:")
-        gridLayout.addWidget(incStrainsLab, 2, 2, 1, 1)
+        gridLayout.addWidget(incStrainsLab, 3, 2, 1, 1)
 
         self.incStrainsIn = QCheckBox(self)
         self.incStrainsIn.setChecked(bool(self.resultsSumIncStrain))
-        gridLayout.addWidget(self.incStrainsIn, 2, 3, 1, 1)
+        gridLayout.addWidget(self.incStrainsIn, 3, 3, 1, 1)
 
         # The write data button
         self.writeDataBut = QPushButton(self)
@@ -316,12 +332,13 @@ If this value is greater than 0, then it must be larger than the smooth order.""
             imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
             smoothWindow = int(self.smoothWindowIn.text())
             smoothOrder = int(self.smoothOrderIn.text())
+            dilation = int(self.dilationIn.text())
 
             # Getting required data
             if self.incDispIn.isChecked():
                 dispResults, _, _ = sdpp.getDisplacements(
                     self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
-                    smoothOrder=smoothOrder)
+                    dilation=dilation, smoothOrder=smoothOrder)
             if self.incStrainsIn.isChecked():
                 strainResults, _, _ = sdpp.getStrains(
                     self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
@@ -350,7 +367,7 @@ If this value is greater than 0, then it must be larger than the smooth order.""
             elif self.incDispIn.isChecked():
                 results = dispDataFrame
             elif self.incStrainsIn.isChecked():
-                results = strainDataFrameS
+                results = strainDataFrame
 
             # Saving the data to a CSV file
             csvPath, _ = QFileDialog.getSaveFileName(
@@ -378,6 +395,7 @@ class ResultsUIContour(QWidget):
     resultsSmoothWindow = 3
     resultsSmoothOrder = 2
     resultsAlpha = 0.75
+    resultsDilation = 0
 
     DISP_INDEX = 0
     STRAIN_INDEX = 1
@@ -472,6 +490,21 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
 
         self.verticalLayout.addLayout(self.gridLayout)
 
+        # Add the dilation input and label
+        self.dilationLab = QLabel(self)
+        self.dilationLab.setText("Dilation:")
+        self.gridLayout.addWidget(self.dilationLab, 2, 2, 1, 1)
+
+        self.dilationIn = QLineEdit(self)
+        self.dilationIn.setText(str(self.resultsDilation))
+        dilationValidator = ClampingIntValidator()
+        dilationValidator.setBottom(0)
+        self.dilationIn.setValidator(dilationValidator)
+        self.dilationIn.setToolTip("""The amount of dilation to apply to the results. Zero or positive integer.
+This is used to help create an exclusion zone around automatically detected 
+boundaries in the ROI (eg holes) where the results may be unreliable.""")
+        self.gridLayout.addWidget(self.dilationIn, 2, 3, 1, 1)
+
         # Creating and adding the Submit Graph button
         self.submitGraphBut = QPushButton("Submit Graph", self)
         self.verticalLayout.addWidget(
@@ -500,6 +533,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         self.smoothWinIn.setEnabled(True)
         self.smoothOrderLab.setEnabled(True)
         self.smoothOrderIn.setEnabled(True)
+        self.dilationIn.setEnabled(True)
+        self.dilationLab.setEnabled(True)
 
         if int(self.resultsSelector.currentIndex()) == self.DISP_INDEX:
             for index, e in enumerate(sdpp.DispComp):
@@ -514,6 +549,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
             self.smoothWinIn.setEnabled(False)
             self.smoothOrderLab.setEnabled(False)
             self.smoothOrderIn.setEnabled(False)
+            self.dilationIn.setEnabled(False)
+            self.dilationLab.setEnabled(False)
 
     # ------------------------------------------------------------------------------
     # Function to submit the graph request
@@ -524,6 +561,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         smoothWindow = int(self.smoothWinIn.text())
         smoothOrder = int(self.smoothOrderIn.text())
         imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
+        dilation = int(self.dilationIn.text())
 
         # Plotting the graphs
         try:
@@ -536,6 +574,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                 figure = sdpp.plotDispContour(self.parent.parent.savePath, imgPair=imgPair, dispComp=dispComp,
                                               alpha=alpha, plotImage=True,
                                               showPlot=False, fileName='',
+                                              dilation=dilation,
                                               smoothWindow=smoothWindow, smoothOrder=smoothOrder,
                                               return_fig=True)
                 showGraph(self, figure, self.verticalLayout)
@@ -547,6 +586,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                 figure = sdpp.plotStrainContour(self.parent.parent.savePath, imgPair=imgPair, strainComp=strainComp,
                                                 alpha=alpha, plotImage=True,
                                                 showPlot=False, fileName='',
+                                                dilation=dilation,
                                                 smoothWindow=smoothWindow, smoothOrder=smoothOrder,
                                                 return_fig=True)
                 showGraph(self, figure, self.verticalLayout)
@@ -576,6 +616,7 @@ class ResultsUILineCut(QWidget):
     resultsCutComp = 1
     resultsGridLines = True
     resultsInterp = False
+    resultsDilation = 0
 
     DISP_INDEX = 0
     STRAIN_INDEX = 1
@@ -680,6 +721,21 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
             "Order of the Savitzky-Golay smoothing polynomial.")
         gridLayout.addWidget(self.smoothOrderIn, 2, 3, 1, 1)
 
+        # Add the dilation input and label in the row after the smoothing parameters
+        dilationLab = QLabel(self)
+        dilationLab.setText("Dilation:")
+        gridLayout.addWidget(dilationLab, 3, 0, 1, 1)
+
+        self.dilationIn = QLineEdit(self)
+        self.dilationIn.setText(str(self.resultsDilation))
+        dilationValidator = ClampingIntValidator()
+        dilationValidator.setBottom(0)
+        self.dilationIn.setValidator(dilationValidator)
+        self.dilationIn.setToolTip("""The amount of dilation to apply to the results. Zero or positive integer.
+This is used to help create an exclusion zone around automatically detected 
+boundaries in the ROI (eg holes) where the results may be unreliable.""")
+        gridLayout.addWidget(self.dilationIn, 3, 1, 1, 1)
+
         # The interpolation checkbox and label
         interpLab = QLabel(self)
         interpLab.setText("Interpolate:")
@@ -744,6 +800,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         smoothWindow = int(self.smoothWinIn.text())
         smoothOrder = int(self.smoothOrderIn.text())
         interpolate = self.interpIn.isChecked()
+        dilation = int(self.dilationIn.text())
 
         try:
             matplotlib.pyplot.close()
@@ -754,7 +811,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                     self.compIn.currentIndex()])
                 figure = sdpp.plotDispCutLine(self.parent.parent.savePath, imgPair=imgPair, dispComp=dispComp,
                                               cutComp=cutComp, cutValues=cutValues, gridLines=gridlines,
-                                              showPlot=False, fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+                                              showPlot=False, fileName='', 
+                                              dilation=dilation, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
                                               interpolate=interpolate, return_fig=True)
 
                 showGraph(self, figure, self.verticalLayout)
@@ -765,7 +823,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                     self.compIn.currentIndex()])
                 figure = sdpp.plotStrainCutLine(self.parent.parent.savePath, imgPair=imgPair, strainComp=strainComp, cutComp=cutComp,
                                                 cutValues=cutValues, gridLines=gridlines, showPlot=False,
-                                                fileName='', smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+                                                fileName='', dilation=dilation, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
                                                 interpolate=interpolate, return_fig=True)
 
                 showGraph(self, figure, self.verticalLayout)

@@ -8,7 +8,7 @@
 ################################################################################
 import os
 import shutil
-from pkg_resources import resource_filename
+from importlib.resources import files
 
 def copy_examples():
 
@@ -25,7 +25,7 @@ def copy_examples():
     # Copy all the resources to the target directory
     for resource, target_name in resources:
         # Get the full path of the resource in the package
-        source_path = resource_filename('sundic', resource)
+        source_path = files('sundic').joinpath(resource)
 
         # Check if the resource is a file or a directory
         if os.path.isfile(source_path):

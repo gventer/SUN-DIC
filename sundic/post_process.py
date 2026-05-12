@@ -10,6 +10,8 @@ from enum import IntEnum
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from scipy import ndimage
+import skimage.morphology as morphology
 from scipy.interpolate import RectBivariateSpline, NearestNDInterpolator
 import sundic.sundic as sdic
 from sundic.util.savitsky_golay import sgolay2d
@@ -91,7 +93,7 @@ class CompID(IntEnum):
 
 
 # --------------------------------------------------------------------------------------------
-def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
+def getDisplacements(resultsFile, imgPair, dilation=0, smoothWindow=0, smoothOrder=2):
     """
     Calculate and return the displacements based on the results file created by
     SUN-DIC.
@@ -100,6 +102,8 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
      - resultsFile (string): Results file from sundic.
      - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
+     - dilation (int, optional): Number of pixels to dilate the NaN mask around automatically
+                    detected features (eg holes). Default is 0.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
         smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
         Default is 0.
@@ -160,7 +164,7 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
     # results array
     results[:, DispComp.DISP_MAG] = np.sqrt(results[:, DispComp.X_DISP]**2 +
                                             results[:, DispComp.Y_DISP]**2)
-
+       
     # If smoothing is requested, apply Savitzky-Golay smoothing
     nRows = subSetPnts.shape[0]
     nCols = subSetPnts.shape[1]
@@ -174,6 +178,26 @@ def getDisplacements(resultsFile, imgPair, smoothWindow=0, smoothOrder=2):
         results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, stepSize, results,
                                                         DispComp.DISP_MAG, smoothWindow=smoothWindow,
                                                         smoothOrder=smoothOrder)
+
+    # Apply dilation of NaN mask if required
+    # Start by getting the current NaN mask based on the displacement magnitude values
+    if dilation > 0:
+        disk = morphology.disk(3)
+        rsltX   = results[:, DispComp.X_DISP].reshape(nRows, nCols, order='F')
+        rsltY   = results[:, DispComp.Y_DISP].reshape(nRows, nCols, order='F')
+        rsltMag = results[:, DispComp.DISP_MAG].reshape(nRows, nCols, order='F')
+        maskX = np.isnan(rsltX)
+        maskY = np.isnan(rsltY)
+        maskMag = np.isnan(rsltMag)
+        grownMaskX = ndimage.binary_dilation(maskX, iterations=dilation, structure=disk)
+        grownMaskY = ndimage.binary_dilation(maskY, iterations=dilation, structure=disk)
+        grownMaskMag = ndimage.binary_dilation(maskMag, iterations=dilation, structure=disk)
+        rsltX[grownMaskX] = np.nan
+        rsltY[grownMaskY] = np.nan
+        rsltMag[grownMaskMag] = np.nan
+        results[:, DispComp.X_DISP]   = rsltX.reshape(nSubSets, order='F')
+        results[:, DispComp.Y_DISP]   = rsltY.reshape(nSubSets, order='F')
+        results[:, DispComp.DISP_MAG] = rsltMag.reshape(nSubSets, order='F')
 
     return results, nRows, nCols
 
@@ -233,7 +257,7 @@ def getCznssd(resultsFile, imgPair):
 
 
 # --------------------------------------------------------------------------------------------
-def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
+def getStrains(resultsFile, imgPair, dilation=0, smoothWindow=9, smoothOrder=2):
     """
     Calculate and return the strains based on the subset points and coefficients.  For now only
     Engineering Strain is calculated.
@@ -242,8 +266,10 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
      - resultsFile (string): Results file from sundic.
      - imgPair (int): Zero based image pair to post-process for displacement values.
                     Use -1 for final/last pair.
+     - dilation (int, optional): Number of pixels to dilate the NaN mask around automatically
+                    detected features (eg holes). Default is 0.
      - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-        smoothing.  Must be an odd number larger than 0.  Default is 3.
+        smoothing.  Must be an odd number larger than 0.  Default is 9.
      - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
         Default is 2.
 
@@ -309,12 +335,37 @@ def getStrains(resultsFile, imgPair, smoothWindow=3, smoothOrder=2):
                                                results[:, StrainComp.Y_STRAIN] +
                                                3 * results[:, StrainComp.SHEAR_STRAIN]**2)
 
+    # Apply dilation of NaN mask if required
+    if dilation > 0:
+        disk = morphology.disk(3)
+        rsltX   = results[:, StrainComp.X_STRAIN].reshape(nRows, nCols, order='F')
+        rsltY   = results[:, StrainComp.Y_STRAIN].reshape(nRows, nCols, order='F')
+        rsltShear = results[:, StrainComp.SHEAR_STRAIN].reshape(nRows, nCols, order='F')
+        rsltVM = results[:, StrainComp.VM_STRAIN].reshape(nRows, nCols, order='F')
+        maskX = np.isnan(rsltX)
+        maskY = np.isnan(rsltY)
+        maskShear = np.isnan(rsltShear)
+        maskVM = np.isnan(rsltVM)
+        grownMaskX = ndimage.binary_dilation(maskX, iterations=dilation, structure=disk)
+        grownMaskY = ndimage.binary_dilation(maskY, iterations=dilation, structure=disk)
+        grownMaskShear = ndimage.binary_dilation(maskShear, iterations=dilation, structure=disk)
+        grownMaskVM = ndimage.binary_dilation(maskVM, iterations=dilation, structure=disk)
+        rsltX[grownMaskX] = np.nan
+        rsltY[grownMaskY] = np.nan
+        rsltShear[grownMaskShear] = np.nan
+        rsltVM[grownMaskVM] = np.nan
+        results[:, StrainComp.X_STRAIN] = rsltX.reshape(nRows*nCols, order='F')
+        results[:, StrainComp.Y_STRAIN] = rsltY.reshape(nRows*nCols, order='F')
+        results[:, StrainComp.SHEAR_STRAIN] = rsltShear.reshape(nRows*nCols, order='F')
+        results[:, StrainComp.VM_STRAIN] = rsltVM.reshape(nRows*nCols, order='F')
+
     return results, nRows, nCols
 
 
 # --------------------------------------------------------------------------------------------
 def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
                     alpha=0.75, plotImage=True, showPlot=True, fileName='',
+                    dilation=0,
                     smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
     """
     Plot the displacement contour based on the subset points and coefficients.
@@ -329,7 +380,9 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
-        - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
+        - dilation (int, optional): Number of pixels to dilate the NaN mask around automatically
+                    detected features (eg holes). Default is 0.
+        - smoothWindow (int, optional): Size of the window size used for the Savitzky-Golay
           smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 0.
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
@@ -346,7 +399,8 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
 
     # Get the displacement results
     results, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow, smoothOrder)
+        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+        dilation=dilation)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
@@ -361,7 +415,7 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         Z = results[:, DispComp.Y_DISP].reshape(nCols, nRows)
     else:
         raise ValueError('Invalid dispComp argument - use the Comp object.')
-
+    
     # Apply maximum and minimum values if provided
     if maxValue:
         Z[Z > maxValue] = maxValue
@@ -406,7 +460,8 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
 # --------------------------------------------------------------------------------------------
 def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
                       alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                      smoothWindow=3, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
+                      dilation=0,
+                      smoothWindow=9, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -420,8 +475,11 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - plotImage (bool, optional): Flag to plot the image under the contour plot. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
-        - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
-          smoothing.  Must be an odd number larger than zero.  Default is 3.
+        - dilation (int, optional): Number of pixels to dilate the mask around automatically
+                    detected features (eg holes) where the results maybe of poor quality. 
+                    Default is 0 which means no dilation.
+        - smoothWindow (int, optional): Size of the window size used for the Savitzky-Golay
+          smoothing.  Must be an odd number larger than zero.  Default is 9.
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
           Default is 2.
         - maxValue (float, optional): Maximum value to plot.  Default is None.
@@ -439,7 +497,8 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     dispResults, nRows, nCols = getDisplacements(
         resultsFile, imgPair, smoothWindow=0, smoothOrder=2)
     results, nRows, nCols = getStrains(
-        resultsFile, imgPair, smoothWindow, smoothOrder)
+        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+        dilation=dilation)
 
     # Setup the plot arrays
     X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
@@ -582,6 +641,7 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
 # --------------------------------------------------------------------------------------------
 def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID,
                     cutValues=[0], gridLines=True, showPlot=True, fileName='',
+                    dilation=0,
                     smoothWindow=0, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
@@ -598,7 +658,9 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
         - gridLines (bool, optional): Flag to plot grid lines. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
-        - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
+        - dilation (int, optional): Number of pixels to dilate the NaN mask around automatically
+                    detected features (eg holes). Default is 0.
+        - smoothWindow (int, optional): Size of the window size used for the Savitzky-Golay
           smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 0.
         - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
@@ -615,13 +677,8 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 
     # Get the displacement results
     results, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow, smoothOrder)
-
-    # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
-    X = X[:, 0]
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
-    Y = Y[0, :]
+        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder, 
+        dilation=dilation)
 
     # Setup the y label based on the requested component
     ylabel = ''
@@ -636,8 +693,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 
     # Create the cutline plot
     fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
-                                   results[:, CompID.YCoordID], results[:,
-                                                                        dispComp.value],
+                                   results[:,CompID.YCoordID], results[:,dispComp.value],
                                    cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
@@ -658,6 +714,7 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
                       cutComp=CompID.YCoordID, cutValues=[0],
                       gridLines=True, showPlot=True, fileName='',
+                      dilation=0,
                       smoothWindow=9, smoothOrder=2, interpolate=False, return_fig=False):
     """
     Plot a strain cut line based on the subset points and coefficients.  The cut line
@@ -675,6 +732,8 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - gridLines (bool, optional): Flag to plot grid lines. Default is True.
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
+        - dilation (int, optional): Number of pixels to dilate the NaN mask around automatically
+                    detected features (eg holes). Default is 0.
         - smoothWindow (int, optional): Size of the window sisze used for the Savitzky-Golay
           smoothing.  Must be an odd number and a value of 0 indicates no smoothing.
           Default is 9.
@@ -689,15 +748,11 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - ValueError: If an invalid dispComp or cutComp argument is provided.
     """
 
-    # Get the displacement results
-    results, nRows, nCols = getStrains(
-        resultsFile, imgPair, smoothWindow, smoothOrder)
+    # Get the strain results
+    results, nRows, nCols = getStrains( resultsFile, imgPair, smoothWindow=smoothWindow, 
+                                       smoothOrder=smoothOrder, dilation=dilation)
 
     # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows)
-    X = X[:, 0]
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows)
-    Y = Y[0, :]
     ylabel = ''
     if strainComp == StrainComp.SHEAR_STRAIN:
         ylabel = 'Strain (XY component)'
@@ -716,8 +771,7 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
     # Create the cutline plot
     fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
-                                   results[:, CompID.YCoordID], results[:,
-                                                                        strainComp.value],
+                                   results[:,CompID.YCoordID], results[:,strainComp.value],
                                    cutValues, cutComp, ylabel, interpolate)
 
     # Show gridlines if requested
@@ -871,9 +925,9 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
 
     # Process the raw data arrays
     X = dataX.reshape(nCols, nRows)
-    X = X[:, 0]
+    X = X.mean(axis=1)
     Y = dataY.reshape(nCols, nRows)
-    Y = Y[0, :]
+    Y = Y.mean(axis=0)
 
     # Setup the line styles and colours
     fig, ax = plt.subplots()

@@ -1,4 +1,9 @@
-__version__ = "0.0.26"
+__version__ = "0.0.27"
+# 0.0.27 - Updated copy_examples
+#        - Added dilation support for displacement field to post-processing to help create
+#          exclusion zone around automatically detected boundaries in the ROI
+#        - Added dilation support to GUI as well 
+#        - Update ROI in GUI to work with latest PyQT libraries
 # 0.0.26 - Updated requirements file and added pyproject.toml installation 
 #          support
 # 0.0.25 - Fixed bug in post-processing that caused an exception when

@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import (
     QSpacerItem, QSizePolicy, QGraphicsPixmapItem, QGraphicsView,
     QGraphicsScene, QGraphicsRectItem, QApplication, QFrame
 )
+from PyQt6.QtGui import QImage, QImageReader
+from PIL import Image
 from PyQt6.QtGui import QPixmap, QPen, QColor, QBrush, QCursor
 from PyQt6.QtCore import pyqtSignal, Qt, QPointF, QRectF
 
@@ -134,21 +136,42 @@ Use the mouse wheel to zoom in and out.""")
         self.widthIn.setText(str(width))
         self.heightIn.setText(str(height))
 
-        # Get all files in the image folder and then the datum image
         try:
             imageFolder = self.parent.settings.ImageFolder
             files = os.listdir(imageFolder)
             files = ns.os_sorted(files)
             roiImage = files[self.parent.settings.DatumImage]
+            imagePath = os.path.join(imageFolder, roiImage)
 
-            # Setting the datum photo to be displayed
-            self.roiViewer.setPhoto(
-                QPixmap(os.path.join(imageFolder, roiImage)))
+            pixmap = QPixmap()
 
-            # Set the rectangle on the image based on the ROI definition
+            # First try Qt image loading
+            reader = QImageReader(imagePath)
+            image = reader.read()
+            if not image.isNull():
+                pixmap = QPixmap.fromImage(image)
+
+            # Fallback to Pillow if Qt failed
+            if pixmap.isNull():
+                pilImage = Image.open(imagePath).convert("RGBA")
+                data = pilImage.tobytes("raw", "RGBA")
+                qimage = QImage(
+                    data,
+                    pilImage.width,
+                    pilImage.height,
+                    pilImage.width * 4,
+                    QImage.Format.Format_RGBA8888
+                )
+                pixmap = QPixmap.fromImage(qimage.copy())
+
+            self.roiViewer.setPhoto(pixmap)
             self.roiViewer.setRect(xPos, yPos, width, height)
+
         except Exception as e:
-            pass
+            print("Error setting ROI data:", e)
+            import traceback
+            traceback.print_exc()
+            self.roiViewer.setPhoto(QPixmap())             
 
     # ------------------------------------------------------------------------------
     # Function that updates the display of coordinates
@@ -208,7 +231,6 @@ Use the mouse wheel to zoom in and out.""")
         self.roiViewer._finalRect.setBrush(brush)
         self.roiViewer.scene.addItem(self.roiViewer._finalRect)
 
-
 class PhotoViewer(QGraphicsView):
     """ Class for the photo viewer used in the ROI definition tab
     """
@@ -235,51 +257,68 @@ class PhotoViewer(QGraphicsView):
         self.photo = QGraphicsPixmapItem()
         self.scene.addItem(self.photo)
         self.setScene(self.scene)
+
         self.setTransformationAnchor(
             QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
 
+        self.setMinimumSize(400, 300)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding,
+                        QSizePolicy.Policy.Expanding)
+
     # ------------------------------------------------------------------------------
     # Function to reset the view
-    def resetView(self, scale=1):
+    def resetView(self):
+        rect = self.photo.boundingRect()
+        if rect.isNull():
+            return
 
-        rect = QRectF(self.photo.pixmap().rect())
+        self.setSceneRect(rect)
+        self.resetTransform()
 
-        if not rect.isNull():
-            self.setSceneRect(rect)
-            unity = self.transform().mapRect(QRectF(0, 0, 1, 1))
-            self.resetTransform()
-            self.scale(1 / unity.width(), 1 / unity.height())
-            viewRect = self.viewport().rect()
-            sceneRect = self.transform().mapRect(rect)
-            factor = min(viewRect.width() / sceneRect.width(),
-                         viewRect.height() / sceneRect.height())
-            self.scale(factor, factor)
-            self.centerOn(self.photo)
-
-            # Apply user zoom
-            self.scale(self.currentScale, self.currentScale)
+        if self.viewport().width() > 0 and self.viewport().height() > 0:
+            self.fitInView(rect, Qt.AspectRatioMode.KeepAspectRatio)
+            if self.currentScale != 1.0:
+                self.scale(self.currentScale, self.currentScale)
 
     # ------------------------------------------------------------------------------
     # Function to set the photo to be displayed
     def setPhoto(self, pixmap=None):
+        self.zoomLevel = 0
+        self.currentScale = 1.0
+
         if pixmap is not None and not pixmap.isNull():
             self.hasPhoto = True
-            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
             self.photo.setPixmap(pixmap)
             self.maxWidth = pixmap.width()
             self.maxHeight = pixmap.height()
+            self.scene.setSceneRect(self.photo.boundingRect())
         else:
             self.hasPhoto = False
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
             self.photo.setPixmap(QPixmap())
-        self.resetView(self.SCALE_FACTOR ** self.zoomLevel)
+            self.scene.setSceneRect(QRectF())
+
+        if self._previewRect:
+            self.scene.removeItem(self._previewRect)
+            self._previewRect = None
+
+        if self._finalRect:
+            self.scene.removeItem(self._finalRect)
+            self._finalRect = None
+
+        self.resetView()
+        self.viewport().update()
 
     # ------------------------------------------------------------------------------
     # Function to zoom in or out
     def zoom(self, step):
+        if not self.hasPhoto:
+            return
+
         step = int(step)
         self.zoomLevel += step
         scaleFactor = self.SCALE_FACTOR ** step if step > 0 else 1 / \
@@ -290,6 +329,10 @@ class PhotoViewer(QGraphicsView):
     # ------------------------------------------------------------------------------
     # Function to handle the mouse wheel event (zooming in this case)
     def wheelEvent(self, event):
+        if not self.hasPhoto:
+            super().wheelEvent(event)
+            return
+
         delta = event.angleDelta().y()
         if delta:
             self.zoom(1 if delta > 0 else -1)
@@ -323,6 +366,7 @@ class PhotoViewer(QGraphicsView):
             scenePos = self.mapToScene(event.pos())
             self._startPoint = scenePos
             self._drawing = True
+
             if self._previewRect:
                 self.scene.removeItem(self._previewRect)
                 self._previewRect = None
@@ -347,9 +391,15 @@ class PhotoViewer(QGraphicsView):
         # When drawing the rectangle
         elif self._drawing:
             scenePos = self.mapToScene(event.pos())
+
             if self._previewRect:
                 self.scene.removeItem(self._previewRect)
+
             rect = QRectF(self._startPoint, scenePos).normalized()
+            rect = rect.intersected(self.photo.boundingRect())
+            if rect.isNull():
+                rect = QRectF(0, 0, 1, 1)
+
             pen = QPen(Qt.GlobalColor.red, 2)
             brush = QBrush(QColor(255, 0, 0, 80))
             self._previewRect = QGraphicsRectItem(rect)
@@ -382,11 +432,14 @@ class PhotoViewer(QGraphicsView):
         elif self._drawing and event.button() == Qt.MouseButton.LeftButton:
             scenePos = self.mapToScene(event.pos())
             rect = QRectF(self._startPoint, scenePos).normalized()
+
             if self._previewRect:
                 self.scene.removeItem(self._previewRect)
                 self._previewRect = None
+
             if self._finalRect:
                 self.scene.removeItem(self._finalRect)
+
             pen = QPen(Qt.GlobalColor.red, 3)
             brush = QBrush(QColor(255, 0, 0, 80))
 
@@ -394,6 +447,7 @@ class PhotoViewer(QGraphicsView):
             rect = rect.intersected(self.photo.boundingRect())
             if rect.isNull():
                 rect = QRectF(0, 0, 1, 1)
+
             self.rectDrawn.emit(rect.x(), rect.y(),
                                 rect.width(), rect.height())
 
@@ -420,11 +474,14 @@ class PhotoViewer(QGraphicsView):
             pos = self.mapFromGlobal(QCursor.pos())
 
         # Convert the position to scene coordinates
-        point = self.mapToScene(pos)
+        scene_point = self.mapToScene(pos)
+        item_point = self.photo.mapFromScene(scene_point)
 
         # If the point is inside the photo rectangle emit the point
-        if self.photo.contains(point):
-            self.coordinatesChanged.emit(point)
+        if self.photo.contains(item_point):
+            self.coordinatesChanged.emit(scene_point)
+        else:
+            self.coordinatesChanged.emit(QPointF())
 
     # ------------------------------------------------------------------------------
     # Function that is called when the mouse leaves the widget
@@ -445,8 +502,13 @@ class PhotoViewer(QGraphicsView):
         brush = QBrush(QColor(255, 0, 0, 80))
         brush.setStyle(Qt.BrushStyle.SolidPattern)
 
+        if self._previewRect:
+            self.scene.removeItem(self._previewRect)
+            self._previewRect = None
+
         if self._finalRect:
             self.scene.removeItem(self._finalRect)
+
         self._finalRect = QGraphicsRectItem(rect)
         self._finalRect.setPen(pen)
         self._finalRect.setBrush(brush)
