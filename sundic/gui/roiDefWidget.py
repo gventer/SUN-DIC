@@ -188,6 +188,7 @@ Use the mouse wheel to zoom in and out.""")
         self.yIn.setText(str(int(y)))
         self.widthIn.setText(str(int(width)))
         self.heightIn.setText(str(int(height)))
+        self.changedROI()
 
         # Update the settings object and main Window status
         self.getData(self.parent.settings)
@@ -230,7 +231,20 @@ Use the mouse wheel to zoom in and out.""")
         self.roiViewer._finalRect.setPen(pen)
         self.roiViewer._finalRect.setBrush(brush)
         self.roiViewer.scene.addItem(self.roiViewer._finalRect)
+        self.changedROI()
 
+    # ------------------------------------------------------------------------------
+    # Helper function to update the ROI definition when the user changes the values manually
+    def changedROI(self):
+        """Save ROI changes immediately to the settings object."""
+        try:
+            self.getData(self.parent.settings)
+            self.parent.savedFlag = False
+            self.parent.updateWindowTitle()
+        except ValueError:
+            # Ignore incomplete edits until all fields contain valid integers
+            pass
+        
 class PhotoViewer(QGraphicsView):
     """ Class for the photo viewer used in the ROI definition tab
     """
@@ -513,3 +527,4 @@ class PhotoViewer(QGraphicsView):
         self._finalRect.setPen(pen)
         self._finalRect.setBrush(brush)
         self.scene.addItem(self._finalRect)
+

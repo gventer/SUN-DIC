@@ -259,7 +259,6 @@ class Settings:
             return False
 
     # --------------------------------------------------------------------------------------------
-
     def loadSettings(self, configFile='settings.ini'):
         """
         Load the DIC settings from a configuration file and return them as a dictionary.
@@ -422,3 +421,54 @@ class Settings:
         # Perform Debug output if requested - print all values in dictionary
         if self.DebugLevel > 1:
             print(self.__repr__())
+
+
+    # --------------------------------------------------------------------------------------------
+    def saveSettings(self, configFile='settings.ini'):
+        """
+        Save the current DIC settings to a configuration file.
+
+        Parameters:
+            - configFile (str): The path to the output settings file.
+        """
+        cp = configparser.ConfigParser()
+
+        cp['General'] = {
+            'DebugLevel': str(self.DebugLevel),
+            'ImageFolder': str(self.ImageFolder),
+            'CPUCount': str(self.CPUCount),
+            'DICType': str(self.DICType),
+        }
+
+        cp['DICSettings'] = {
+            'SubSetSize': str(self.SubsetSize),
+            'StepSize': str(self.StepSize),
+            'ShapeFunctions': str(self.ShapeFunctions),
+            'ReferenceStrategy': str(self.ReferenceStrategy),
+            'StartingPoints': str(self.StartingPoints),
+        }
+
+        cp['PreProcess'] = {
+            'GaussianBlurSize': str(self.GaussianBlurSize),
+            'GaussianBlurStdDev': str(self.GaussianBlurStdDev),
+        }
+
+        cp['ImageSetDefinition'] = {
+            'DatumImage': str(self.DatumImage),
+            'TargetImage': str(self.TargetImage),
+            'Increment': str(self.Increment),
+            'ROI': ', '.join(str(v) for v in self.ROI),
+            'BackgroundCutoff': str(self.BackgroundCutoff),
+        }
+
+        cp['Optimisation'] = {
+            'OptimizationAlgorithm': str(self.OptimizationAlgorithm),
+            'MaxIterations': str(self.MaxIterations),
+            'InterpolationOrder': str(self.InterpolationOrder),
+            'ConvergenceThreshold': str(self.ConvergenceThreshold),
+            'NZCCThreshold': str(self.NZCCThreshold),
+        }
+
+        with open(configFile, 'w', encoding='utf-8') as f:
+            cp.write(f)
+        

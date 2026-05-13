@@ -1,5 +1,7 @@
-__version__ = "0.0.27b"
-# 0.0.28 - Updated Qt support in results widget
+__version__ = "0.0.27c"
+# 0.0.28 - GUI - added import/export of settings.ini file to File menu
+#        - GUI fix - manual changes to the ROI were not saved, but are now
+#        - Updated Qt support in results widget
 #        - Fixed some issues with the code when the user does not specify a ROI
 #          This relates to automatically setting up a usable ROI based on the nominal
 #          subset size and automatically resized subsets in cases where the subsets do
