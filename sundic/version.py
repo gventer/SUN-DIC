@@ -1,4 +1,9 @@
-__version__ = "0.0.27"
+__version__ = "0.0.27b"
+# 0.0.28 - Updated Qt support in results widget
+#        - Fixed some issues with the code when the user does not specify a ROI
+#          This relates to automatically setting up a usable ROI based on the nominal
+#          subset size and automatically resized subsets in cases where the subsets do
+#          not all have the same size (e.g. due to being near the edge of the image)
 # 0.0.27 - Updated copy_examples
 #        - Added dilation support for displacement field to post-processing to help create
 #          exclusion zone around automatically detected boundaries in the ROI
