@@ -21,6 +21,11 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/gventer/SUN-DIC"
 
+[project.optional-dependencies]
+jupyter = [
+    "jupyter>=1.1.1",
+]
+
 [project.scripts]
 sundic = "sundic.gui.mainWindow:main"
 copy-examples = "sundic.copy_examples:copy_examples"

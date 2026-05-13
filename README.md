@@ -56,11 +56,13 @@ Although installation can be performed without creating a virtual environment, i
 1. Create a virtual environment.
 2. Activate the virtual environment.
 3. Install the package from [PyPI](https://pypi.org/project/SUN-DIC/).
-4. Copy the example problem to the current working directory by typing `copy-examples`.  A complete working example is provided by the following files:
+4. If you want to use the example Jupyter notebook, install the optional `jupyter` dependencies.
+5. Copy the example problem to the current working directory by typing `copy-examples`.  A complete working example is provided by the following files:
    - `test_sundic.ipynb`
    - `settings.ini`
    - `planar_images` folder
-   These files provide practical starting point for using both the API or GUI.
+  
+  These files provide a practical starting point for using both the API or GUI.
 
 ---
 
@@ -78,13 +80,18 @@ Although installation can be performed without creating a virtual environment, i
    source sundic/bin/activate
    ```
 
-3. Install the package:
+3. Install the base package:
 
    ```
    pip install SUN-DIC
    ```
 
-4. Copy the example problem:
+4. Optional: install Jupyter notebook support if you want to use the Jupyter example:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
+
+5. Copy the example problem:
 
    ```
    copy-examples
@@ -106,13 +113,17 @@ Although installation can be performed without creating a virtual environment, i
    conda activate sundic
    ```
 
-3. Install the package:
+3. Install the base package:
 
    ```
    pip install SUN-DIC
    ```
+4. Optional: install Jupyter notebook support if you want to use the Jupyter example:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
 
-4. . Copy the example problem:
+5. Copy the example problem:
 
    ```
    copy-examples
@@ -123,14 +134,19 @@ Although installation can be performed without creating a virtual environment, i
 ### Installing Directly from GitHub (Advanced users only)
 
 1. Create and activate a virtual environment using either `pip` or `conda` as outlined above.
-2. Clone the repository and install the package:
+2. Clone the repository and install the base package:
 
    ```
    git clone https://github.com/gventer/SUN-DIC.git
    pip install ./SUN-DIC
    ```
 
-3. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
+3. Optional: install Jupyter notebook support if you want to use the Jupyter example
+   ```
+   pip install "./SUN-DIC[jupyter]"
+   ```
+
+4. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
 
 ---
 
@@ -142,7 +158,8 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 
 1. Type `sundic` in the terminal to launch the GUI.
 2. Use the `copy-examples` command to copy a complete working example to the current working directory.
-3. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
+3. To use the provided example problem in the GUI, make use of the `Import Settings File` option in the `File` menu of the GUI to import the `settings.ini` file that comes with the example problem.  This will setup the example problem in the GUI so that it can be run from the `Analysis` window.
+4. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
 
 <img src="screenshots/settings.png" width="450"> <img src="screenshots/image_set.png" width="450"> <img src="screenshots/roi.png" width="450">
 <img src="screenshots/analyze.png" width="450"> <img src="screenshots/results.png" width="450">
@@ -152,12 +169,15 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 ### Using the API
 
 1. Use the `copy-examples` command to copy a complete working example to the current working directory.
-2. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed working example.
+2. Open the `test_sundic.ipynb` Jupyter notebook for a detailed working example.  This requires the optional Jupyter notebook dependencies to be installed with:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
 3. The typical workflow involves:
    - Modifying the `settings.ini` file.
    - Running the DIC analysis.
    - Post-processing the results.
-4. While the example uses a Jupyter Notebook, the API can also be used in standard Python `.py` scripts.
+4. While the example uses a Jupyter notebook, the API can also be used in standard Python `.py` scripts.
 
 ---
 

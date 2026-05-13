@@ -258,11 +258,11 @@ class UIMainWindow(object):
         self.actionNew.triggered.connect(self.newAction)
 
         self.actionImportSettings = QAction(self.parent)
-        self.actionImportSettings.setText("Import Settings File...")
+        self.actionImportSettings.setText("Import Settings File")
         self.actionImportSettings.triggered.connect(self.importSettingsAction)
 
         self.actionExportSettings = QAction(self.parent)
-        self.actionExportSettings.setText("Export Settings File...")
+        self.actionExportSettings.setText("Export Settings File")
         self.actionExportSettings.triggered.connect(self.exportSettingsAction)        
 
         self.actionExit = QAction(self.parent)

@@ -482,15 +482,15 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     if debugLevel > 0:
         print('\nSubset Information : ')
         print('---------------------------------')
-        print('      Number of candidate subsets : '+str(nCandidates))
-        print('       Number of subsets retained : '+str(nSubSets))
-        print('       Number of subsets excluded : '+str(nExcluded))
+        print('       Number of candidate subsets : '+str(nCandidates))
+        print('        Number of subsets retained : '+str(nSubSets))
+        print('        Number of subsets excluded : '+str(nExcluded))
         print('     Number of rows in subset grid : '+str(nRows))
         print('  Number of columns in subset grid : '+str(nCols))
         if nSubSets > 0:
-            print('        Effective x range of centres : {} to {}'.format(
+            print('      Effective x range of centres : {} to {}'.format(
                 int(np.min(x0)), int(np.max(x0))))
-            print('        Effective y range of centres : {} to {}'.format(
+            print('      Effective y range of centres : {} to {}'.format(
                 int(np.min(y0)), int(np.max(y0))))
 
     return subSetPnts
@@ -2031,6 +2031,9 @@ def _safeRayInit_(externalRay, nCpus, debugLevel=0):
     """
 
     nRetry = 3  # Number of retries
+
+    # Silence Ray future warning about accelerator env var override behavior
+    os.environ["RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"] = "0"
 
     # Try to start ray with retries
     for i in range(nRetry):  # Retry a few times
