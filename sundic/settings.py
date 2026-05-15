@@ -32,6 +32,7 @@ class Settings:
     __defInterpolationOrder = 5
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
+    __defMaskFile = ''
 
     # --------------------------------------------------------------------------------------------
 
@@ -60,6 +61,7 @@ class Settings:
         self.InterpolationOrder = self.__defInterpolationOrder
         self.ConvergenceThreshold = self.__defConvergenceThreshold
         self.NZCCThreshold = self.__defNZCCThreshold
+        self.MaskFile = self.__defMaskFile
 
     # --------------------------------------------------------------------------------------------
 
@@ -245,7 +247,6 @@ class Settings:
             return False
 
     # --------------------------------------------------------------------------------------------
-
     def isFastICLM(self):
         """
         Determine if the optimization algorithm is the fast version of the Levenberg-Marquardt method.
@@ -257,6 +258,18 @@ class Settings:
             return True
         else:
             return False
+        
+
+    # --------------------------------------------------------------------------------------------
+    def hasMask(self):
+        """
+        Determine if a binary mask was defined for this analysis
+
+        Returns:
+            - bool: True if a mask file was defined, False otherwise.
+        """
+        return isinstance(self.MaskFile, str) and len(self.MaskFile.strip()) > 0
+    
 
     # --------------------------------------------------------------------------------------------
     def loadSettings(self, configFile='settings.ini'):
@@ -385,6 +398,13 @@ class Settings:
         if self.BackgroundCutoff < 0:
             raise ValueError(
                 'Config Parser:  BackgroundCutoff value must be greater than or equal to 0')
+        
+        self.MaskFile = cp.get(
+            'ImageSetDefinition', 'MaskFile', fallback=self.__defMaskFile)
+        # Check if the maskFile exists if it is not empty
+        if self.MaskFile and not os.path.isfile(self.MaskFile):
+            raise ValueError(
+                'Config Parser:  Specified MaskFile does not exist')
 
         # -- Optimization ------------------------------------------------------------------------
         # Initialization of optimisation routine
@@ -459,6 +479,7 @@ class Settings:
             'Increment': str(self.Increment),
             'ROI': ', '.join(str(v) for v in self.ROI),
             'BackgroundCutoff': str(self.BackgroundCutoff),
+            'MaskFile': str(self.MaskFile),
         }
 
         cp['Optimisation'] = {
