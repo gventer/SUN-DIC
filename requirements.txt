@@ -6,6 +6,5 @@ ray>=2.55.1
 numba>=0.65.1
 msgpack-numpy>=0.4.8
 matplotlib>=3.10.9
-jupyter>=1.1.1
 pandas>=3.0.3
 PyQT6>=6.11.0
