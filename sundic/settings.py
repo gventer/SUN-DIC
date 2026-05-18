@@ -32,6 +32,7 @@ class Settings:
     __defInterpolationOrder = 5
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
+    __defMaskFile = ''
 
     # --------------------------------------------------------------------------------------------
 
@@ -60,6 +61,7 @@ class Settings:
         self.InterpolationOrder = self.__defInterpolationOrder
         self.ConvergenceThreshold = self.__defConvergenceThreshold
         self.NZCCThreshold = self.__defNZCCThreshold
+        self.MaskFile = self.__defMaskFile
 
     # --------------------------------------------------------------------------------------------
 
@@ -144,6 +146,7 @@ class Settings:
         retStr += "  %25s : %s\n" % ('ROI', str(self.ROI))
         retStr += "  %25s : %s\n" % ('Background Cutoff',
                                      str(self.BackgroundCutoff))
+        retStr += "  %25s : %s\n" % ('Mask File', str(self.MaskFile))
         retStr += "  %25s : %s\n" % \
             ('Optimization Algorithm', str(self.OptimizationAlgorithm))
         retStr += "  %25s : %s\n" % ('Max Iterations', str(self.MaxIterations))
@@ -245,7 +248,6 @@ class Settings:
             return False
 
     # --------------------------------------------------------------------------------------------
-
     def isFastICLM(self):
         """
         Determine if the optimization algorithm is the fast version of the Levenberg-Marquardt method.
@@ -257,9 +259,20 @@ class Settings:
             return True
         else:
             return False
+        
 
     # --------------------------------------------------------------------------------------------
+    def hasMask(self):
+        """
+        Determine if a binary mask was defined for this analysis
 
+        Returns:
+            - bool: True if a mask file was defined, False otherwise.
+        """
+        return isinstance(self.MaskFile, str) and len(self.MaskFile.strip()) > 0
+    
+
+    # --------------------------------------------------------------------------------------------
     def loadSettings(self, configFile='settings.ini'):
         """
         Load the DIC settings from a configuration file and return them as a dictionary.
@@ -386,6 +399,13 @@ class Settings:
         if self.BackgroundCutoff < 0:
             raise ValueError(
                 'Config Parser:  BackgroundCutoff value must be greater than or equal to 0')
+        
+        self.MaskFile = cp.get(
+            'ImageSetDefinition', 'MaskFile', fallback=self.__defMaskFile)
+        # Check if the maskFile exists if it is not empty
+        if self.MaskFile and not os.path.isfile(self.MaskFile):
+            raise ValueError(
+                'Config Parser:  Specified MaskFile does not exist')
 
         # -- Optimization ------------------------------------------------------------------------
         # Initialization of optimisation routine
@@ -422,3 +442,55 @@ class Settings:
         # Perform Debug output if requested - print all values in dictionary
         if self.DebugLevel > 1:
             print(self.__repr__())
+
+
+    # --------------------------------------------------------------------------------------------
+    def saveSettings(self, configFile='settings.ini'):
+        """
+        Save the current DIC settings to a configuration file.
+
+        Parameters:
+            - configFile (str): The path to the output settings file.
+        """
+        cp = configparser.ConfigParser()
+
+        cp['General'] = {
+            'DebugLevel': str(self.DebugLevel),
+            'ImageFolder': str(self.ImageFolder),
+            'CPUCount': str(self.CPUCount),
+            'DICType': str(self.DICType),
+        }
+
+        cp['DICSettings'] = {
+            'SubSetSize': str(self.SubsetSize),
+            'StepSize': str(self.StepSize),
+            'ShapeFunctions': str(self.ShapeFunctions),
+            'ReferenceStrategy': str(self.ReferenceStrategy),
+            'StartingPoints': str(self.StartingPoints),
+        }
+
+        cp['PreProcess'] = {
+            'GaussianBlurSize': str(self.GaussianBlurSize),
+            'GaussianBlurStdDev': str(self.GaussianBlurStdDev),
+        }
+
+        cp['ImageSetDefinition'] = {
+            'DatumImage': str(self.DatumImage),
+            'TargetImage': str(self.TargetImage),
+            'Increment': str(self.Increment),
+            'ROI': ', '.join(str(v) for v in self.ROI),
+            'BackgroundCutoff': str(self.BackgroundCutoff),
+            'MaskFile': str(self.MaskFile),
+        }
+
+        cp['Optimisation'] = {
+            'OptimizationAlgorithm': str(self.OptimizationAlgorithm),
+            'MaxIterations': str(self.MaxIterations),
+            'InterpolationOrder': str(self.InterpolationOrder),
+            'ConvergenceThreshold': str(self.ConvergenceThreshold),
+            'NZCCThreshold': str(self.NZCCThreshold),
+        }
+
+        with open(configFile, 'w', encoding='utf-8') as f:
+            cp.write(f)
+        

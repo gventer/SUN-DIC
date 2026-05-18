@@ -156,7 +156,29 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
         shapeFn = settings.ShapeFunctions
         subSetPnts = _setupSubSets_(
             subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel)
+        if subSetPnts.size == 0:
+            raise ValueError("No valid subset centers could be created for the specified ROI/subset size.")
 
+        # Deal with a binary mask if specified
+        roiMask = None
+        activeSubsets = np.ones(subSetPnts.shape[:2], dtype=bool)
+
+        if settings.hasMask():
+            img0 = readImage(imgSet[0])
+            roiMask = _loadMask_(settings.MaskFile, img0.shape)
+            activeSubsets = _buildActiveSubsetsMask_(subSetPnts, roiMask)
+
+            if debugLevel > 0:
+                nActive = np.count_nonzero(activeSubsets)
+                nTotal = activeSubsets.size
+                print('\nMask Information :')
+                print('---------------------------------')
+                print(f'  Active subsets   : {nActive}')
+                print(f'  Inactive subsets : {nTotal - nActive}')
+    
+        if not np.any(activeSubsets):
+            raise ValueError("The specified mask excludes all subset centers. No active subsets remain.")
+        
         # Get the image pair information
         imgDatum = settings.DatumImage
         imgTarget = settings.TargetImage
@@ -213,13 +235,14 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
                         mRows, mCols))
                     print("")
                 subMatrices = _splitMatrix_(subSetPnts, mRows, mCols)
+                activeSubMatrices = _splitMatrix_(activeSubsets, mRows, mCols)
 
                 # Track the processes that are being submitted
                 procIDs = []
                 for i in range(mRows*mCols):
                     iRow, iCol = np.unravel_index(i, (mRows, mCols))
                     procIDs.append(_rmt_icOptimization_.remote(
-                        settings, iRow, iCol, subMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
+                        settings, iRow, iCol, subMatrices[iRow][iCol], activeSubMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
 
                     if nDebugOld > 0:
                         print("  Starting remote process for submatrix {} {}".
@@ -247,7 +270,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
             else:
                 # coefficients at convergence for current (i'th) image pair
                 subSetPnts[:] = _icOptimization_(
-                    settings, subSetPnts, imgSet, img, guiThread=guiThread)
+                    settings, subSetPnts, activeSubsets, imgSet, img, guiThread=guiThread)
 
             # Update the subset points coordinates if required - we make copies of the
             # current subset points to create a new array of subset points
@@ -259,6 +282,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
             subSetPntsOut = np.copy(subSetPnts)
             subSetPntsOut[:, :, CompID.XCoordID] = x_coordInit
             subSetPntsOut[:, :, CompID.YCoordID] = y_coordInit
+            subSetPntsOut = _applyInactiveSubsets_(subSetPntsOut, activeSubsets)
             returnData.append(subSetPntsOut)
             df.writeSubSetData(imgPairIdx, subSetPntsOut)
 
@@ -291,7 +315,8 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
 
 # --------------------------------------------------------------------------------------------
 @ray.remote
-def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img, guiThread=None):
+def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, activeSubsets, 
+                         imgSet, img, guiThread=None):
     """
     Perform the IC optimization for a subset of points in a parallel environment.  This is a
     very thin wrapper for the icOptimization function that allows the function to be called
@@ -302,6 +327,7 @@ def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img, guiT
         - iRowID (int): The row index of the submatrix.
         - iColID (int): The column index of the submatrix.
         - subSetPnts (ndarray): The subset points to optimize.
+        - activeSubsets (ndarray): A boolean array indicating which subsets are active.
         - imgSet (ndarray): The array of images.
         - img (int): The index of the image to process.
         - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to
@@ -311,7 +337,7 @@ def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, imgSet, img, guiT
         - tuple: A tuple containing the row index, column index, and the updated subset points.
     """
     rslt = _icOptimization_(settings, np.copy(
-        subSetPnts), imgSet, img, guiThread=guiThread)
+        subSetPnts), np.copy(activeSubsets), imgSet, img, guiThread=guiThread)
     return iRowID, iColID, rslt
 
 
@@ -326,8 +352,8 @@ def _setupROI_(ROI, img0, debugLevel=0):
         - debugLevel (int): The level of debug output to print.
 
     Returns:
-        - ROI (int[]): An int array representing the ROI with four elements [XStart, YStart,
-            XLength, YLength].
+        - ROI (int[]): An int array representing the ROI with four elements
+            [XStart, YStart, XLength, YLength].
     """
     # If xLength or yLength is zero, use full image based on image size
     # of first image
@@ -336,25 +362,26 @@ def _setupROI_(ROI, img0, debugLevel=0):
         # Read the image and determine the size
         img = readImage(img0)
         height, width = img.shape
-
-        # Ensure starts are non-negative
-        xStart = max(0, ROI[0])
-        yStart = max(0, ROI[1])
-
-        # Calculate lengths
-        xLength = ROI[2] if ROI[2] != 0 else width - xStart
-        yLength = ROI[3] if ROI[3] != 0 else height - yStart
-
-        # Ensure lengths do not exceed image bounds
-        xLength = min(xLength, width - xStart)
-        yLength = min(yLength, height - yStart)
-
-        # Ensure ROI is at least M pixels from edges
         M = IntConst.MIN_SUBSET_SIZE
-        xStart = max(xStart, M)
-        yStart = max(yStart, M)
-        xLength = min(xLength, width - 2*M)
-        yLength = min(yLength, height - 2*M)
+
+        # Clamp starts to valid subset-centre range
+        xStart = max(ROI[0], M)
+        yStart = max(ROI[1], M)
+
+        # If the start is beyond the last safe subset-centre location, clamp it back
+        xStart = min(xStart, width - M - 1)
+        yStart = min(yStart, height - M - 1)
+
+        # Compute maximum ROI lengths so that all generated subset centres remain valid.
+        # Since _setupSubSets_ uses arange(start, start + length, step), the largest
+        # possible generated centre is < start + length, so require:
+        #     start + length <= (image_size - M)
+        maxXLength = max(0, (width - M) - xStart)
+        maxYLength = max(0, (height - M) - yStart)
+
+        # Fill unspecified dimensions, otherwise clamp requested size
+        xLength = maxXLength if ROI[2] == 0 else min(ROI[2], maxXLength)
+        yLength = maxYLength if ROI[3] == 0 else min(ROI[3], maxYLength)
 
         ROI = [xStart, yStart, xLength, yLength]
 
@@ -377,7 +404,7 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     the subset size and step size.
 
     Parameters:
-    - subSetSize (int): The size of each subset.
+    - subSetSize (int): The nominal size of each subset.
     - stepSize (int): The step size between subsets.
     - shapeFn (string): The order of the shape functions for each subset.
     - ROI (tuple): A tuple containing the origin coordinates (xOrigin, yOrigin)
@@ -388,8 +415,8 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     Returns:
     - subSetPnts (ndarray): An array of shape (nRows, nCols, nVals) where nRows are the number
         of rows in the point grid (y-values), nCols is the number of columns (x-values) and
-        nVals are the number of values stored for each point.  These are the x,y coordinates
-        followed by the model coeficients.
+        nVals are the number of values stored for each point. These are the x,y coordinates
+        followed by the model coefficients.
     """
     # Read the image and determine the size
     img = readImage(img0)
@@ -400,17 +427,44 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     xBound = xOrigin + roiW
     yBound = yOrigin + roiH
 
-    # Now setup the measurement point coordidnates: defined in the reference image,
-    # i.e subset centres
-    y0, x0 = np.meshgrid(np.arange(yOrigin, yBound, stepSize),
-                         np.arange(xOrigin, xBound, stepSize),
+    # Original candidate grid inside the ROI
+    yCand, xCand = np.meshgrid(np.arange(yOrigin, yBound, stepSize),
+                               np.arange(xOrigin, xBound, stepSize),
+                               indexing='ij')
+    nRowsCand, nColsCand = yCand.shape
+    nCandidates = nRowsCand * nColsCand
+
+    # Only place subset centres where the FULL nominal subset fits in the image.
+    half = int(0.5 * (subSetSize - 1))
+
+    xStart = max(xOrigin, half)
+    yStart = max(yOrigin, half)
+    xStop = min(xBound, imgW - half)
+    yStop = min(yBound, imgH - half)
+
+    # If the ROI is too small to contain even one full subset, return an empty grid
+    if xStart >= xStop or yStart >= yStop:
+        subSetPnts = np.zeros((0, 0, IntConst.SUBSET_PNT_SIZE))
+        if debugLevel > 0:
+            print('\nSubset Information : ')
+            print('---------------------------------')
+            print('WARNING: ROI is too small to place any full subsets.')
+            print('         Number of candidate subsets : {}'.format(nCandidates))
+            print('         Number of subsets defined   : 0')
+            print('         Number excluded near edges  : {}'.format(nCandidates))
+        return subSetPnts
+
+    # Setup the measurement point coordinates that are actually valid
+    y0, x0 = np.meshgrid(np.arange(yStart, yStop, stepSize),
+                         np.arange(xStart, xStop, stepSize),
                          indexing='ij')
 
     # The number of rows and columns in the subset grid
     nRows, nCols = y0.shape
+    nSubSets = nRows * nCols
+    nExcluded = max(0, nCandidates - nSubSets)
 
     # Allocate the memory for the subset points
-    # x and y coordinates, the shape function coefficients and an analyze or not flag
     subSetPnts = np.zeros((nRows, nCols, IntConst.SUBSET_PNT_SIZE))
 
     # Store the x and y coordinates in the subSetPnts
@@ -427,20 +481,23 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     subSetPnts[:, :, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
     subSetPnts[:, :, CompID.XDispID:] = 0.0
 
-    # ----------------------------------------------------------------------------------------
-    # Check that the subsets are not exceeding the image bounds
-    # ----------------------------------------------------------------------------------------
+    # Safety check only
     autoFix = False
-    autoFix = _fixSubSetSize_(subSetPnts, CompID.XCoordID, 0, imgW)
-    autoFix = _fixSubSetSize_(subSetPnts, CompID.YCoordID, 0, imgH)
+    autoFix = _fixSubSetSize_(subSetPnts, CompID.XCoordID, 0, imgW) or autoFix
+    autoFix = _fixSubSetSize_(subSetPnts, CompID.YCoordID, 0, imgH) or autoFix
 
-    # Let the user know we've automatically fixed the subset sizes
-    if autoFix:
-        print('WARNING: Some subset sizes were auto-fixed to fit within the image bounds. ')
-        print('         This warning can be avoided by specifying an appropriate ROI.')
-        if debugLevel > 0:
-            print('         The subset sizes after auto-fixing are:')
-            print(subSetPnts[:, :, CompID.SSSizeID])
+    # Restore warning behavior
+    if nExcluded > 0 and debugLevel > 0:
+        print('WARNING: Some subsets near the ROI/image edges were excluded so that')
+        print('         the full nominal subset size fits within the image bounds.')
+        print('         Candidate subsets : {}'.format(nCandidates))
+        print('         Excluded subsets  : {}'.format(nExcluded))
+        print('         Retained subsets  : {}'.format(nSubSets))
+
+    if autoFix and debugLevel > 0:
+        print('WARNING: Some subset sizes were auto-fixed to fit within the image bounds.')
+        print('         The subset sizes after auto-fixing are:')
+        print(subSetPnts[:, :, CompID.SSSizeID])
 
     # Ensure that the subset size is not smaller than the minimum subset size
     subSetPnts[:, :, CompID.SSSizeID] = np.maximum(
@@ -448,12 +505,18 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
 
     # Print debug output if requested
     if debugLevel > 0:
-        nSubSets = nRows * nCols
         print('\nSubset Information : ')
         print('---------------------------------')
-        print('         Number of subsets defined : '+str(nSubSets))
+        print('       Number of candidate subsets : '+str(nCandidates))
+        print('        Number of subsets retained : '+str(nSubSets))
+        print('        Number of subsets excluded : '+str(nExcluded))
         print('     Number of rows in subset grid : '+str(nRows))
         print('  Number of columns in subset grid : '+str(nCols))
+        if nSubSets > 0:
+            print('      Effective x range of centres : {} to {}'.format(
+                int(np.min(x0)), int(np.max(x0))))
+            print('      Effective y range of centres : {} to {}'.format(
+                int(np.min(y0)), int(np.max(y0))))
 
     return subSetPnts
 
@@ -461,45 +524,44 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
 # --------------------------------------------------------------------------------------------
 def _fixSubSetSize_(subSetPnts, index, lowerBnd, upperBnd):
     """
-    Check and fix the subset sizes based on the specified lower and upper image bounds.  If 
-    the subset sizes are out of bounds, they are adjusted to fit within the specified bounds.
-    This function is used to ensure that the subset sizes do not exceed the image bounds.
+    Check and fix subset sizes based on image bounds.
+
+    For each subset centre, compute the largest valid odd subset size that fits
+    fully within the bounds [lowerBnd, upperBnd). If the current subset size is
+    too large, shrink it to that value.
 
     Parameters:
         - subSetPnts (ndarray): The subset points array.
         - index (int): The index of the coordinate to check (0 for x, 1 for y).
-        - lowerBnd (float): The lower bound for the subset size.
-        - upperBnd (float): The upper bound for the subset size.
+        - lowerBnd (float): The lower bound for the coordinate.
+        - upperBnd (float): The upper bound for the coordinate.
 
     Returns:
-        - autoFix (bool): A boolean flag indicating if the subset sizes were auto-fixed.
+        - autoFix (bool): True if any subset sizes were adjusted.
     """
-
-    # Flag to indicate if we had to auto-fix the subset sizes
     autoFix = False
 
-    # Get the center point values
     cntVals = subSetPnts[:, :, index]
+    ss = subSetPnts[:, :, CompID.SSSizeID]
 
-    # Check the lower bound
-    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
-    bndLowDiff = (cntVals - M) - lowerBnd
-    outOfBounds = np.where(bndLowDiff < 0)
-    if outOfBounds[0].size > 0:
-        autoFix = True
-        subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
-            subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
-            2.0*bndLowDiff[outOfBounds]
+    # Distance from centre to nearest valid edge in this dimension
+    roomLower = cntVals - lowerBnd
+    roomUpper = (upperBnd - 1) - cntVals
+    maxHalfWidth = np.floor(np.minimum(roomLower, roomUpper))
 
-    # Check the upper bound
-    M = (subSetPnts[:, :, CompID.SSSizeID] - 1) / 2
-    bndUppDiff = (upperBnd - (cntVals + M))
-    outOfBounds = np.where(bndUppDiff < 0)
-    if outOfBounds[0].size > 0:
+    # Largest valid odd subset size for this centre in this dimension
+    maxSize = 2 * maxHalfWidth + 1
+
+    # Keep subset sizes odd integers
+    ssOdd = 2 * np.floor((ss - 1) / 2) + 1
+    newSize = np.minimum(ssOdd, maxSize)
+
+    # Final cleanup: enforce odd integer-valued sizes
+    newSize = 2 * np.floor((newSize - 1) / 2) + 1
+
+    if np.any(newSize < ss):
         autoFix = True
-        subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] = \
-            subSetPnts[outOfBounds[0], outOfBounds[1], CompID.SSSizeID] + \
-            2.0*bndUppDiff[outOfBounds] - 2
+        subSetPnts[:, :, CompID.SSSizeID] = newSize
 
     return autoFix
 
@@ -600,7 +662,7 @@ def _relativeCoords_(subSetSize, cache):
     return result
 
 # --------------------------------------------------------------------------------------------
-def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
+def _icOptimization_(settings, subSetPnts, activeSubsets, imgSet, img, guiThread=None):
     """
     Perform IC (inverse compositional update) optimization for image correlation.  Currently
     two optimization algorithms are supported - IC-GN (Gauss Newton) or
@@ -609,6 +671,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
     Parameters:
         - settings (dict): Dictionary containing the optimization settings.
         - subSetPnts (ndarray): 3D Array of subset point information.
+        - activeSubsets (numpy.ndarray): 2D boolean array indicating which subsets are active.
         - imgSet (ndarray): Array of reference images.
         - img (int): Target image - index into the imgSet array.
         - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to
@@ -687,7 +750,7 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
 
     # Get the starting point for the optimization
     nextPnt, subSetPnts = _getStartingPnt_(
-        subSetPnts, nGPPoints, F, G, GInter, nBGCutOff, _relativeCoords_cache)
+        subSetPnts, activeSubsets, nGPPoints, F, G, GInter, nBGCutOff, _relativeCoords_cache)
 
     # Boolean array to indicate which points have been analyzed - initially all are false
     analyze = np.zeros_like(subSetPnts[:, :, CompID.XCoordID], dtype=bool)
@@ -697,10 +760,11 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
         print('\nStarting IC Optimization for Image Pair: '+str(img))
         print('---------------------------------')
 
-    # Loop through all subset points, determine the model coefficients
+    # Loop through all active subset points, determine the model coefficients
     # for each subset independently - the order is determined by the next best
     # point to optimize
-    for iSubSet in range(0, nSubSets):
+    nActiveSubSets = np.count_nonzero(activeSubsets)
+    for iSubSet in range(nActiveSubSets):
 
         # Check if we need to stop the analysis - only if running from the GUI
         if guiThread is not None and guiThread.isRunning() is False:
@@ -711,7 +775,17 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
             break
 
         # Current point to work with
+        if nextPnt is None:
+            break
         iRow, iCol = nextPnt
+        if not activeSubsets[iRow, iCol]:
+            analyze[iRow, iCol] = True
+            nextPnt, subSetPnts = _getNextPnt_(
+                nextPnt, subSetPnts, activeSubsets, analyze, F, G,
+                GInter, nBGCutOff, _cznssd_cache, _relativeCoords_cache)
+            if nextPnt is None:
+                break
+            continue
 
         # Get the subset size and shapeFn for the current subset
         subSetSize = subSetPnts[iRow, iCol, CompID.SSSizeID].astype(int)
@@ -724,17 +798,27 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
         x0 = int(subSetPnts[iRow, iCol, CompID.XCoordID])
         y0 = int(subSetPnts[iRow, iCol, CompID.YCoordID])
 
+        # Current subset model shape function coefficients
+        shapeFnCoeffs_i = subSetPnts[iRow, iCol, CompID.XDispID:]
+
         # Intensity data for reference subset
         f, f_mean, f_tilde, dfdx, dfdy = _referenceSubSetInfo_(
             F, delF, x0, y0, subSetSize, subSetIndices=None)
+        if np.isnan(f_mean) or np.isnan(f_tilde):
+            shapeFnCoeffs_i[:] = np.nan
+            subSetPnts[iRow, iCol, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
+            analyze[iRow, iCol] = True
+            nextPnt, subSetPnts = _getNextPnt_(
+                nextPnt, subSetPnts, activeSubsets, analyze, F, G,
+                GInter, nBGCutOff, _cznssd_cache, _relativeCoords_cache)
+            if nextPnt is None:
+                break
+            continue
 
         # Hessian and Jacobian operators for GuassNewton optimization routine,
         # derived from the reference subset intensity gradient data
         H, J = _getHessianInfo_(dfdx, dfdy, xsi, eta, subSetSize,
                                 shapeFn, isNormalized)
-
-        # Current subset model shape function coefficients
-        shapeFnCoeffs_i = subSetPnts[iRow, iCol, CompID.XDispID:]
 
         # Initial estimate for the incremental update of the model coefficients
         # in the current iteration - initial estimate set to 0 for all coefficients
@@ -869,19 +953,21 @@ def _icOptimization_(settings, subSetPnts, imgSet, img, guiThread=None):
         # Print debug output if requested
         if settings.DebugLevel > 1:
             print("  Subset {0:6d} of {1:6d}: ID ({2:4d},{3:4d})  Iteration Cnt {4:3d}".
-                  format(iSubSet, nSubSets, iRow, iCol, iter))
+                  format(iSubSet, nActiveSubSets, iRow, iCol, iter))
 
         elif settings.DebugLevel > 0 and iSubSet % 100 == 0:
             print("  Subset {0:6d} of {1:6d}: ID ({2:4d},{3:4d})  Iteration Cnt {4:3d}".
-                  format(iSubSet, nSubSets, iRow, iCol, iter))
+                  format(iSubSet, nActiveSubSets, iRow, iCol, iter))
 
         # Mark the current point as analyzed
         analyze[nextPnt] = True
 
         # Find the next point to iterate to
-        nextPnt, subSetPnts = _getNextPnt_(nextPnt, subSetPnts, analyze, F, G,
-                                          GInter, nBGCutOff, 
+        nextPnt, subSetPnts = _getNextPnt_(nextPnt, subSetPnts, activeSubsets,
+                                            analyze, F, G, GInter, nBGCutOff, 
                                           _cznssd_cache, _relativeCoords_cache)
+        if nextPnt is None:
+            break
 
     return subSetPnts
 
@@ -970,7 +1056,7 @@ def _processImage_(imgSet, img, gaussBlur, interOrder, isDatumImg, isNormalized)
 # Optimized _getNextPnt_ function with caching and vectorized interpolation
 # For now both versions are kept until we are confident the optimized version is stable 
 # and provides significant speedup across a range of settings and image types
-def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
+def _getNextPnt_(currentPnt, subSetPnts, activeSubsets, analyzed, F, G, GInter,
                            nBGCutOff, cznssd_cache, relativeCoords_cache):
     """
     Get the next point to analyze in the optimization algorithm (OPTIMIZED VERSION). The 
@@ -986,6 +1072,7 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         - currentPnt (tuple): The index of the current point - tuple with iRow and ICol.
         - subSetPnts (numpy.ndarray): The subSetPnts data structure - 3D array that contains
             coordinates of the center points and deformation model coefficients.
+        - activeSubsets (numpy.ndarray): A boolean array indicating which points are active subsets.
         - analyzed (numpy.ndarray): A boolean array indicating which points have been analyzed.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
@@ -1015,10 +1102,12 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
         (min(maxRow, iRow + 1), max(0, iCol - 1)),
         (min(maxRow, iRow + 1), min(maxCol, iCol + 1))
     ]
+    neighbor_indices = list(dict.fromkeys(neighbor_indices))
 
     neighbors = [(r, c) for r, c in neighbor_indices
-                 if r is not None and c is not None and
-                 not analyzed[r, c]]
+             if r is not None and c is not None and
+             activeSubsets[r, c] and
+             not analyzed[r, c]]
 
     # ========================================================================================
     # Vectorized interpolation
@@ -1130,14 +1219,17 @@ def _getNextPnt_(currentPnt, subSetPnts, analyzed, F, G, GInter,
 
     # Find the index of the best point that has not been analyzed yet using a masked array
     cznssd_arr = subSetPnts[:, :, CompID.CZNSSDID]
-    masked_cznssd = np.where(~analyzed, cznssd_arr, np.inf)
+    valid = activeSubsets & (~analyzed)
+    if not np.any(valid):
+        return None, subSetPnts
+    masked_cznssd = np.where(valid, cznssd_arr, np.inf)
     nextPnt = np.unravel_index(np.argmin(masked_cznssd), masked_cznssd.shape)
 
     # Return the next point to analyze
     return nextPnt, subSetPnts
 
 # --------------------------------------------------------------------------------------------
-def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoords_cache):
+def _getStartingPnt_(subSetPnts, activeSubsets, nGQPoints, F, G, GInter, nBGCutOff, relativeCoords_cache):
     """
     Get the starting point for the optimization algorithm.  This is done by detecting
     keypoints in a selection of subset points located at Gauss Quadrature points spread
@@ -1149,6 +1241,8 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoo
     Parameters:
         - subSetPnts (numpy.ndarray): 3D Array of subSetPoint information - center point
             coordinates and model coefficients.
+        - activeSubsets (numpy.ndarray): 2D boolean array indicating which subsets are active
+            and should be considered for starting point selection.
         - nGQPoints (int): The number of Gauss Quadrature points to use as starting points.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
@@ -1161,6 +1255,11 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoo
         - (iRow, iCol): The index of the best starting point.
         - subSetPnts: Updated with the deformation model coefficients for each starting point.
     """
+
+    # Fail with a clean error if no active subsets are found
+    if not np.any(activeSubsets):
+        raise ValueError("The specified ROI mask excludes all subset centers.")
+
     # Get the Gauss points
     gqPnts, _ = np.polynomial.legendre.leggauss(nGQPoints)
 
@@ -1169,15 +1268,18 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoo
     nRow, nCol = subSetPnts.shape[:2]
     xPnts = np.round(((nCol/2 - 1) * (1 + gqPnts))).astype(int)
     yPnts = np.round(((nRow/2 - 1) * (1 + gqPnts))).astype(int)
+    xPnts = np.clip(xPnts, 0, max(0, nCol - 1))
+    yPnts = np.clip(yPnts, 0, max(0, nRow - 1))
 
     # Extract the points to use in the Akaze detect
     # Do broadcasting to get all the required points not just a diagonal
     # Note: We are now using fancy indexing so we have a copy of the data in adPoints
     adPoints = subSetPnts[np.ix_(yPnts, xPnts)].copy()
+    adActive = activeSubsets[np.ix_(yPnts, xPnts)].copy()
 
     # Do the Akaze detect for all the test points and get back the parameter
     # vector
-    adPoints = _akazeDetect_(adPoints, F, G)
+    adPoints = _akazeDetect_(adPoints, adActive, F, G)
 
     # Store the parameters with the CZNSSD value in the shapeFnCoeff matrix
     xcoord, ycoord = CompID.XCoordID, CompID.YCoordID
@@ -1195,6 +1297,13 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoo
         # Impose the deformation model on the subset and get the reference and deformed
         # subset information
         iRow, iCol = it.multi_index
+        
+        # Deal with inactive subsets - set the CZNSSD value to max and skip the rest of the loop
+        if not adActive[iRow, iCol]:
+            adPoints[iRow, iCol, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
+            adPoints[iRow, iCol, CompID.XDispID:] = np.nan
+            continue
+
         xsi_df, eta_df = _relativeDeformedCoords_(
             adPoints[iRow, iCol, xdisp:], xsi, eta, shapeFn)
 
@@ -1217,14 +1326,20 @@ def _getStartingPnt_(subSetPnts, nGQPoints, F, G, GInter, nBGCutOff, relativeCoo
     # We can actually setup a mask to search as we do for the getNextPoint operation,
     # however it seems faster to just directly search for the minimum value and it is
     # only done once
-    startIdx = np.unravel_index(
-        np.argmin(subSetPnts[:, :, cznssd_idx]), subSetPnts[:, :, cznssd_idx].shape)
+    masked_cznssd = np.where(activeSubsets, subSetPnts[:, :, cznssd_idx], np.inf)
+    minVal = np.min(masked_cznssd)
+
+    if np.isinf(minVal) or minVal >= IntConst.CNZSSD_MAX:
+        activeRows, activeCols = np.where(activeSubsets)
+        startIdx = (activeRows[0], activeCols[0])
+    else:
+        startIdx = np.unravel_index(np.argmin(masked_cznssd), masked_cznssd.shape)
 
     return startIdx, subSetPnts
 
 
 # --------------------------------------------------------------------------------------------
-def _akazeDetect_(adPoints, F, G):
+def _akazeDetect_(adPoints, adActive, F, G):
     """
     Detects keypoints and computes descriptors using the AKAZE algorithm for the specified
     subsets (in adPoints) in the given images.  The keypoints are matched and used to
@@ -1234,6 +1349,7 @@ def _akazeDetect_(adPoints, F, G):
     Parameters:
         - adPoints (numpy.ndarray): The subset of points to use as starting points from the
             subSetPnts data structure.
+        - adActive (numpy.ndarray): A boolean mask indicating which subsets are active.
         - F (numpy.ndarray): The query image.
         - G (numpy.ndarray): The train image.
 
@@ -1261,6 +1377,12 @@ def _akazeDetect_(adPoints, F, G):
     # Loop through all the points and perform Akaze detection for each
     for iRow in range(rows):
         for iCol in range(cols):
+
+            # Skip inactive candidate points
+            if not adActive[iRow, iCol]:
+                adPoints[iRow, iCol, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
+                adPoints[iRow, iCol, CompID.XDispID:] = np.nan
+                continue
 
             # Get Subset info and reset the size factor
             x, y, subSetSize = X[iRow, iCol], Y[iRow, iCol], SS[iRow, iCol]
@@ -1380,26 +1502,51 @@ def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize, subSetIndices=None):
     - dfdy: numpy.ndarray
         The gradient in the y-direction (Fy) of the subset.
     """
-    # Get the upper and lower bound that define the subset in the
-    # reference image
-    bound = int(0.5*(subSetSize-1))
+    # Get the upper and lower bound that define the subset in the reference image
+    bound = int(0.5 * (subSetSize - 1))
 
-    # Extract  reference subset intensity values, f, from mother image, F,
-    f = F[y0-bound:y0+bound+1, x0-bound:x0+bound+1]
+    yMin = y0 - bound
+    yMax = y0 + bound + 1
+    xMin = x0 - bound
+    xMax = x0 + bound + 1
+
+    expectedSize = int(subSetSize * subSetSize)
+
+    # If the subset falls outside the image, return an invalid subset
+    if yMin < 0 or xMin < 0 or yMax > F.shape[0] or xMax > F.shape[1]:
+        f = np.full((expectedSize, 1), np.nan)
+        f_mean = np.nan
+        f_tilde = np.nan
+
+        if delF is not None:
+            dfdx = np.full(expectedSize, np.nan)
+            dfdy = np.full(expectedSize, np.nan)
+        else:
+            dfdx = dfdy = 0
+
+        if subSetIndices is not None:
+            f = f[subSetIndices]
+            if isinstance(dfdx, np.ndarray):
+                dfdx = dfdx[subSetIndices]
+                dfdy = dfdy[subSetIndices]
+
+        return f, f_mean, f_tilde, dfdx, dfdy
+
+    # Extract reference subset intensity values, f, from mother image, F
+    f = F[yMin:yMax, xMin:xMax]
     f = f.reshape(-1, 1, order='F')
     if subSetIndices is not None:
         f = f[subSetIndices]
 
     # Extract the gradient information
     # Note: Fy = delF[0], Fx = delF[1]
-    # Check if delF is None - this will be the case if we are
-    if (delF is not None):
-        dfdy = delF[0][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
+    if delF is not None:
+        dfdy = delF[0][yMin:yMax, xMin:xMax]
         dfdy = dfdy.reshape(-1, order='F')
         if subSetIndices is not None:
             dfdy = dfdy[subSetIndices]
 
-        dfdx = delF[1][y0-bound:y0+bound+1, x0-bound:x0+bound+1]
+        dfdx = delF[1][yMin:yMax, xMin:xMax]
         dfdx = dfdx.reshape(-1, order='F')
         if subSetIndices is not None:
             dfdx = dfdx[subSetIndices]
@@ -1408,7 +1555,7 @@ def _referenceSubSetInfo_(F, delF, x0, y0, subSetSize, subSetIndices=None):
 
     # Average subset intensity, and normalised sum of squared differences
     f_mean = f.mean()
-    f_tilde = np.linalg.norm(f-f_mean)
+    f_tilde = np.linalg.norm(f - f_mean)
 
     return f, f_mean, f_tilde, dfdx, dfdy
 
@@ -1778,6 +1925,20 @@ def _calcCZNSSD_(nBGCutOff, f, f_mean, f_tilde, g, g_mean, g_tilde):
     Returns:
         - float: The CZNSSD value for the given subset intensity values.
     """
+
+    # Reject invalid inputs
+    if np.isnan(f_mean) or np.isnan(g_mean) or np.isnan(f_tilde) or np.isnan(g_tilde):
+        return IntConst.CNZSSD_MAX
+
+    if np.isnan(f).any() or np.isnan(g).any():
+        return IntConst.CNZSSD_MAX
+
+    if f.shape != g.shape:
+        return IntConst.CNZSSD_MAX
+
+    if f_tilde == 0 or g_tilde == 0:
+        return IntConst.CNZSSD_MAX
+
     # Deal with cases where the image is all black
     if (f_mean < nBGCutOff) or (g_mean < nBGCutOff):
         return IntConst.CNZSSD_MAX
@@ -1875,6 +2036,10 @@ def _fillMissingData_(dataX, dataY, dataVal):
         linear interpolation.
     """
 
+    # Handle case where all values are NaN
+    if np.isnan(dataVal).all():
+        return dataVal
+    
     # Check if there are NaN values to interpolate
     if np.isnan(dataVal).any():
 
@@ -1921,8 +2086,10 @@ def readImage(imgFile, normalize8Bit=False):
     # Use the full range of the image bitrange but keep the same data type
     imgDType = grayImg.dtype
     maxValue = np.iinfo(imgDType).max
-    ratio = np.amax(grayImg) / maxValue
-    grayImg = (grayImg/ratio).astype(imgDType)
+    amax = np.amax(grayImg)
+    if amax > 0:
+        ratio = amax / maxValue
+        grayImg = (grayImg/ratio).astype(imgDType)
 
     # # Normalize the image to be in the range 0-255 - useful for displaying the image
     if normalize8Bit:
@@ -1947,6 +2114,9 @@ def _safeRayInit_(externalRay, nCpus, debugLevel=0):
     """
 
     nRetry = 3  # Number of retries
+
+    # Silence Ray future warning about accelerator env var override behavior
+    os.environ["RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"] = "0"
 
     # Try to start ray with retries
     for i in range(nRetry):  # Retry a few times
@@ -2058,3 +2228,75 @@ def _convertShapeFn_(shapeFn):
         else:
             raise ValueError(
                 'Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic')
+
+
+# ---------------------------------------------------------------------------------------------
+def _loadMask_(maskFile, expectedShape):
+    """
+    Load the binary mask file if one was specified
+
+    Parameters:
+        maskFile (string): The path to the mask file.
+        expectedShape (tuple): The expected shape of the mask - the overall image dimensions.
+
+    Raises:
+        FileNotFoundError: If the mask file is not found or cannot be read.
+        ValueError: If the mask shape does not match the expected shape.
+    
+    Returns:
+        numpy.ndarray: A boolean array where True indicates valid pixels according to the mask.
+    """
+    # Try to read the mask file as a grayscale image
+    mask = cv.imread(maskFile, cv.IMREAD_GRAYSCALE)
+    if mask is None:
+        raise FileNotFoundError(f"Mask file {maskFile} not found or could not be read.")
+
+    # Check that the mask shape matches the expected shape
+    if mask.shape != expectedShape:
+        raise ValueError(
+            f"Mask shape {mask.shape} does not match image shape {expectedShape}.\n \
+Please ensure the mask has the same dimensions as the input image."
+        )
+    
+    # Use thresholding to convert the mask to a binary mask (in case it is not already binary)
+    _, mask = cv.threshold(mask, 127, 255, cv.THRESH_BINARY)
+
+    return mask > 0
+
+
+# ---------------------------------------------------------------------------------------------
+def _buildActiveSubsetsMask_(subSetPnts, roiMask):
+    """
+    Build an active subset based on the provided binary mask
+
+    Parameters:
+    - subSetPnts (numpy.ndarray): An array of shape (nRows, nCols, nComponents) containing the coordinates of the subset points.
+    - roiMask (numpy.ndarray): A binary mask where True indicates valid pixels. 
+
+    Returns:
+        numpy.ndarray: A boolean array indicating the active subset.
+    """
+    x = subSetPnts[:, :, CompID.XCoordID].astype(int)
+    y = subSetPnts[:, :, CompID.YCoordID].astype(int)
+
+    return roiMask[y, x]
+
+# ---------------------------------------------------------------------------------------------
+def _applyInactiveSubsets_(subSetPnts, activeSubsets):
+    """
+    Apply the inactive subsets mask to the subset points, setting the CZNSSD value to the
+    maximum and the displacements to NaN for inactive subsets.
+
+    Parameters:
+    - subSetPnts (numpy.ndarray): An array of shape (nRows, nCols, nComponents) containing the 
+        coordinates of the subset points.
+    - activeSubsets (numpy.ndarray): A boolean array indicating the active subsets.
+
+    Returns:
+    - numpy.ndarray: An array of the same shape as subSetPnts with the inactive subsets modified.
+    """
+    out = np.copy(subSetPnts)
+    rows, cols = np.where(~activeSubsets)
+    out[rows, cols, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
+    out[rows, cols, CompID.XDispID:] = np.nan
+    return out

@@ -257,6 +257,14 @@ class UIMainWindow(object):
         self.actionNew.setIcon(newIcon)
         self.actionNew.triggered.connect(self.newAction)
 
+        self.actionImportSettings = QAction(self.parent)
+        self.actionImportSettings.setText("Import Settings File")
+        self.actionImportSettings.triggered.connect(self.importSettingsAction)
+
+        self.actionExportSettings = QAction(self.parent)
+        self.actionExportSettings.setText("Export Settings File")
+        self.actionExportSettings.triggered.connect(self.exportSettingsAction)        
+
         self.actionExit = QAction(self.parent)
         self.actionExit.setText("Exit")
         self.actionExit.triggered.connect(self.exitAction)
@@ -271,8 +279,13 @@ class UIMainWindow(object):
         # Add the actions to the menus
         menuFile.addAction(self.actionNew)
         menuFile.addAction(self.actionOpen)
+        menuFile.addSeparator()
+        menuFile.addAction(self.actionImportSettings)
+        menuFile.addAction(self.actionExportSettings)
+        menuFile.addSeparator()
         menuFile.addAction(self.actionSave)
         menuFile.addAction(self.actionSave_as)
+        menuFile.addSeparator()
         menuFile.addAction(self.actionExit)
 
         menuAbout.addAction(self.actionAbout)
@@ -335,8 +348,10 @@ class UIMainWindow(object):
             self.parent.savePath = filePath
             self.parent.updateWindowTitle()
             self.parent.settings = sdset.Settings.fromMsgPackFile(filePath)
-            self.parent.settings.ImageFolder = self.parent.getAbsImageFolder(filePath,
-                                                                             self.parent.settings.ImageFolder)
+            self.parent.settings.ImageFolder = self.parent.getAbsPathRelativeToResultsFile(
+                filePath, self.parent.settings.ImageFolder)
+            self.parent.settings.MaskFile = self.parent.getAbsPathRelativeToResultsFile(
+                filePath, self.parent.settings.MaskFile)            
 
             # See if we should enable the results button - only if results exist
             resultsFile = dataFile.DataFile.openReader(filePath)
@@ -472,6 +487,103 @@ class UIMainWindow(object):
             self.parent.resultsBut.setEnabled(False)
 
     # ------------------------------------------------------------------------------
+    # Export the current settings to a settings.ini style file
+    def importSettingsAction(self):
+        """
+        Import a settings.ini style file and overwrite the current project settings.
+        """
+
+        if self.parent.savedFlag == False:
+            warn = QMessageBox.question(
+                self.parent,
+                "Warning",
+                "You have unsaved changes. Importing settings will overwrite the current project settings. Do you want to proceed?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if warn == QMessageBox.StandardButton.No:
+                return
+            
+        filePath, _ = QFileDialog.getOpenFileName(
+            self.parent,
+            "Import Settings File",
+            "",
+            "Settings Files (*.ini *.txt);;All Files (*)"
+        )
+
+        if not filePath:
+            return
+
+        try:
+            # Load new settings from file
+            newSettings = sdset.Settings.fromSettingsFile(filePath)
+
+            newSettings.ImageFolder = self.getAbsPathRelativeToResultsFile(
+                filePath, newSettings.ImageFolder)
+            newSettings.MaskFile = self.getAbsPathRelativeToResultsFile(
+                filePath, newSettings.MaskFile)
+
+            # Optionally resolve relative image folder against the settings file location
+            if hasattr(newSettings, "ImageFolder") and not os.path.isabs(newSettings.ImageFolder):
+                baseDir = os.path.dirname(filePath)
+                newSettings.ImageFolder = os.path.abspath(
+                    os.path.join(baseDir, newSettings.ImageFolder)
+                )
+
+            # Overwrite current project settings
+            self.parent.settings = newSettings
+
+            # Mark project as modified
+            self.parent.savedFlag = False
+            self.parent.updateWindowTitle()
+
+            # Refresh all visible widgets
+            self.parent.settingsUI.setData(self.parent.settings)
+            self.parent.imageSetUI.setData(self.parent.settings)
+            self.parent.roiDefUI.setData(self.parent.settings)
+            self.parent.analysisUI.setData(self.parent.settings)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.parent,
+                "Import Settings Error",
+                f"Failed to import settings file:\n{e}"
+            )
+    
+    # ------------------------------------------------------------------------------
+    # Export the current settings to a settings.ini style file
+    def exportSettingsAction(self):
+        """
+        Export the current project settings to a settings.ini style file.
+        """
+        filePath, _ = QFileDialog.getSaveFileName(
+            self.parent,
+            "Export Settings File",
+            "settings.ini",
+            "Settings Files (*.ini *.txt);;All Files (*)"
+        )
+
+        if not filePath:
+            return
+
+        try:
+            # First pull current UI values into the settings object
+            self.parent.settingsUI.getData(self.parent.settings)
+            self.parent.imageSetUI.getData(self.parent.settings)
+            self.parent.roiDefUI.getData(self.parent.settings)
+            self.parent.analysisUI.getData(self.parent.settings)
+
+            # Save to text file
+            self.parent.settings.saveSettings(filePath)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.parent,
+                "Export Settings Error",
+                f"Failed to export settings file:\n{e}"
+            )
+
+    # ------------------------------------------------------------------------------
     # Create an exit action
     def exitAction(self):
         self.parent.close()
@@ -598,20 +710,40 @@ class mainProgram(QMainWindow, UIMainWindow):
                     str(os.path.basename(self.savePath)) + "* - SUN-DIC")
 
     # ------------------------------------------------------------------------------
-    # Get the absolute path to the image folder based on the results file location
-    def getAbsImageFolder(self, resultsFile, imageFolder):
+    # Helper function to resolve a path that may be relative to the results 
+    # file location
+    def getAbsPathRelativeToResultsFile(self, resultsFile, pathValue):
+        """
+        Helper function to resolve a path that may be relative to the results 
+        file location.
 
-        # Check if the imageFolder is an absolute path
-        if os.path.isabs(imageFolder):
-            return imageFolder
+        Parameters:
+        - resultsFile: The path to the results file that the pathValue may 
+                        be relative to.
+        - pathValue: The path value to resolve. If this is an absolute path, it will 
+                        be returned unchanged. If it is a relative path, it will be 
+                        resolved against the results file location. If it is None, 
+                        None will be returned.
 
-        # If not, make it an absolute path that is relative to the resultsFile
-        elif imageFolder is not None and os.path.isabs(resultsFile):
-            return os.path.abspath(os.path.join(os.path.dirname(resultsFile), imageFolder))
+            Returns: The absolute path corresponding to pathValue, resolved against 
+                        the results file location if it was a relative path. If 
+                        pathValue is None, None is returned.
+        """
 
-        # Otherwise, return the image folder as is
-        else:
-            return imageFolder
+        # Return None unchanged
+        if pathValue is None:
+            return pathValue
+
+        # If already absolute, leave it alone
+        if os.path.isabs(pathValue):
+            return pathValue
+
+        # Otherwise resolve relative to the results/settings file location
+        if os.path.isabs(resultsFile):
+            return os.path.abspath(os.path.join(os.path.dirname(resultsFile), pathValue))
+
+        # Fallback
+        return pathValue
 
 
 # ------------------------------------------------------------------------------

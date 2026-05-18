@@ -14,9 +14,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use("qtagg")
 
 
 # ------------------------------------------------------------------------------

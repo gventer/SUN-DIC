@@ -1,4 +1,13 @@
-__version__ = "0.0.27"
+__version__ = "0.0.28"
+# 0.0.28 - Allow the user to specify a binary mask to define the region of interest
+#        - Make the Jupyter install optional and added to the pyproject.toml file
+#        - GUI - added import/export of settings.ini file to File menu
+#        - GUI fix - manual changes to the ROI were not saved, but are now
+#        - Updated Qt support in results widget
+#        - Fixed some issues with the code when the user does not specify a ROI
+#          This relates to automatically setting up a usable ROI based on the nominal
+#          subset size and automatically resized subsets in cases where the subsets do
+#          not all have the same size (e.g. due to being near the edge of the image)
 # 0.0.27 - Updated copy_examples
 #        - Added dilation support for displacement field to post-processing to help create
 #          exclusion zone around automatically detected boundaries in the ROI

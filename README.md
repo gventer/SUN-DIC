@@ -26,8 +26,7 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 ## Limitations
 
 1. Currently supports only 2D planar problems (a stereo version is under development).
-2. Only rectangular regions of interest (ROI) can be specified. However, subsets with an all-black background (based on a user-defined threshold) is ignored thus allowing the code to handle irregularly shaped domains.
-3. Limited documentation.  Please see the `settings.ini` file for complete documentation on the options and the `test_sundic.ipynb` file as a working example of using the API.  These files are included as a working example (with sample image files) which can be accessed by issuing the `copy-examples` command after installation.  Please see below.
+2. Limited documentation.  Please see the provided `settings.ini` file for a complete description of all the options or use tooltip comments in the GUI for a description of the options.  Please see below.
 
 ---
 
@@ -40,10 +39,11 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 5. Supports both linear (affine) and quadratic shape functions.
 6. Includes Inverse Compositional Gauss-Newton (IC-GN) and Inverse Compositional Levenberg-Marquardt (IC-LM) solvers.
 7. Provides absolute and relative update strategies for handling multiple image pairs.
-8. Computes displacements and strains.
-9. Utilizes Savitzky-Golay smoothing for strain calculations.  Displacements can also be smoothed using the same algorithm.
-10. Supports parallel computing for improved performance.
-11. Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/).
+8. Users can specify rectangular regions of iterest (ROI) and/or make use of a black/white mask to define a custom ROI.  White areas are analysed while black areas are ignored.  In addition, subsets with an all-black background (based on a user-defined threshold) are automatically ignored thus allowing the code to handle irregularly shaped domains automatically.
+9. Computes displacements and strains and provides several graphing options to investigate the results.
+10. Utilizes Savitzky-Golay smoothing for strain calculations.  Displacements can also be smoothed using the same algorithm.
+11. Supports parallel computing for improved performance.
+12. Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/).
 
 ---
 
@@ -56,11 +56,13 @@ Although installation can be performed without creating a virtual environment, i
 1. Create a virtual environment.
 2. Activate the virtual environment.
 3. Install the package from [PyPI](https://pypi.org/project/SUN-DIC/).
-4. Copy the example problem to the current working directory by typing `copy-examples`.  A complete working example is provided by the following files:
+4. If you want to use the example Jupyter notebook, install the optional `jupyter` dependencies.
+5. Copy the example problem to the current working directory by typing `copy-examples`.  A complete working example is provided by the following files:
    - `test_sundic.ipynb`
    - `settings.ini`
    - `planar_images` folder
-   These files provide practical starting point for using both the API or GUI.
+  
+  These files provide a practical starting point for using both the API or GUI.
 
 ---
 
@@ -78,13 +80,18 @@ Although installation can be performed without creating a virtual environment, i
    source sundic/bin/activate
    ```
 
-3. Install the package:
+3. Install the base package:
 
    ```
    pip install SUN-DIC
    ```
 
-4. Copy the example problem:
+4. Optional: install Jupyter notebook support if you want to use the Jupyter example:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
+
+5. Copy the example problem:
 
    ```
    copy-examples
@@ -106,13 +113,17 @@ Although installation can be performed without creating a virtual environment, i
    conda activate sundic
    ```
 
-3. Install the package:
+3. Install the base package:
 
    ```
    pip install SUN-DIC
    ```
+4. Optional: install Jupyter notebook support if you want to use the Jupyter example:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
 
-4. . Copy the example problem:
+5. Copy the example problem:
 
    ```
    copy-examples
@@ -123,14 +134,19 @@ Although installation can be performed without creating a virtual environment, i
 ### Installing Directly from GitHub (Advanced users only)
 
 1. Create and activate a virtual environment using either `pip` or `conda` as outlined above.
-2. Clone the repository and install the package:
+2. Clone the repository and install the base package:
 
    ```
    git clone https://github.com/gventer/SUN-DIC.git
    pip install ./SUN-DIC
    ```
 
-3. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
+3. Optional: install Jupyter notebook support if you want to use the Jupyter example
+   ```
+   pip install "./SUN-DIC[jupyter]"
+   ```
+
+4. The example problem can then be found in the `SUN-DIC/sundic/examples` directory.
 
 ---
 
@@ -142,7 +158,8 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 
 1. Type `sundic` in the terminal to launch the GUI.
 2. Use the `copy-examples` command to copy a complete working example to the current working directory.
-3. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
+3. To use the provided example problem in the GUI, make use of the `Import Settings File` option in the `File` menu of the GUI to import the `settings.ini` file that comes with the example problem.  This will setup the example problem in the GUI so that it can be run from the `Analysis` window.
+4. Follow the workflow outlined on the left-hand side of the GUI. Hovering over any entry provides helpful tooltips.
 
 <img src="screenshots/settings.png" width="450"> <img src="screenshots/image_set.png" width="450"> <img src="screenshots/roi.png" width="450">
 <img src="screenshots/analyze.png" width="450"> <img src="screenshots/results.png" width="450">
@@ -152,12 +169,15 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 ### Using the API
 
 1. Use the `copy-examples` command to copy a complete working example to the current working directory.
-2. Open the `test_sundic.ipynb` Jupyter Notebook for a detailed working example.
+2. Open the `test_sundic.ipynb` Jupyter notebook for a detailed working example.  This requires the optional Jupyter notebook dependencies to be installed with:
+   ```
+   pip install "SUN-DIC[jupyter]"
+   ```
 3. The typical workflow involves:
    - Modifying the `settings.ini` file.
    - Running the DIC analysis.
    - Post-processing the results.
-4. While the example uses a Jupyter Notebook, the API can also be used in standard Python `.py` scripts.
+4. While the example uses a Jupyter notebook, the API can also be used in standard Python `.py` scripts.
 
 ---
 
