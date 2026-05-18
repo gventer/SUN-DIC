@@ -27,6 +27,9 @@ class ROIDefUI(QWidget):
 
         super().__init__(parent)
 
+        self._loadingData = False # Guard varaible to deal with sync 
+                                # between maskFile textfield
+
         # Set the class variables
         self.parent = parent
 
@@ -119,7 +122,10 @@ class ROIDefUI(QWidget):
         self.roiViewer.setFrameShadow(QFrame.Shadow.Plain)
         self.roiViewer.setToolTip("""Left Click+Drag to select the ROI.
 Left Click+Shift+Drag to pan the image.
-Use the mouse wheel to zoom in and out.""")
+Use the mouse wheel to zoom in and out.
+Red rectangle shows the selected ROI.
+Green points show the active subset 
+centers defined by the mask (if enabled).""")
         verticalLayout.addWidget(self.roiViewer)
 
         # Add a label to show the coordinates of the mouse
@@ -141,6 +147,8 @@ Use the mouse wheel to zoom in and out.""")
         self.maskBrowseBut.clicked.connect(self.browseMaskFile)
         self.useMaskCheck.toggled.connect(self.updateMaskPreview)
         self.maskFileIn.editingFinished.connect(self.updateMaskPreview)
+        self.useMaskCheck.toggled.connect(self.changedMask)
+        self.maskFileIn.editingFinished.connect(self.changedMask)
         self.toggleMaskControls(False)
 
 
@@ -161,54 +169,63 @@ Use the mouse wheel to zoom in and out.""")
     # ------------------------------------------------------------------------------
     # Function that is called to set the data for this object
     def setData(self, settings):
-
-        # Get the ROI definition
-        xPos, yPos, width, height = settings.ROI
-        self.xIn.setText(str(xPos))
-        self.yIn.setText(str(yPos))
-        self.widthIn.setText(str(width))
-        self.heightIn.setText(str(height))
-        hasMask = isinstance(settings.MaskFile, str) and len(settings.MaskFile.strip()) > 0
-        self.useMaskCheck.setChecked(hasMask)
-        self.maskFileIn.setText(settings.MaskFile if hasMask else "")
-
+        self._loadingData = True
         try:
-            imageFolder = self.parent.settings.ImageFolder
-            files = os.listdir(imageFolder)
-            files = ns.os_sorted(files)
-            roiImage = files[self.parent.settings.DatumImage]
-            imagePath = os.path.join(imageFolder, roiImage)
+            # Get the ROI definition
+            xPos, yPos, width, height = settings.ROI
+            self.xIn.setText(str(xPos))
+            self.yIn.setText(str(yPos))
+            self.widthIn.setText(str(width))
+            self.heightIn.setText(str(height))
+            hasMask = isinstance(settings.MaskFile, str) and len(settings.MaskFile.strip()) > 0
+            fileName = settings.MaskFile.strip() if hasMask else "None"
 
-            pixmap = QPixmap()
+            self.useMaskCheck.setChecked(hasMask)
+            if hasMask:
+                self.maskFileIn.setText(fileName)
+            else:
+                self.maskFileIn.setText("")
 
-            # First try Qt image loading
-            reader = QImageReader(imagePath)
-            image = reader.read()
-            if not image.isNull():
-                pixmap = QPixmap.fromImage(image)
 
-            # Fallback to Pillow if Qt failed
-            if pixmap.isNull():
-                pilImage = Image.open(imagePath).convert("RGBA")
-                data = pilImage.tobytes("raw", "RGBA")
-                qimage = QImage(
-                    data,
-                    pilImage.width,
-                    pilImage.height,
-                    pilImage.width * 4,
-                    QImage.Format.Format_RGBA8888
-                )
-                pixmap = QPixmap.fromImage(qimage.copy())
+            try:
+                imageFolder = self.parent.settings.ImageFolder
+                files = os.listdir(imageFolder)
+                files = ns.os_sorted(files)
+                roiImage = files[self.parent.settings.DatumImage]
+                imagePath = os.path.join(imageFolder, roiImage)
 
-            self.roiViewer.setPhoto(pixmap)
-            self.roiViewer.setRect(xPos, yPos, width, height)
-            self.updateMaskPreview()
+                pixmap = QPixmap()
 
-        except Exception as e:
-            print("Error setting ROI data:", e)
-            import traceback
-            traceback.print_exc()
-            self.roiViewer.setPhoto(QPixmap())             
+                # First try Qt image loading
+                reader = QImageReader(imagePath)
+                image = reader.read()
+                if not image.isNull():
+                    pixmap = QPixmap.fromImage(image)
+
+                # Fallback to Pillow if Qt failed
+                if pixmap.isNull():
+                    pilImage = Image.open(imagePath).convert("RGBA")
+                    data = pilImage.tobytes("raw", "RGBA")
+                    qimage = QImage(
+                        data,
+                        pilImage.width,
+                        pilImage.height,
+                        pilImage.width * 4,
+                        QImage.Format.Format_RGBA8888
+                    )
+                    pixmap = QPixmap.fromImage(qimage.copy())
+
+                self.roiViewer.setPhoto(pixmap)
+                self.roiViewer.setRect(xPos, yPos, width, height)
+                self.updateMaskPreview()
+
+            except Exception as e:
+                print("Error setting ROI data:", e)
+                import traceback
+                traceback.print_exc()
+                self.roiViewer.setPhoto(QPixmap())   
+        finally:
+            self._loadingData = False          
 
     # ------------------------------------------------------------------------------
     # Function that updates the display of coordinates
@@ -280,6 +297,8 @@ Use the mouse wheel to zoom in and out.""")
     # Helper function to update the ROI definition when the user changes the values manually
     def changedROI(self):
         """Save ROI changes immediately to the settings object."""
+        if self._loadingData:
+            return
         try:
             self.getData(self.parent.settings)
             self.parent.savedFlag = False
@@ -287,6 +306,18 @@ Use the mouse wheel to zoom in and out.""")
         except ValueError:
             # Ignore incomplete edits until all fields contain valid integers
             pass
+
+    # ------------------------------------------------------------------------------
+    # Helper function to update the mask preview when the user changes the mask file 
+    # or toggles the use mask option
+    def changedMask(self):
+        """Save mask changes immediately to the settings object."""
+        if self._loadingData:
+            return
+        self.getData(self.parent.settings)
+        self.parent.savedFlag = False
+        self.parent.updateWindowTitle()
+
 
     # ------------------------------------------------------------------------------
     # Helper function to toggle the mask file input and browse button based on the 
@@ -322,6 +353,7 @@ Use the mouse wheel to zoom in and out.""")
             self.maskFileIn.setText(fileName)
             self.useMaskCheck.setChecked(True)
             self.updateMaskPreview()
+            self.changedMask()
 
     # -----------------------------------------------------------------------------
     # Helper function to update the mask preview points on the image based on the 
@@ -350,7 +382,7 @@ Use the mouse wheel to zoom in and out.""")
                 self.parent.settings.StepSize,
                 self.parent.settings.ShapeFunctions,
                 ROI,
-                firstImagePath
+                firstImagePath, debugLevel=0
             )
 
             activeSubsets = np.ones(subSetPnts.shape[:2], dtype=bool)

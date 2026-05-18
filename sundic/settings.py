@@ -146,6 +146,7 @@ class Settings:
         retStr += "  %25s : %s\n" % ('ROI', str(self.ROI))
         retStr += "  %25s : %s\n" % ('Background Cutoff',
                                      str(self.BackgroundCutoff))
+        retStr += "  %25s : %s\n" % ('Mask File', str(self.MaskFile))
         retStr += "  %25s : %s\n" % \
             ('Optimization Algorithm', str(self.OptimizationAlgorithm))
         retStr += "  %25s : %s\n" % ('Max Iterations', str(self.MaxIterations))

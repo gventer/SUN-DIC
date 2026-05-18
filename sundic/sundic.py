@@ -487,18 +487,17 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     autoFix = _fixSubSetSize_(subSetPnts, CompID.YCoordID, 0, imgH) or autoFix
 
     # Restore warning behavior
-    if nExcluded > 0:
+    if nExcluded > 0 and debugLevel > 0:
         print('WARNING: Some subsets near the ROI/image edges were excluded so that')
         print('         the full nominal subset size fits within the image bounds.')
         print('         Candidate subsets : {}'.format(nCandidates))
         print('         Excluded subsets  : {}'.format(nExcluded))
         print('         Retained subsets  : {}'.format(nSubSets))
 
-    if autoFix:
+    if autoFix and debugLevel > 0:
         print('WARNING: Some subset sizes were auto-fixed to fit within the image bounds.')
-        if debugLevel > 0:
-            print('         The subset sizes after auto-fixing are:')
-            print(subSetPnts[:, :, CompID.SSSizeID])
+        print('         The subset sizes after auto-fixing are:')
+        print(subSetPnts[:, :, CompID.SSSizeID])
 
     # Ensure that the subset size is not smaller than the minimum subset size
     subSetPnts[:, :, CompID.SSSizeID] = np.maximum(

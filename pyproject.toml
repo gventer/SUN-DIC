@@ -31,7 +31,10 @@ sundic = "sundic.gui.mainWindow:main"
 copy-examples = "sundic.copy_examples:copy_examples"
 
 [tool.setuptools]
-packages = ["sundic"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["sundic*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "sundic.version.__version__"}

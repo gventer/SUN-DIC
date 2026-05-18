@@ -1,4 +1,4 @@
-__version__ = "0.0.27c"
+__version__ = "0.0.28"
 # 0.0.28 - Allow the user to specify a binary mask to define the region of interest
 #        - Make the Jupyter install optional and added to the pyproject.toml file
 #        - GUI - added import/export of settings.ini file to File menu

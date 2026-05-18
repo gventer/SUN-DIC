@@ -26,8 +26,7 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 ## Limitations
 
 1. Currently supports only 2D planar problems (a stereo version is under development).
-2. Only rectangular regions of interest (ROI) can be specified. However, subsets with an all-black background (based on a user-defined threshold) is ignored thus allowing the code to handle irregularly shaped domains.
-3. Limited documentation.  Please see the `settings.ini` file for complete documentation on the options and the `test_sundic.ipynb` file as a working example of using the API.  These files are included as a working example (with sample image files) which can be accessed by issuing the `copy-examples` command after installation.  Please see below.
+2. Limited documentation.  Please see the provided `settings.ini` file for a complete description of all the options or use tooltip comments in the GUI for a description of the options.  Please see below.
 
 ---
 
@@ -40,10 +39,11 @@ This is an early release of the Stellenbosch University DIC Code, referred to as
 5. Supports both linear (affine) and quadratic shape functions.
 6. Includes Inverse Compositional Gauss-Newton (IC-GN) and Inverse Compositional Levenberg-Marquardt (IC-LM) solvers.
 7. Provides absolute and relative update strategies for handling multiple image pairs.
-8. Computes displacements and strains.
-9. Utilizes Savitzky-Golay smoothing for strain calculations.  Displacements can also be smoothed using the same algorithm.
-10. Supports parallel computing for improved performance.
-11. Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/).
+8. Users can specify rectangular regions of iterest (ROI) and/or make use of a black/white mask to define a custom ROI.  White areas are analysed while black areas are ignored.  In addition, subsets with an all-black background (based on a user-defined threshold) are automatically ignored thus allowing the code to handle irregularly shaped domains automatically.
+9. Computes displacements and strains and provides several graphing options to investigate the results.
+10. Utilizes Savitzky-Golay smoothing for strain calculations.  Displacements can also be smoothed using the same algorithm.
+11. Supports parallel computing for improved performance.
+12. Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/).
 
 ---
 

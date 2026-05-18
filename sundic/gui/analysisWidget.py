@@ -2,6 +2,7 @@ import os
 import sys
 import ray
 import socket
+import time
 
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
@@ -175,8 +176,13 @@ Must be larger than or equal to 1.""")
         self.progOut.setPlainText(self.parent.settings.__repr__())
 
         # Start the run
+        # use tic/toc to time the analysis and print the time to the output window
+
+        global START_TIME
+        START_TIME = time.time()
         self.worker = PlanarDICWorker(
             settings=self.parent.parent.settings, resultsFile=self.parent.parent.savePath)
+        
         self.worker.progress.connect(self.appendProgress)
         self.worker.started.connect(self.startedRunOutput)
         self.worker.finished.connect(self.finishedRunOutput)
@@ -207,6 +213,11 @@ Must be larger than or equal to 1.""")
     # ------------------------------------------------------------------------------
     # Method to handle the finished signal
     def finishedRunOutput(self, text):
+
+        stop_time = time.time()
+        elapsed_time = stop_time - START_TIME
+        self.appendProgress(f"\nTime to complete the analysis: {elapsed_time:.2f} seconds")
+
         self.parent.settingsBut.setEnabled(True)
         self.parent.imageSetBut.setEnabled(True)
         self.parent.roiBut.setEnabled(True)

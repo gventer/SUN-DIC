@@ -348,8 +348,10 @@ class UIMainWindow(object):
             self.parent.savePath = filePath
             self.parent.updateWindowTitle()
             self.parent.settings = sdset.Settings.fromMsgPackFile(filePath)
-            self.parent.settings.ImageFolder = self.parent.getAbsImageFolder(filePath,
-                                                                             self.parent.settings.ImageFolder)
+            self.parent.settings.ImageFolder = self.parent.getAbsPathRelativeToResultsFile(
+                filePath, self.parent.settings.ImageFolder)
+            self.parent.settings.MaskFile = self.parent.getAbsPathRelativeToResultsFile(
+                filePath, self.parent.settings.MaskFile)            
 
             # See if we should enable the results button - only if results exist
             resultsFile = dataFile.DataFile.openReader(filePath)
@@ -515,6 +517,11 @@ class UIMainWindow(object):
         try:
             # Load new settings from file
             newSettings = sdset.Settings.fromSettingsFile(filePath)
+
+            newSettings.ImageFolder = self.getAbsPathRelativeToResultsFile(
+                filePath, newSettings.ImageFolder)
+            newSettings.MaskFile = self.getAbsPathRelativeToResultsFile(
+                filePath, newSettings.MaskFile)
 
             # Optionally resolve relative image folder against the settings file location
             if hasattr(newSettings, "ImageFolder") and not os.path.isabs(newSettings.ImageFolder):
@@ -703,20 +710,40 @@ class mainProgram(QMainWindow, UIMainWindow):
                     str(os.path.basename(self.savePath)) + "* - SUN-DIC")
 
     # ------------------------------------------------------------------------------
-    # Get the absolute path to the image folder based on the results file location
-    def getAbsImageFolder(self, resultsFile, imageFolder):
+    # Helper function to resolve a path that may be relative to the results 
+    # file location
+    def getAbsPathRelativeToResultsFile(self, resultsFile, pathValue):
+        """
+        Helper function to resolve a path that may be relative to the results 
+        file location.
 
-        # Check if the imageFolder is an absolute path
-        if os.path.isabs(imageFolder):
-            return imageFolder
+        Parameters:
+        - resultsFile: The path to the results file that the pathValue may 
+                        be relative to.
+        - pathValue: The path value to resolve. If this is an absolute path, it will 
+                        be returned unchanged. If it is a relative path, it will be 
+                        resolved against the results file location. If it is None, 
+                        None will be returned.
 
-        # If not, make it an absolute path that is relative to the resultsFile
-        elif imageFolder is not None and os.path.isabs(resultsFile):
-            return os.path.abspath(os.path.join(os.path.dirname(resultsFile), imageFolder))
+            Returns: The absolute path corresponding to pathValue, resolved against 
+                        the results file location if it was a relative path. If 
+                        pathValue is None, None is returned.
+        """
 
-        # Otherwise, return the image folder as is
-        else:
-            return imageFolder
+        # Return None unchanged
+        if pathValue is None:
+            return pathValue
+
+        # If already absolute, leave it alone
+        if os.path.isabs(pathValue):
+            return pathValue
+
+        # Otherwise resolve relative to the results/settings file location
+        if os.path.isabs(resultsFile):
+            return os.path.abspath(os.path.join(os.path.dirname(resultsFile), pathValue))
+
+        # Fallback
+        return pathValue
 
 
 # ------------------------------------------------------------------------------
