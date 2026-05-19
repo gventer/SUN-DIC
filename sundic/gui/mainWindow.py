@@ -730,9 +730,9 @@ class mainProgram(QMainWindow, UIMainWindow):
                         pathValue is None, None is returned.
         """
 
-        # Return None unchanged
-        if pathValue is None:
-            return pathValue
+        # Return None unchanged or length is equal to zero
+        if pathValue is None or len(pathValue.strip()) == 0:
+            return None
 
         # If already absolute, leave it alone
         if os.path.isabs(pathValue):

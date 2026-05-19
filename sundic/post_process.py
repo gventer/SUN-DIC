@@ -182,7 +182,7 @@ def getDisplacements(resultsFile, imgPair, dilation=0, smoothWindow=0, smoothOrd
     # Apply dilation of NaN mask if required
     # Start by getting the current NaN mask based on the displacement magnitude values
     if dilation > 0:
-        disk = morphology.disk(3)
+        disk = morphology.disk(1)
         rsltX   = results[:, DispComp.X_DISP].reshape(nRows, nCols, order='F')
         rsltY   = results[:, DispComp.Y_DISP].reshape(nRows, nCols, order='F')
         rsltMag = results[:, DispComp.DISP_MAG].reshape(nRows, nCols, order='F')
