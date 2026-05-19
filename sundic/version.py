@@ -1,4 +1,7 @@
-__version__ = "0.0.28"
+__version__ = "0.0.29"
+# 0.0.29 - Quick bug fix with binary mask setting when opening an existing results file
+#        - Fine tune the optional jupyter install
+#        - Fine tune the disk size for dilation to a radiius of 1 subset
 # 0.0.28 - Allow the user to specify a binary mask to define the region of interest
 #        - Make the Jupyter install optional and added to the pyproject.toml file
 #        - GUI - added import/export of settings.ini file to File menu
