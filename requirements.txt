@@ -1,4 +1,4 @@
-numpy>=2.4.5
+numpy>=2.4.6
 natsort>=8.4.0
 opencv_python_headless>=4.13.0.92
 scikit-image>=0.26.0
