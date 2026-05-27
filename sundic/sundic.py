@@ -434,13 +434,28 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     nRowsCand, nColsCand = yCand.shape
     nCandidates = nRowsCand * nColsCand
 
-    # Only place subset centres where the FULL nominal subset fits in the image.
-    half = int(0.5 * (subSetSize - 1))
+    # Only place subsets at points where the full nominal subset size fits within the 
+    # image bounds.
 
-    xStart = max(xOrigin, half)
-    yStart = max(yOrigin, half)
-    xStop = min(xBound, imgW - half)
-    yStop = min(yBound, imgH - half)
+    # If subSetSize is an array, extract the maximum values for the first row, the last row,
+    # the first column and the last column
+    if isinstance(subSetSize, np.ndarray):
+        yMinMax = subSetSize[0, :].max()  # Max in first row
+        yMaxMax = subSetSize[-1, :].max()  # Max in last row
+        xMinMax = subSetSize[:, 0].max()  # Max in first column
+        xMaxMax = subSetSize[:, -1].max()  # Max in last column
+
+        xStart = max(xOrigin, int(0.5 * (xMinMax - 1)))
+        yStart = max(yOrigin, int(0.5 * (yMinMax - 1)))
+        xStop = min(xBound, imgW - int(0.5 * (xMaxMax - 1)))
+        yStop = min(yBound, imgH - int(0.5 * (yMaxMax - 1)))        
+    else:
+        half = int(0.5 * (subSetSize - 1))
+        
+        xStart = max(xOrigin, half)
+        yStart = max(yOrigin, half)
+        xStop = min(xBound, imgW - half)
+        yStop = min(yBound, imgH - half)
 
     # If the ROI is too small to contain even one full subset, return an empty grid
     if xStart >= xStop or yStart >= yStop:

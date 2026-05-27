@@ -1,4 +1,7 @@
-__version__ = "0.0.29"
+__version__ = "0.0.29b"
+# 0.0.29b- Fix a problem with _setupSubSets_ when using different subsets sizes for
+#          each of the subsets (thus providing a 2D array with subset sizes, rather
+#          just a single subset size for all subsets).
 # 0.0.29 - Quick bug fix with binary mask setting when opening an existing results file
 #        - Fine tune the optional jupyter install
 #        - Fine tune the disk size for dilation to a radiius of 1 subset
