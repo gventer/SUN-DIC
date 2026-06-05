@@ -1,8 +1,6 @@
 # SUN-DIC
 
----
-
-**Stellenbosch University Digital Image Correlation (DIC) Code**
+### Stellenbosch University Digital Image Correlation (DIC) Code
 
 [![PyPI version](https://img.shields.io/pypi/v/SUN-DIC?style=flat-square&color=2C7BE5)](https://pypi.org/project/SUN-DIC/) [![Python version](https://img.shields.io/pypi/pyversions/SUN-DIC?style=flat-square&color=F0B429)](https://pypi.org/project/SUN-DIC/) [![License: MIT](https://img.shields.io/badge/License-MIT-2EA44F.svg?style=flat-square)](LICENSE)
 
@@ -13,8 +11,7 @@
 
 SUN-DIC is an open-source Python package for **2D digital image correlation (DIC)** developed at **Stellenbosch University**. It provides both a **graphical user interface (GUI)** and a **Python API** for displacement and strain analysis from image sets, making it suitable for both interactive use and research workflows.
 
-> **Early release notice**  
-> SUN-DIC is currently in an early public release phase. Core functionality is available and documented, but the interface and documentation will continue to evolve. Bug reports, suggestions, and feedback are very welcome.
+> **Early release notice:** SUN-DIC is currently in an early public release phase. Core functionality is available and documented, but the interface and documentation will continue to evolve. Bug reports, suggestions, and feedback are very welcome.
 > 
 
 ---
@@ -23,7 +20,7 @@ SUN-DIC is an open-source Python package for **2D digital image correlation (DIC
 
 ### Install with `pip`
 
-> **Note** Please see detailed installation instructions for both `pip` and `conda` further down in this `README` file.
+> **Note:** Please see detailed installation instructions for both `pip` and `conda` further down in this `README` file.
 
 ```bash
 python3.11 -m venv sundic
@@ -97,15 +94,16 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 3. Install the package from PyPI
 4. Optionally install Jupyter dependencies
 5. Copy the example problem into your current directory using `copy-examples`
+   
    > Optionally you can issue the `copy-examples --manual` command to also copy the user manual to your current directory
 
-The example problem includes:
+   The example problem includes:
 
-- `test_sundic.ipynb`
-- `settings.ini`
-- `planar_images/`
+   - `test_sundic.ipynb`
+   - `settings.ini`
+   - `planar_images/`
 
-These files provide a practical starting point for both the GUI and API workflows.
+   These files provide a practical starting point for both the GUI and API workflows.
 
 ---
 
@@ -119,33 +117,33 @@ These files provide a practical starting point for both the GUI and API workflow
 
 2. Activate the virtual environment:
    
-**Linux / macOS**
-```bash
-source sundic/bin/activate
-```
+   **Linux / macOS**
+   ```bash
+   source sundic/bin/activate
+   ```
 
-**Windows (Command Prompt)**
-```bash
-sundic\Scripts\activate
-```
+   **Windows (Command Prompt)**
+   ```bash
+   sundic\Scripts\activate
+   ```
 
 3. Install the base package:
 
-```bash
-pip install SUN-DIC
-```
+   ```bash
+   pip install SUN-DIC
+   ```
 
 4. Optional -- install Jupyter notebook support:
 
-```bash
-pip install "SUN-DIC[jupyter]"
-```
+   ```bash
+   pip install "SUN-DIC[jupyter]"
+   ```
 
 5. Copy the example problem:
 
-```bash
-copy-examples
-```
+   ```bash
+   copy-examples
+   ```
 
 ---
 
@@ -153,33 +151,33 @@ copy-examples
 
 1. Create a virtual environment with Python 3.11:
 
-```bash
-conda create -n sundic python=3.11
-```
+   ```bash
+   conda create -n sundic python=3.11
+   ```
 
 2. Activate the environment:
 
-```bash
-conda activate sundic
-```
+   ```bash
+   conda activate sundic
+   ```
 
 3. Install the base package:
 
-```bash
-pip install SUN-DIC
-```
+   ```bash
+   pip install SUN-DIC
+   ```
 
 4. Optional -- install Jupyter notebook support:
 
-```bash
-pip install "SUN-DIC[jupyter]"
-```
+   ```bash
+   pip install "SUN-DIC[jupyter]"
+   ```
 
 5. Copy the example problem:
 
-```bash
-copy-examples
-```
+   ```bash
+   copy-examples
+   ```
 
 ---
 
@@ -189,22 +187,22 @@ copy-examples
    
 2. Clone the repository and install the package:
 
-```bash
-git clone https://github.com/gventer/SUN-DIC.git
-pip install ./SUN-DIC
-```
+   ```bash
+   git clone https://github.com/gventer/SUN-DIC.git
+   pip install ./SUN-DIC
+   ```
 
 3. Optional: install Jupyter notebook support:
 
-```bash
-pip install "./SUN-DIC[jupyter]"
-```
+   ```bash
+   pip install "./SUN-DIC[jupyter]"
+   ```
 
 4. The example problem is available in:
 
-```text
-SUN-DIC/sundic/examples
-```
+   ```text
+   SUN-DIC/sundic/examples
+   ```
 
 ---
 
@@ -216,9 +214,9 @@ Make sure the virtual environment where `SUN-DIC` is installed is active before 
 
 1. Launch the GUI from a terminal:
 
-```bash
-sundic
-```
+   ```bash
+   sundic
+   ```
 
 2. Use the `copy-examples` command to copy a complete example to your current directory
    
@@ -244,9 +242,9 @@ GUI entries include tooltips describing the available options.
 2. Open `test_sundic.ipynb` for a fully worked example
 3. If needed, install the optional Jupyter dependencies:
 
-```bash
-pip install "SUN-DIC[jupyter]"
-```
+   ```bash
+   pip install "SUN-DIC[jupyter]"
+   ```
 
 A typical API workflow involves:
 
