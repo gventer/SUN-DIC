@@ -2,14 +2,11 @@
 
 ### Stellenbosch University Digital Image Correlation (DIC) Code
 
-[![PyPI version](https://img.shields.io/pypi/v/SUN-DIC?style=flat-square&color=2C7BE5)](https://pypi.org/project/SUN-DIC/) [![Python version](https://img.shields.io/pypi/pyversions/SUN-DIC?style=flat-square&color=F0B429)](https://pypi.org/project/SUN-DIC/) [![License: MIT](https://img.shields.io/badge/License-MIT-2EA44F.svg?style=flat-square)](LICENSE)
-
-[![PyPI Downloads](https://img.shields.io/pypi/dm/SUN-DIC?style=flat-square&color=0F766E)](https://pypi.org/project/SUN-DIC/) [![GitHub stars](https://img.shields.io/github/stars/gventer/SUN-DIC.svg?style=flat-square&color=D97706)](https://github.com/gventer/SUN-DIC/stargazers)
-
-
----
 
 SUN-DIC is an open-source Python package for **2D digital image correlation (DIC)** developed at **Stellenbosch University**. It provides both a **graphical user interface (GUI)** and a **Python API** for displacement and strain analysis from image sets, making it suitable for both interactive use and research workflows.
+
+[![PyPI version](https://img.shields.io/pypi/v/SUN-DIC?style=flat-square&color=2C7BE5)](https://pypi.org/project/SUN-DIC/) [![Python version](https://img.shields.io/pypi/pyversions/SUN-DIC?style=flat-square&color=F0B429)](https://pypi.org/project/SUN-DIC/) [![License: MIT](https://img.shields.io/badge/License-MIT-2EA44F.svg?style=flat-square)](LICENSE) [![PyPI Downloads](https://img.shields.io/pypi/dm/SUN-DIC?style=flat-square&color=0F766E)](https://pypi.org/project/SUN-DIC/) [![GitHub stars](https://img.shields.io/github/stars/gventer/SUN-DIC.svg?style=flat-square&color=D97706)](https://github.com/gventer/SUN-DIC/stargazers)
+
 
 > **Early release notice:** SUN-DIC is currently in an early public release phase. Core functionality is available and documented, but the interface and documentation will continue to evolve. Bug reports, suggestions, and feedback are very welcome.
 > 
