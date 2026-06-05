@@ -1,0 +1,62 @@
+% ─────────────────────────────────────────────────────────────────────────────
+\chapter{About SUN-DIC}
+\label{sec:about}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\section{What is Digital Image Correlation?}
+
+Digital Image Correlation (DIC) is a non-contact optical technique used to measure full-field displacement and strain on the surface of a specimen under load. A random speckle pattern is applied to the specimen surface (or may occur naturally on the surface). One or more cameras (for stereo DIC) record images as the specimen deforms.
+
+DIC software, such as SUN-DIC, tracks small image regions called subsets between a reference image and one or more deformed images. This process, known as correlation, determines how each subset has translated and deformed during loading. The result is a dense displacement field $(u,v)$ over the selected region of interest (ROI), from which surface strains can be computed.
+
+\section{Key Features of SUN-DIC}
+
+SUN-DIC (Stellenbosch University Digital Image Correlation) is an open-source Python software platform for two-dimensional planar DIC analysis. It was developed at Stellenbosch University to provide a freely available, transparent, and extensible DIC solution that incorporates modern, widely used DIC algorithms.
+~\\
+
+\noindent
+Key features of SUN-DIC include:
+
+\begin{itemize}
+	\item \textbf{Correlation criterion:} Zero-Mean Normalised Sum of Squared Differences (ZNSSD)
+	
+	\item \textbf{Optimisation algorithms:} Inverse Compositional Gauss--Newton (IC-GN) and Inverse Compositional Levenberg--Marquardt (IC-LM)
+	
+	\item \textbf{Shape functions:} Affine (6 DOF) and Quadratic (12 DOF)
+	
+	\item \textbf{Robust initialisation:} AKAZE-based initial guess strategy to improve robustness and overcome the limited convergence radius of the IC-GN and IC-LM optimisers
+	
+	\item \textbf{Flexible ROI definition:} Support for rectangular regions of interest, binary masks, and automatic exclusion of near-zero intensity subsets (typically corresponding to a black background)
+	
+	\item \textbf{Parallel execution:} Seamless parallel processing using the \code{ray} framework
+	
+	\item \textbf{Broad image-format support:} Compatible with all image formats supported by the \code{opencv} library
+	
+	\item \textbf{Multiple interfaces:} Includes both a Python API and an easy-to-use PyQt6 graphical user interface (GUI)
+	
+	\item \textbf{Simple installation:} Distributed through \code{pypi}
+
+	
+\end{itemize}
+
+\section{Citation}
+
+The software is described in detail in the following publication. Please cite this article when referencing SUN-DIC in academic publications:
+
+\begin{grayquote}
+	G.\ Venter and M.\ Neaves, ``SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation,'' \textit{Advances in Engineering Software}, vol.\ 211, 2025.
+	
+	\href{https://doi.org/10.1016/j.advengsoft.2025.104043}{DOI: 10.1016/j.advengsoft.2025.104043}
+\end{grayquote}
+
+\section{What This Manual Covers}
+
+This manual provides:
+
+\begin{enumerate}
+	\item Installation instructions for SUN-DIC and its dependencies
+	\item A complete reference for all SUN-DIC algorithm parameters
+	\item A step-by-step guide to the graphical user interface (GUI)
+	\item A worked example using the Python API
+	\item A concise theoretical background covering the ZNSSD criterion, subpixel interpolation, affine and quadratic shape functions, AKAZE initialisation, and the IC-GN and IC-LM optimisation algorithms
+\end{enumerate}

@@ -28,7 +28,7 @@ jupyter = [
 
 [project.scripts]
 sundic = "sundic.gui.mainWindow:main"
-copy-examples = "sundic.copy_examples:copy_examples"
+copy-examples = "sundic.copy_examples:main"
 
 [tool.setuptools]
 include-package-data = true
@@ -47,6 +47,7 @@ sundic = [
     "examples/settings.ini",
     "examples/test_sundic.ipynb",
     "examples/planar_images/*",
+    "docs/SUN-DIC_Manual.pdf",
     "gui/icons/*",
     "gui/Fonts/Figtree/*",
     "gui/Fonts/Figtree/static/*",
