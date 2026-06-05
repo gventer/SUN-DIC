@@ -1,0 +1,151 @@
+% ─────────────────────────────────────────────────────────────────────────────
+\chapter{Parameters}
+\label{sec:parameters}
+% ─────────────────────────────────────────────────────────────────────────────
+
+All parameters are stored in an INI-format configuration file (typically \code{settings.ini}). This file can be edited manually and used directly with the API. When using the GUI, an existing \code{settings.ini} file can be loaded to populate the interface. Alternatively, the GUI can be used to define settings and export a \code{settings.ini} file for use with the API.
+
+The \code{settings.ini} file is divided into five sections, which are described in detail below. After each section, general notes are provided to guide parameter selection.
+
+\newpage
+\section{\code{[General]}}
+
+\begin{center}
+	\begin{tabularx}{0.9\textwidth}{lllX}
+		\toprule
+		\textbf{Key} & \textbf{Type} & \textbf{Default} & \textbf{Description} \\
+		\midrule
+		\code{DebugLevel}   & int                  & \code{0}      & Verbosity level \\
+		& & & 0 -- silent \\
+		& & & 1 -- top-level output \\
+		& & & 2 -- per-iteration output \\
+		& & & Values outside 0--2 are silently clamped \\
+		\code{ImageFolder}  & str                  & \code{images} & Path to image directory (absolute or relative to working directory) \\
+		\code{CPUCount}     & int or \code{auto}   & \code{1}      & Number of CPU cores to use \\
+		& & & \code{auto} uses all available cores \\
+		\code{DICType}      & str                  & \code{Planar} & Analysis type (currently only \code{Planar} is implemented) \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\noindent
+\textbf{Notes:}
+\begin{enumerate}
+	\item \codebf{CPUCount} If set to 1, the \code{ray} library is not used and computation runs on a single core. This can be useful for debugging, as parallel execution may reduce the amount of detailed output available.
+	
+	\item \codebf{CPUCount} Setting \code{auto} may not always provide optimal performance on many-core systems. In practice, specifying approximately half the available cores often yields better performance for small to medium workloads.
+	
+\end{enumerate}
+
+\newpage
+\section{\code{[DICSettings]}}
+
+\begin{center}
+	\begin{tabularx}{0.9\textwidth}{lllX}
+		\toprule
+		\textbf{Key} & \textbf{Type} & \textbf{Default} & \textbf{Description} \\
+		\midrule
+		\code{SubSetSize}        & int (odd) & \code{33}       & Subset side length in pixels. \textbf{Must be odd} so that the subset is centred on a single pixel. \\
+		\code{StepSize}          & int       & \code{5}        & Grid spacing between subset centres in pixels \\
+		\code{ShapeFunctions}    & str       & \code{Affine}   & \code{Affine} (6 DOF) or \code{Quadratic} (12 DOF). Quadratic is more accurate in high-gradient regions but computationally more expensive. \\
+		\code{StartingPoints}    & int       & \code{4}        & Defines an $n \times n$ grid of candidate starting points across the ROI to initialise the correlation process. \\
+		\code{ReferenceStrategy} & str       & \code{Relative} & \code{Relative}: each frame is compared to the previous frame (ROI updated per step) --- recommended for large deformations \\
+		& & & \code{Absolute}: all frames are compared to the first image (fixed ROI) --- recommended for small deformations \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\noindent
+\textbf{Notes:}
+\begin{enumerate}
+	\item \codebf{SubSetSize} Larger subsets reduce noise but increase spatial averaging and potential bias. Quadratic shape functions generally require larger subset sizes than affine functions. Increasing this value can improve robustness if correlation fails.
+
+	\item \codebf{StepSize} Controls the density of evaluated points within the ROI and therefore has a strong impact on runtime. It does not directly affect accuracy, only spatial sampling density.
+	
+	\item \codebf{StartingPoints} Increasing the number of starting points improves robustness of the initialisation but increases computational cost. Values above 4 or 5 rarely provide significant benefit. When running in parallel, the ROI is split across cores, and the starting-point grid is applied independently to each sub-region.
+	
+\end{enumerate}
+
+\newpage
+\section{\code{[PreProcess]}}
+
+\begin{center}
+	\begin{tabularx}{0.9\textwidth}{lllX}
+		\toprule
+		\textbf{Key} & \textbf{Type} & \textbf{Default} & \textbf{Description} \\
+		\midrule
+		\code{GaussianBlurSize}   & int   & \code{5}   & Gaussian blur kernel size (must be odd). \\
+		& & & \code{0} -- disables filtering \\
+		\code{GaussianBlurStdDev} & float & \code{0.0} & Gaussian standard deviation. \\
+		& & &  \code{0.0} -- uses an automatically determined value based on kernel size \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\newpage
+\section{\code{[ImageSetDefinition]}}
+
+\begin{center}
+	\begin{tabularx}{0.9\textwidth}{lllX}
+		\toprule
+		\textbf{Key} & \textbf{Type} & \textbf{Default} & \textbf{Description} \\
+		\midrule
+		\code{DatumImage}       & int    & \code{0}       & Index of reference image in the naturally sorted image list \\
+		\code{TargetImage}      & int    & \code{-1}      & Index of last target image (\code{-1} indicates the last image in the folder) \\
+		\code{Increment}        & int    & \code{1}       & Step size between frames in the datum-to-target range \\
+		\code{ROI}              & int[4] & \code{0,0,0,0} & Region of interest defined as $x, y, w, h$. \code{0,0,0,0} selects the full image \\
+		\code{BackgroundCutoff} & int    & \code{25}      & Subsets with mean intensity below this threshold are excluded. This enables automatic handling of holes, notches, and irregular boundaries without manual masking \\
+		\code{MaskFile}         & str    & (empty)        & Optional binary mask file (absolute or relative to working directory), combined with the ROI. White pixels (255) are included; black pixels (0) are excluded \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\noindent
+\textbf{Notes:}
+\begin{enumerate}
+	\item \codebf{ROI} When set to \code{0,0,0,0}, SUN-DIC automatically defines an internal ROI that fits the subsets within the image bounds.
+	
+	\item \codebf{BackgroundCutoff} Set to 0 to disable automatic exclusion based on intensity. Note that this feature may occasionally exclude valid regions within the ROI.
+	
+	\item \codebf{MaskFile} The mask must have the same dimensions as the first image in the dataset and contain only black (0) and white (255) pixels. It is applied in combination with the ROI. The mask can be created using external tools such as GIMP.
+	
+\end{enumerate}
+
+\newpage
+\section{\code{[Optimisation]}}
+
+\begin{center}
+	\begin{tabularx}{0.9\textwidth}{lllX}
+		\toprule
+		\textbf{Key} & \textbf{Type} & \textbf{Default} & \textbf{Description} \\
+		\midrule
+		\code{OptimizationAlgorithm} & str   & \code{IC-GN}  & \code{IC-GN}: fastest, suitable for most cases \\
+		& & & \code{IC-LM}: more robust for difficult cases, but computationally more expensive \\
+		& & & \code{Fast-IC-LM}: reduced-accuracy but faster variant of IC-LM \\
+		\code{MaxIterations}         & int   & \code{50}     & Maximum number of iterations per subset \\
+		\code{InterpolationOrder}    & int   & \code{5}      & \code{3} -- cubic interpolation (more stable, usually sufficient) \\
+		& & & \code{5} -- quintic interpolation (potentially more accurate, higher cost) \\
+		\code{ConvergenceThreshold}  & float & \code{0.0001} & Stop when displacement change is below this threshold \\
+		& & & \code{0} disables this criterion \\
+		\code{NZCCThreshold}         & float & \code{0.999}  & Stop when ZNCC exceeds this value \\
+		& & & Values $\geq$ 1.0 disable this criterion \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\noindent
+\textbf{Notes:}
+\begin{enumerate}
+	\item \codebf{OptimizationAlgorithm} \code{IC-LM} is generally more robust but slightly slower than \code{IC-GN}. With the initialisation strategy implemented in SUN-DIC, \code{IC-GN} is sufficient in most cases. \code{IC-LM} should be used only when convergence issues occur with \code{IC-GN}. The \code{Fast-IC-LM} option is experimental and should be used with caution.
+	
+	\item \codebf{MaxIterations} This value is intentionally conservative and should rarely need adjustment. In most cases, convergence occurs in fewer than 5 iterations.
+	
+	\item \codebf{InterpolationOrder} The cubic option (\code{3}) is generally sufficient. The quintic option (\code{5}) may provide slightly higher accuracy but at increased computational cost. Cubic interpolation is typically more robust.
+	
+	\item \codebf{ConvergenceThreshold} The default value is appropriate for most applications.  Can be disabled by setting this value to 0.
+	
+	\item \codebf{NZCCThreshold} This provides an additional stopping criterion. If set below 1.0, optimisation stops when either convergence criterion is satisfied. To disable this criterion, set to \code{>= 1.0}.
+	
+	\item If both \code{ConvergenceThreshold} and \code{NZCCThreshold} are disabled, \code{MaxIterations} will be reached for all subsets.  This is not advised.  Generally, only \code{NZCCThreshold} should be disabled if a more stringent convergence is required.
+	
+\end{enumerate}

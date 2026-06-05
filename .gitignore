@@ -9,3 +9,10 @@ test_sundic.py
 SUN-DIC.code-workspace
 SUN_DIC.egg-info/
 settings.json
+SUN-DIC_Manual.aux
+SUN-DIC_Manual.bbl
+SUN-DIC_Manual.blg
+SUN-DIC_Manual.log
+SUN-DIC_Manual.out
+SUN-DIC_Manual.toc
+SUN-DIC_Manual.synctex.gz

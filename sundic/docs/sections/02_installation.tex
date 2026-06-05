@@ -1,0 +1,134 @@
+\chapter{Installation}
+\label{sec:installation}
+
+\section{Requirements}
+
+SUN-DIC has been tested on Windows, macOS, and Linux, with Linux serving as the primary development platform. The examples in this manual assume \textbf{Python 3.11}. Before proceeding, verify your Python version by running the following command from a terminal or command prompt:
+
+\begin{lstlisting}[language=bash]
+python --version
+\end{lstlisting}
+
+\noindent
+\textbf{Special Installation Notes}
+
+\begin{itemize}
+	\item On Windows, the \code{ray} package may not always support the latest Python release. For example, at the time of writing, Python~3.14 was available, while \code{ray} was only supported up to Python~3.12. If installation fails because of the \code{ray} dependency, install an earlier supported version of Python.
+	
+	\item On Linux, the GUI requires Qt6 system libraries (for example, \code{libxcb} and \code{xcb-util}). If the GUI fails to start, these libraries may need to be installed using your system package manager.
+\end{itemize}
+
+To avoid dependency conflicts, it is strongly recommended that SUN-DIC be installed in a dedicated virtual environment. The instructions below assume that such an environment is used. Installation can be performed either with \code{conda} in an Anaconda environment or with \code{pip} in a standard \code{venv} environment.
+
+\section{Creating a Virtual Environment}
+
+\subsection{Using \code{conda}}
+
+Create and activate a dedicated virtual environment named \code{sundic}:
+
+\begin{lstlisting}[language=bash]
+conda create -n sundic python=3.11
+conda activate sundic
+\end{lstlisting}
+
+\subsection{Using \code{venv}}
+
+Create a virtual environment named \code{sundic}:
+
+\begin{lstlisting}[language=bash]
+python3.11 -m venv sundic
+\end{lstlisting}
+
+\noindent
+Activate the environment:
+
+\begin{lstlisting}[language=bash]
+# macOS / Linux
+source sundic/bin/activate
+
+# Windows
+sundic\Scripts\activate
+\end{lstlisting}
+
+\section{Installing SUN-DIC from PyPI}
+
+Once the virtual environment has been created and activated, install SUN-DIC using:
+
+\begin{lstlisting}[language=bash]
+pip install SUN-DIC
+\end{lstlisting}
+
+\noindent
+To install the optional Jupyter notebook dependencies (required for the example notebook \code{test\_sundic.ipynb}), use:
+
+\begin{lstlisting}[language=bash]
+pip install SUN-DIC[jupyter]
+\end{lstlisting}
+
+\section{Installing from GitHub (Advanced)}
+
+Users who wish to access the latest release, experiment with development versions, or contribute to SUN-DIC can install the software directly from the GitHub repository.  To clone and install the latest release version:
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/gventer/SUN-DIC.git
+pip install ./SUN-DIC
+\end{lstlisting}
+
+\noindent
+To include optional Jupyter notebook support:
+
+\begin{lstlisting}[language=bash]
+pip install ./SUN-DIC[jupyter]
+\end{lstlisting}
+
+\noindent
+To obtain the latest development version, clone the \code{dev} branch instead:
+
+\begin{lstlisting}[language=bash]
+git clone --branch dev https://github.com/gventer/SUN-DIC.git
+\end{lstlisting}
+
+
+\section{Copying the Example Files}
+
+The \code{copy-examples} console script is installed alongside SUN-DIC. Run it once after installation to copy the bundled example files to the current working directory:
+
+\begin{lstlisting}[language=bash]
+copy-examples
+\end{lstlisting}
+
+\noindent
+This command creates the following files and directories:
+
+\begin{itemize}
+	\item \code{test\_sundic.ipynb} -- a complete worked example demonstrating the Python API within a Jupyter notebook
+	\item \code{settings.ini} --- a fully documented reference configuration file for the API example, but that can also be loaded into the GUI
+	\item \code{planar\_images/} --- five sample TIFF images of a planar tensile specimen for use with both the API example and the GUI
+\end{itemize}
+
+\noindent
+These files provide a convenient starting point for both API and GUI users.
+
+Optionally, the \code{copy-examples} script can also be used to copy this user manual by making use of the \code{--manual} command line flag:
+
+\begin{lstlisting}[language=bash]
+copy-examples --manual
+\end{lstlisting}
+
+\noindent
+In addition to the example problem files and directories listed above, this command will also create:
+
+\begin{itemize}
+	\item \code{docs/SUN-DIC\_Manual.pdf} -- this user manual
+\end{itemize}
+
+\section{Launching the GUI}
+
+The GUI can be launched using the following console command:
+
+\begin{lstlisting}[language=bash]
+sundic
+\end{lstlisting}
+
+\noindent
+If the installation was successful, the SUN-DIC graphical interface should now open.

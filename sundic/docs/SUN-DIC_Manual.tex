@@ -1,0 +1,172 @@
+% !TeX encoding = UTF-8
+% !TeX program  = xelatex
+
+\documentclass[hidelinks, a4paper,12pt,oneside]{book}
+
+\usepackage[english]{babel}
+
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{lastpage}
+\usepackage{afterpage}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{ltablex}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage[
+colorlinks=true,
+linkcolor=blue,
+urlcolor=blue,
+citecolor=blue
+]{hyperref}
+\usepackage{pdflscape}
+\usepackage{xurl}
+\usepackage{natbib}
+\usepackage[table]{xcolor}
+\RequirePackage{ifthen}
+\usepackage[]{mdframed}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+
+%==== Math setup =====================================================
+\usepackage{amsmath}%............................. Advanced math (before fonts)
+
+%=== Stix Two Fonts ==================================================
+%
+% https://www.stixfonts.org
+% Part of TexLive & MikTeX
+
+\usepackage{iftex}
+\ifxetex
+\usepackage[math-style=ISO, bold-style=ISO ]{unicode-math}
+
+\setmainfont{STIX Two Text}
+\setmathfont{STIX Two Math}
+\setsansfont[Extension      = {.otf},
+UprightFont    = {*-Regular} ,
+ItalicFont     = {*-RegularIt} ,
+BoldFont       = {*-Bold} ,
+BoldItalicFont = {*-BoldIt},
+Scale          = MatchLowercase ]{SourceSansPro}
+
+% Windows font
+\setmonofont[Scale=MatchLowercase ]{Consolas}
+
+% Free unicode typwrite fonts
+\AtBeginDocument{%
+	\let\varGamma  \mitGamma
+	\let\varDelta  \Delta
+	\let\varTheta  \Theta
+	\let\varLambda \Lambda
+	\let\varXi     \Xi
+	\let\varPi     \Pi
+	\let\varSigma  \Sigma
+	\let\varUpsilon\Upsilon
+	\let\varPhi    \Phi
+	\let\varPsi    \Psi
+	\let\varOmega  \Omega}
+
+\let\bm\symbfit
+
+\else
+\usepackage[utf8]{inputenc}
+\usepackage[full]{textcomp}%..................... Additional text symbols
+
+\usepackage[lcgreekalpha]{stix2}%................ Main serif font
+\usepackage[regular]{sourcesanspro}%............. Sansserif font
+\usepackage{inconsolata}%....................... Typewriter font
+
+\usepackage[T1]{fontenc}%........................ Type 1 outline fonts
+\usepacakge{charter}
+\usepackage{bm}%................................. Bold math fonts
+
+\fi
+
+\normalfont
+%=====================================================================
+
+\geometry{tmargin=3cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm,headheight=0.5cm,headsep=1.0cm,footskip=1cm}
+
+%--------------------------------------------
+%-- Define the header/foot style here
+\pagestyle{fancy}
+\fancyhf{}
+%\fancyhead[L]{\thechapter}  % Left side: chapter number
+\fancyhead[C]{\leftmark}    % Center: chapter title
+\fancyhead[R]{\thepage}     % Right side: page number
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    language=Python,
+	aboveskip=1.0em,
+	belowskip=1.5em    
+}
+
+%--------------------------------------------
+%-- Define constants
+\newcommand{\version}{0.0.29}
+\newcommand{\pyversion}{3.11}
+
+%--------------------------------------------
+%-- Define useful commands
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\codebf}[1]{\textbf{\texttt{#1}}}
+\newtcolorbox{grayquote}{
+	colback=gray!10,
+	colframe=gray!10,
+	boxrule=0pt,
+	arc=2pt,
+	left=1em,
+	right=1em,
+	top=0.8em,
+	bottom=0.8em
+}
+
+\begin{document}
+
+\frontmatter
+\begin{titlepage}
+	\centering
+	
+	\includegraphics[width=0.8\textwidth]{../gui/icons/splashScreen.png}
+	
+	\vspace*{2cm}
+	{\Huge SUN-DIC User Manual\par}
+	\vspace{1cm}
+	
+	{\Large Stellenbosch University\par}
+	{\Large Version \version\par}
+	{\Large \url{https://github.com/gventer/SUN-DIC}\par}
+	\vspace{1cm}
+	\includegraphics[width=0.4\textwidth]{figures/qr2.png}
+	
+	\vspace{2cm}
+	{\Large \the\year\par}
+\end{titlepage}
+
+
+\newpage
+\input{sections/00_comments.tex}
+\tableofcontents
+\newpage
+
+\mainmatter
+\input{sections/01_about}
+\input{sections/02_installation}
+\input{sections/03_parameters}
+\input{sections/04_gui_example}
+\input{sections/05_api_example}
+\input{sections/06_theory}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{dic_papers}
+
+\end{document}
