@@ -18,7 +18,7 @@ import skimage as sk
 import ray as ray
 
 import sundic.util.datafile as dataFile
-from sundic.util.fast_interp import interp2d
+from sundic.util.fast_interp_2d import OptimizedInterp2D
 from scipy.interpolate import NearestNDInterpolator
 from sundic.util.savitsky_golay import sgolay2d
 
@@ -1890,21 +1890,8 @@ def _fastInterpolation_(image, interOrder):
     - imgInter (interp2d): The interpolation model that can be called in
         the future for interpolation.
     """
-    # Image dimensions
-    ny = image.shape[0]
-    nx = image.shape[1]
-
-    # Setup the interpolation model that can be called in future whenever
-    # interpolation is required
-    # --------------------------------------------------------------
-    # -- Build in interpolator from scipy
-    # X = np.arange(0, nx)
-    # Y = np.arange(0, ny)
-    # imgInter = RectBivariateSpline(Y, X, image, kx=3, ky=3)
-    # --------------------------------------------------------------
-    imgInter = interp2d([0, 0], [ny-1, nx-1], [1, 1], image,
-                        k=interOrder, p=[False, False], c=[True, True], e=[1, 1])
-
+    # Simply load the optimized Numba 2D interpolator
+    imgInter = OptimizedInterp2D(image.astype(np.float64), order=interOrder)
     return imgInter
 
 
