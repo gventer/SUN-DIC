@@ -15,7 +15,6 @@ import cv2 as cv
 import numpy as np
 from enum import IntEnum, Enum
 import skimage as sk
-import ray as ray
 
 import sundic.util.datafile as dataFile
 from sundic.util.fast_interp_2d import OptimizedInterp2D
@@ -223,6 +222,10 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
 
             # Setup the parallel run and wait for all results
             if nCpus > 1:
+
+                ray = _require_ray()
+                _rmt_icOptimization_ = _get_rmt_icOptimization()
+
                 # Turn of debugging temporarily
                 nDebugOld = settings.DebugLevel
                 settings.DebugLevel = 0
@@ -242,7 +245,8 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
                 for i in range(mRows*mCols):
                     iRow, iCol = np.unravel_index(i, (mRows, mCols))
                     procIDs.append(_rmt_icOptimization_.remote(
-                        settings, iRow, iCol, subMatrices[iRow][iCol], activeSubMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
+                        settings, iRow, iCol, subMatrices[iRow][iCol], 
+                        activeSubMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
 
                     if nDebugOld > 0:
                         print("  Starting remote process for submatrix {} {}".
@@ -314,9 +318,8 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
 
 
 # --------------------------------------------------------------------------------------------
-@ray.remote
-def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, activeSubsets, 
-                         imgSet, img, guiThread=None):
+def _rmt_icOptimizationImpl(settings, iRowID, iColID, subSetPnts, activeSubsets,
+                             imgSet, img, guiThread=None):
     """
     Perform the IC optimization for a subset of points in a parallel environment.  This is a
     very thin wrapper for the icOptimization function that allows the function to be called
@@ -336,10 +339,28 @@ def _rmt_icOptimization_(settings, iRowID, iColID, subSetPnts, activeSubsets,
     Returns:
         - tuple: A tuple containing the row index, column index, and the updated subset points.
     """
-    rslt = _icOptimization_(settings, np.copy(
-        subSetPnts), np.copy(activeSubsets), imgSet, img, guiThread=guiThread)
+    rslt = _icOptimization_(
+        settings,
+        np.copy(subSetPnts),
+        np.copy(activeSubsets),
+        imgSet,
+        img,
+        guiThread=guiThread,
+    )
     return iRowID, iColID, rslt
 
+# --------------------------------------------------------------------------------
+def _get_rmt_icOptimization():
+    """
+    Get the remote icOptimization implementation needed for Ray - we need this
+    wrapper to setup the remote function with the correct signature for Ray without 
+    having a dependency on Ray in the main code.
+
+    Returns:
+        The remote version of the _rmt_icOptimizationImpl function that can be called from Ray.
+    """
+    ray = _require_ray()
+    return ray.remote(_rmt_icOptimizationImpl)
 
 # --------------------------------------------------------------------------------------------
 def _setupROI_(ROI, img0, debugLevel=0):
@@ -434,13 +455,28 @@ def _setupSubSets_(subSetSize, stepSize, shapeFn, ROI, img0, debugLevel=0):
     nRowsCand, nColsCand = yCand.shape
     nCandidates = nRowsCand * nColsCand
 
-    # Only place subset centres where the FULL nominal subset fits in the image.
-    half = int(0.5 * (subSetSize - 1))
+    # Only place subsets at points where the full nominal subset size fits within the 
+    # image bounds.
 
-    xStart = max(xOrigin, half)
-    yStart = max(yOrigin, half)
-    xStop = min(xBound, imgW - half)
-    yStop = min(yBound, imgH - half)
+    # If subSetSize is an array, extract the maximum values for the first row, the last row,
+    # the first column and the last column
+    if isinstance(subSetSize, np.ndarray):
+        yMinMax = subSetSize[0, :].max()  # Max in first row
+        yMaxMax = subSetSize[-1, :].max()  # Max in last row
+        xMinMax = subSetSize[:, 0].max()  # Max in first column
+        xMaxMax = subSetSize[:, -1].max()  # Max in last column
+
+        xStart = max(xOrigin, int(0.5 * (xMinMax - 1)))
+        yStart = max(yOrigin, int(0.5 * (yMinMax - 1)))
+        xStop = min(xBound, imgW - int(0.5 * (xMaxMax - 1)))
+        yStop = min(yBound, imgH - int(0.5 * (yMaxMax - 1)))        
+    else:
+        half = int(0.5 * (subSetSize - 1))
+        
+        xStart = max(xOrigin, half)
+        yStart = max(yOrigin, half)
+        xStop = min(xBound, imgW - half)
+        yStop = min(yBound, imgH - half)
 
     # If the ROI is too small to contain even one full subset, return an empty grid
     if xStart >= xStop or yStart >= yStop:
@@ -2100,6 +2136,7 @@ def _safeRayInit_(externalRay, nCpus, debugLevel=0):
         ray (Ray): The initialized ray instance.
     """
 
+    ray = _require_ray()
     nRetry = 3  # Number of retries
 
     # Silence Ray future warning about accelerator env var override behavior
@@ -2133,6 +2170,7 @@ def _safeRayLaunch_(func, debugLevel=0):
         result (any): The result of the Ray get function.
     """
 
+    ray = _require_ray()
     nRetry = 3  # Number of retries
 
     # Try to launch the task with retries
@@ -2161,6 +2199,7 @@ def _safeRayShutdown_(externalRay, debugLevel=0):
         None
     """
 
+    ray = _require_ray()
     nRetry = 3  # Number of retries
 
     # Try to shutdown ray with retries
@@ -2287,3 +2326,23 @@ def _applyInactiveSubsets_(subSetPnts, activeSubsets):
     out[rows, cols, CompID.CZNSSDID] = IntConst.CNZSSD_MAX
     out[rows, cols, CompID.XDispID:] = np.nan
     return out
+
+# ---------------------------------------------------------------------------------------------
+def _require_ray():
+    """
+    Load the Ray library when needed to do parallel computing
+
+    Raises:
+        ImportError: Tell the users if the Ray library could not be loaded
+
+    Returns:
+        The Ray library if it was successfully loaded
+    """
+    try:
+        import ray
+        return ray
+    except ImportError as e:
+        raise ImportError(
+            "Parallel execution requires the optional dependency 'ray'. "
+            "Install it with: pip install 'SUN-DIC[parallel]'"
+        ) from e

@@ -1,0 +1,349 @@
+% ─────────────────────────────────────────────────────────────────────────────
+\chapter{Python API Workflow and Example}
+\label{sec:api}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\section{Setup}
+
+Start by copying the example problem to your working directory by issuing the
+\code{copy-examples} command from a terminal after activating your virtual
+environment. After running \code{copy-examples}, the working directory will
+contain:
+
+\begin{itemize}
+	\item \code{settings.ini} -- Example configuration file
+	\item \code{planar\_images/} -- Five sample TIFF images
+	\item \code{test\_sundic.ipynb} -- Jupyter notebook containing a complete worked example
+\end{itemize}
+
+The Jupyter notebook is the recommended starting point for new users because it
+demonstrates every step described in this chapter with live output and
+visualisation. The API can also be used directly from a standard Python
+\code{.py} script.
+
+If you intend to use the provided notebook, remember to install the optional Jupyter
+dependencies using:
+
+\begin{lstlisting}[language=bash]
+pip install ./SUN-DIC[jupyter]
+\end{lstlisting}
+
+\section{API Module Overview}
+
+Most users will interact with only three modules:
+
+\begin{itemize}
+	\item \code{sundic.settings} -- Reading, writing, and managing analysis settings.
+	\item \code{sundic.sundic} -- Running the DIC analysis.
+	\item \code{sundic.post\_process} -- Visualisation, export, and access to computed results.
+\end{itemize}
+
+\noindent
+The typical workflow is:
+
+\begin{enumerate}
+	\item Load a \code{settings.ini} file.
+	\item Run the DIC analysis.
+	\item Open the resulting \code{.sdic} file for post-processing.
+	\item Generate plots, export data, or access NumPy arrays directly.
+\end{enumerate}
+
+The API follows a two-phase workflow. During the first phase, the DIC analysis reads the configuration and image sequence and writes all results to a binary \code{.sdic} file.
+
+During the second phase, post-processing functions read the \code{.sdic} file
+on demand to generate displacement fields, strain fields, contour plots,
+line-cut graphs, correlation-quality plots, and exported data files.
+
+Because all results are stored in the \code{.sdic} file, the computationally
+expensive DIC analysis only needs to be performed once. Post-processing
+operations can then be repeated with different settings without rerunning the
+analysis.
+
+\section{Running an Analysis}
+
+Settings are loaded from a \code{settings.ini} file and passed directly to the
+analysis function along with a name for the output file. The fully documented
+\code{settings.ini} provided with the example problem is a good starting point
+for creating a custom configuration file for your own analysis.
+
+The \code{Settings} class implements a custom string representation, allowing the current configuration to be printed directly. The following listing reads the provided
+\code{settings.ini} file, prints the configuration to the screen, and then
+submits the DIC analysis using the \code{planarDICLocal} function.
+
+
+\begin{lstlisting}
+import sundic.sundic as sdic
+import sundic.settings as sdset
+
+settings = sdset.Settings.fromSettingsFile('settings.ini')
+print(settings)
+
+sdic.planarDICLocal(settings, 'results.sdic')
+\end{lstlisting}
+
+Debug output is printed to the console as each image pair is processed.  All raw results and the settings snapshot are stored in the specified \code{results.sdic} file.  This is a SUN-DIC specific binary file that can also be opened in the GUI for post-processing.
+
+The \code{planarDICLocal} function has an optional argument named \code{externalRay} that can be set to \code{True} if a Ray server was started separately from the API run.  This is useful when running a number of DIC analyses in a loop where an external Ray server reduces the overhead of starting and stopping the server each time an analysis is performed.  The call to \code{planarDICLocal} would then look as follows:
+
+\begin{lstlisting}
+sdic.planarDICLocal(settings, 'results.sdic', externalRay=True)
+\end{lstlisting}
+
+The external Ray server is typically started from the terminal using the following command.  There are however more advanced options available for starting a Ray server, please refer to the Ray documentation.
+
+\begin{lstlisting}
+ray start --head
+\end{lstlisting}
+
+
+\section{Post-Processing}
+
+All post-processing functions live in \code{sundic.post\_process} and accept the
+output file path together with an image-pair index (\code{imgPair}).
+Use \code{0} for the first pair or \code{-1} for the last. Throughout this chapter, the parameter \code{imgPair} identifies the image pair to process. Image pairs are numbered starting from zero. A value of \code{imgPair = 0} corresponds to the first image pair in the analysis, while \code{imgPair = -1} refers to the last available image pair.
+
+\subsection{Smoothing}
+
+Displacement and strain plot and data access functions all accept a \code{smoothWindow} (odd integer) and a \code{smoothOrder} (int) parameter to apply Savitzky-Golay smoothing before plotting.  For the displacement data, the smoothing is optional, while for the strain data it is required.  Strain calculations always apply smoothing with the window size defaulting to 9 but this value should be increased for noisier data.
+
+
+\subsection{Contour Plots}
+
+The following listing will produce contour graphs for X and Y displacement components, followed by contour graphs of the X and Von Mises strain components.
+
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+# Displacement contour plots
+sdpp.plotDispContour('results.sdic', -1, dispComp=sdpp.DispComp.X_DISP)
+sdpp.plotDispContour('results.sdic', -1, dispComp=sdpp.DispComp.Y_DISP)
+
+# Strain contour plots
+sdpp.plotStrainContour('results.sdic', -1,
+                       strainComp=sdpp.StrainComp.X_STRAIN)
+sdpp.plotStrainContour('results.sdic', -1,
+                       strainComp=sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+\newpage
+\noindent
+A complete list of arguments for these contour plot functions are summarized below:
+
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# imgPair (int)     : the zero based image pair ID to process
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# alpha (float)     : the transparency of the contour plot
+#                     (Default is 0.75 -> 75% opaque)
+# plotImage (bool)  : whether to plot the underlying image
+#                     (Default is True -> plot the underlying image)
+# showPlot (bool)   : whether to show the plot here
+#                     (Default is True -> show the plot)
+# fileName (str)    : the file name to save the plot to if 
+#                     required
+#                     (Default is '' -> No file saved)
+# smoothWindow (int): the size of the smoothing window
+#                     this is the number of surrounding subSets to 
+#                     consider in the smoothing 
+#                     (Default=0 -> no smoothing)
+# smoothOrder (int) : the order of the smoothing polynomial 
+#                     (Default=2 -> quadratic smoothing)
+# dilation (int)    : the number of subsets to dilate the mask 
+#                     around automatically detected features (eg holes) 
+#                     where the results may be of poor quality 
+#                     (Default = 0  -> no dilation)
+# maxValue (float)  : the maximum value to plot
+#                     (Default is None -> auto scale)
+# minValue (float)  : the minimum value to plot
+#                     (Default is None -> auto scale)
+\end{lstlisting}
+
+For \code{plotDispContour} there is an additional optional parameter \code{dispComp} to identify the displacement component to plot.  Available \code{dispComp} values are \code{X\_DISP}, \code{Y\_DISP}, and \code{DISP\_MAG}.
+
+\begin{lstlisting}
+# dispComp (int)    : the displacement component to plot
+#                     (Default is sdpp.DispComp.MAG -> Magnitude)
+\end{lstlisting}
+
+
+For \code{plotStrainContour} the corresponding parameter to identify the strain component to plot is \code{strainComp} and available \code{strainComp} values are  \code{X\_STRAIN}, \code{Y\_STRAIN}, \code{SHEAR\_STRAIN}, and \code{VM\_STRAIN}.
+
+\begin{lstlisting}
+# strainComp (int)  : the strain component to plot
+#                     (Default is sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+
+\subsection{Correlation Quality Plot}
+
+A filled contour map of the ZNCC correlation quality field can be plotted to identify
+subsets that converged poorly:
+
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+sdpp.plotZNCCContour('results.sdic', -1)
+\end{lstlisting}
+
+ZNCC ranges from $-1$ to $1$, with $1$ indicating a perfect match.
+Values close to $1$ across the domain indicate a reliable analysis.  Low or negative
+values flag problematic regions (poor speckle, occlusion, large out-of-plane motion).  A complete list of parameters for the \code{plotZNCCContour} function are summarized below.
+
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# imgPair (int)     : the zero based image pair ID to process
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# alpha (float)     : the transparency of the contour plot
+#                     (Default is 0.75 -> 75% opaque)
+# plotImage (bool)  : whether to plot the underlying image
+#                     (Default is True -> Plot the underlying image)
+# showPlot (bool)   : whether to show the plot here
+#                     (Default is True -> Show the plot)
+# fileName (str)    : the file name to save the plot to if 
+#                     required
+#                     (Default is '' -> No file saved)
+# maxValue (float)  : the maximum value to plot
+#                     (Default is None -> auto scale)
+# minValue (float)  : the minimum value to plot
+#                     (Default is None -> auto scale)
+\end{lstlisting}
+
+
+\subsection{Line Cuts}
+
+A line-cut graph plots field values along one or more straight lines through the domain. The \code{plotDispCutLine} and \code{plotStrainCutLine} functions extract displacement or strain values along one or more straight cuts through the image.  The listing below shows how to generate a displacement line-cut graph for the X  displacement with cuts at 250, 300 and 350 pixels along the Y coordinate.  This results in a 2D graph with three lines.  The second function call in the listing generates a line-cut graph for the Von Mises strain with cuts at 500 and 700 pixels along the X coordinate. A 2D graph with two lines will be produced.
+
+\newpage
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+# Line cut through the displacement field at fixed Y positions
+sdpp.plotDispCutLine('results.sdic', -1,
+	dispComp=sdpp.DispComp.X_DISP,
+	cutComp=sdpp.CompID.YCoordID,
+	cutValues=[250, 300, 350])
+	
+# Von Mises strain along fixed X positions
+sdpp.plotStrainCutLine('results.sdic', -1,
+	strainComp=sdpp.StrainComp.VM_STRAIN,
+	cutComp=sdpp.CompID.XCoordID,
+	cutValues=[500, 700])
+\end{lstlisting}
+
+A complete list of parameters for the \code{plotDispCutLine}  and \code{plotStrainCutLine} functions are summarized below.
+
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# imgPair (int)     : the zero based image pair ID to process
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# cutComp (int)     : the component to cut through
+#                     (Default is sdpp.CompID.XCoordID -> X coordinate)
+# cutValues (list)  : the values to cut through
+#                     (Default is None -> No cuts)
+# gridLines (bool)  : whether to plot grid lines
+#                     (Default is True -> Plot grid lines)
+# showPlot (bool)   : whether to show the plot here
+#                     (Default is True -> Show the plot)
+# fileName (str)    : the file name to save the plot to
+#                     (Default is '' -> No file saved)
+# smoothWindow (int): the size of the smoothing window
+#                     this is the number of surrounding subSets to 
+#                     consider in the smoothing
+#                     (Default is 0 -> no smoothing)
+# smoothOrder (int) : the order of the smoothing polynomial
+#                     (Default is 2 -> quadratic smoothing)
+# dilation (int)    : the number of subsets to dilate the mask 
+#                     around automatically detected features (eg holes) 
+#                     where the results may be of poor quality 
+#                     (Default = 0  -> no dilation)
+# interpolate (bool): whether to interpolate the data
+#                     (Default is False -> no interpolation)
+# -----------------------------------------------------------
+\end{lstlisting}
+
+\newpage
+As for the contour plots, there is an additional optional parameter \code{dispComp} to identify the displacement component to plot when calling \code{plotDispCutLine}.  Available \code{dispComp} values are \code{X\_DISP}, \code{Y\_DISP}, and \code{DISP\_MAG}.
+
+\begin{lstlisting}
+# dispComp (int)    : the displacement component to plot
+#                     (Default is sdpp.DispComp.MAG -> Magnitude)
+\end{lstlisting}
+
+For \code{plotStrainCutLine} the corresponding parameter to identify the strain component to plot is \code{strainComp} and available \code{strainComp} values are  \code{X\_STRAIN}, \code{Y\_STRAIN}, \code{SHEAR\_STRAIN}, and \code{VM\_STRAIN}.
+
+\begin{lstlisting}
+# strainComp (int)  : the strain component to plot
+#                     (Default is sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+\subsection{Accessing Raw Data}
+
+For custom analysis or export, the displacement and strain arrays can be retrieved
+directly as \code{NumPy} arrays.  Each row corresponds to one subset point and missing points carry \code{NaN} values that can be filtered out with a standard \code{NumPy} mask.  The following listing first retrieves the displacement data and then the strain data.
+
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+# Get raw displacement data for the last image pair
+disp, nRows, nCols    = sdpp.getDisplacements('results.sdic', -1)
+
+# Get raw strain data for the last image pair
+strains, nRows, nCols = sdpp.getStrains('results.sdic', -1)
+\end{lstlisting}
+
+\noindent
+The column layout for the displacement data is as follows:
+
+\begin{lstlisting}
+| X Coord | Y Coord | Z Coord | X Disp | Y Disp | Z Disp | Magnitude |
+\end{lstlisting}
+
+\noindent
+The column layout for the strain data is as follows:
+
+\begin{lstlisting}
+|X Coord|Y Coord| Z Coord | X Strain | Y Strain | XY Strain | VM Strain |
+\end{lstlisting}
+
+\newpage
+A complete list of parameters for the \code{getDisplacements}  and \code{getStrains} functions are summarized below.
+
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# imgPair (int)     : the zero based image pair ID to process
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# smoothWindow (int): the size of the smoothing window
+#                     this is the number of surrounding subSets to 
+#                     consider in the smoothing 
+#                     (Default is 0 -> no smoothing for displacements
+#                                 9 -> smoothing for strains)
+# smoothOrder (int) : the order of the smoothing polynomial 
+#                     (Default is 2 -> quadratic smoothing)
+# dilation (int)    : the number of subsets to dilate the mask 
+#                     around automatically detected features (eg holes) 
+#                     where the results may be of poor quality 
+#                     (Default is 0  -> no dilation)
+#
+# Returns:
+# --------
+# results: the displacement/strain results with the columns as outlined 
+#          above
+# nRows  : the number of subset rows in the image
+# nCols  : the number of subset columns in the image
+\end{lstlisting}
