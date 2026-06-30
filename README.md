@@ -1,6 +1,8 @@
 # SUN-DIC
 
-### Stellenbosch University Digital Image Correlation (DIC) Code
+---
+
+# Stellenbosch University Digital Image Correlation (DIC) Code
 
 
 SUN-DIC is an open-source Python package for **2D digital image correlation (DIC)** developed at **Stellenbosch University**. It provides both a **graphical user interface (GUI)** and a **Python API** for displacement and strain analysis from image sets, making it suitable for both interactive use and research workflows.
@@ -11,9 +13,9 @@ SUN-DIC is an open-source Python package for **2D digital image correlation (DIC
 > **Early release notice:** SUN-DIC is currently in an early public release phase. Core functionality is available and documented, but the interface and documentation will continue to evolve. Bug reports, suggestions, and feedback are very welcome.
 
 
-## Quick Start
+# Quick Start
 
-### Install with `pip`
+## Install with `pip`
 
 > **Note:** Please see detailed installation instructions for both `pip` and `conda` further down in this `README` file.
 
@@ -25,7 +27,7 @@ copy-examples
 sundic
 ```
 
-## Documentation
+# Documentation
 
 SUN-DIC documentation is currently provided through the following resources:
 
@@ -42,12 +44,12 @@ SUN-DIC documentation is currently provided through the following resources:
   [![Documentation](https://img.shields.io/badge/docs-online-7A3E9D?style=flat-square)](https://gventer.github.io/SUN-DIC/)
 
 
-## Publications
+# Publications
 
 1. Venter, Gerhard and Neaves, Melody, [*SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*](https://www.sciencedirect.com/science/article/pii/S0965997825001814), Advances in Engineering Software, Volume 211, 2025.
 
 
-## Key Features
+# Key Features
 
 - Fully open-source, using standard Python libraries wherever possible
 - Provides both a user-friendly GUI and a programmable API
@@ -64,14 +66,14 @@ SUN-DIC documentation is currently provided through the following resources:
 - Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/)
 
 
-## Limitations
+# Limitations
 
 - Currently supports **2D planar** DIC problems only
 - A stereo / 3D version is under development
 
 
 
-## Installation
+# Installation
 
 Although SUN-DIC can be installed without creating a virtual environment, using one is strongly recommended for easier dependency management.
 
@@ -84,7 +86,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 2. Open a new terminal to ensure Miniforge is active (you should see the base environment).
 3. Proceed with the standard installation using `conda` as described below.
 
-### General Steps
+## General Steps
 
 1. Create a virtual environment
 2. Activate the environment
@@ -103,7 +105,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
    These files provide a practical starting point for both the GUI and API workflows.
 
 
-### Using `pip`
+## Using `pip`
 
 1. Create a virtual environment (e.g., `sundic`):
 
@@ -141,7 +143,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
    copy-examples
    ```
 
-### Using `conda`
+## Using `conda`
 
 1. Create a virtual environment with Python 3.11:
 
@@ -174,7 +176,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
    ```
 
 
-### Installing Directly from GitHub (Advanced Users)
+## Installing Directly from GitHub (Advanced Users)
 
 1. Create and activate a virtual environment using either `pip` or `conda` as described above
    
@@ -198,11 +200,11 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
    ```
 
 
-## Usage
+# Usage
 
 Make sure the virtual environment where `SUN-DIC` is installed is active before proceeding.
 
-### Running the GUI
+## Running the GUI
 
 1. Launch the GUI from a terminal:
 
@@ -226,7 +228,7 @@ GUI entries include tooltips describing the available options.
 <img src="screenshots/analyze.png" width="450"> <img src="screenshots/results.png" width="450">
 
 
-### Using the API
+## Using the API
 
 1. Use the `copy-examples` command to copy a complete example to your current directory
 2. Open `test_sundic.ipynb` for a fully worked example
@@ -245,12 +247,12 @@ A typical API workflow involves:
 Although the provided example uses a Jupyter notebook, the API can also be used in standard Python scripts.
 
 
-## Support and Feedback
+# Support and Feedback
 
 If you encounter a bug, have a feature suggestion, or would like to provide feedback, please open an issue on the GitHub repository.
 
 
-## Citation
+# Citation
 
 ```bibtex
 @article{sun-dic,
@@ -266,13 +268,13 @@ url = {https://www.sciencedirect.com/science/article/pii/S0965997825001814},
 ```
 
 
-## Presentations
+# Presentations
 
 1. 2025-04-17 -- [MOD Research Group Meeting - Overview of SUN-DIC](presentations/2025_sundic_mod.pdf) 
 
 
 
-## Acknowledgments
+# Acknowledgments
 
 - **SUN-DIC analysis code**: based on work by **Ed Brisley** as part of his MEng degree at Stellenbosch University. His thesis is available through the [Stellenbosch University Library](https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a).
 - **Interpolator**: uses `fast_interp` by David Stein, licensed under Apache 2.0. Repository: [fast_interp](https://github.com/dbstein/fast_interp)
@@ -281,11 +283,11 @@ url = {https://www.sciencedirect.com/science/article/pii/S0965997825001814},
 - **Graphical design**: Dr. Melody Neaves
 
 
-## License
+# License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
 
-## Author
+# Author
 
 Developed by [Gerhard Venter](https://github.com/gventer/).
