@@ -1,4 +1,5 @@
-__version__ = "0.0.31"
+__version__ = "0.0.32"
+# 0.0.32 - Use pandas 3.0.3 instead of 3.0.4 which is not yet available
 # 0.0.31 - Improved interpolator for better performance
 #        - Minor changes to the readme file and user manual
 # 0.0.30 - Fix a problem with _setupSubSets_ when using different subsets sizes for
