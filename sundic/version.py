@@ -1,4 +1,6 @@
-__version__ = "0.0.30"
+__version__ = "0.0.31"
+# 0.0.31 - Improved interpolator for better performance
+#        - Minor changes to the readme file and user manual
 # 0.0.30 - Fix a problem with _setupSubSets_ when using different subsets sizes for
 #          each of the subsets (thus providing a 2D array with subset sizes, rather
 #          just a single subset size for all subsets).

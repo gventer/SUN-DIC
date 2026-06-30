@@ -9,9 +9,7 @@ SUN-DIC is an open-source Python package for **2D digital image correlation (DIC
 
 
 > **Early release notice:** SUN-DIC is currently in an early public release phase. Core functionality is available and documented, but the interface and documentation will continue to evolve. Bug reports, suggestions, and feedback are very welcome.
-> 
 
----
 
 ## Quick Start
 
@@ -27,7 +25,6 @@ copy-examples
 sundic
 ```
 
----
 ## Documentation
 
 SUN-DIC documentation is currently provided through the following resources:
@@ -45,12 +42,10 @@ SUN-DIC documentation is currently provided through the following resources:
   [![Documentation](https://img.shields.io/badge/docs-online-7A3E9D?style=flat-square)](https://gventer.github.io/SUN-DIC/)
 
 
----
 ## Publications
 
 1. Venter, Gerhard and Neaves, Melody, [*SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*](https://www.sciencedirect.com/science/article/pii/S0965997825001814), Advances in Engineering Software, Volume 211, 2025.
 
----
 
 ## Key Features
 
@@ -68,7 +63,6 @@ SUN-DIC documentation is currently provided through the following resources:
 - Supports parallel computing for improved performance
 - Easy installation via [PyPI](https://pypi.org/project/SUN-DIC/)
 
----
 
 ## Limitations
 
@@ -76,7 +70,6 @@ SUN-DIC documentation is currently provided through the following resources:
 - A stereo / 3D version is under development
 
 
----
 
 ## Installation
 
@@ -84,11 +77,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 
 > **Note** The `ray` library providing the parallel computing functionality is typically not supported for the latest Python releases on Windows. If you run into a `ray` dependency issue during installation, please try an older version of Python.
 
-### 🍎 Note for Apple Silicon Users (Mac M1/M2/M3)
-
-If you are installing SUN-DIC on a Mac equipped with an Apple Silicon processor, using the standard Anaconda distribution may cause version conflicts or C++ compilation errors (e.g., with `llvmlite` or `ray`). This is typically due to Anaconda defaulting to x86_64 emulation.
-
-To ensure a seamless, native ARM64 installation **without needing to modify the `requirements.txt` file**, it is highly recommended to use **[Miniforge](https://github.com/conda-forge/miniforge)** instead of Anaconda. 
+> **Note** If you are installing on a Mac equipped with an Apple Silicon processor (Mac M1/M2/M3), using the standard Anaconda distribution may cause version conflicts or C++ compilation errors (eg, with `llvmlite` or `ray`). This is typically due to Anaconda defaulting to x86_64 emulation.  To ensure a seamless, native ARM64 installation without needing to modify the `requirements.txt` file, it is recommended to use **[Miniforge](https://github.com/conda-forge/miniforge)** instead of Anaconda. 
 
 **Setup instructions for Apple Silicon:**
 1. Install the macOS arm64 version of Miniforge.
@@ -113,7 +102,6 @@ To ensure a seamless, native ARM64 installation **without needing to modify the 
 
    These files provide a practical starting point for both the GUI and API workflows.
 
----
 
 ### Using `pip`
 
@@ -153,8 +141,6 @@ To ensure a seamless, native ARM64 installation **without needing to modify the 
    copy-examples
    ```
 
----
-
 ### Using `conda`
 
 1. Create a virtual environment with Python 3.11:
@@ -187,7 +173,6 @@ To ensure a seamless, native ARM64 installation **without needing to modify the 
    copy-examples
    ```
 
----
 
 ### Installing Directly from GitHub (Advanced Users)
 
@@ -212,7 +197,6 @@ To ensure a seamless, native ARM64 installation **without needing to modify the 
    SUN-DIC/sundic/examples
    ```
 
----
 
 ## Usage
 
@@ -242,8 +226,6 @@ GUI entries include tooltips describing the available options.
 <img src="screenshots/analyze.png" width="450"> <img src="screenshots/results.png" width="450">
 
 
----
-
 ### Using the API
 
 1. Use the `copy-examples` command to copy a complete example to your current directory
@@ -262,26 +244,33 @@ A typical API workflow involves:
 
 Although the provided example uses a Jupyter notebook, the API can also be used in standard Python scripts.
 
----
 
 ## Support and Feedback
 
 If you encounter a bug, have a feature suggestion, or would like to provide feedback, please open an issue on the GitHub repository.
 
----
 
 ## Citation
 
-If you use SUN-DIC in academic work, please cite the publication listed above.
+```bibtex
+@article{sun-dic,
+title = {SUN-DIC: A Python-based open-source software tool for Digital Image Correlation},
+author = {Venter, Gerhard and Neaves, Melody},
+year = {2025},
+journal = {Advances in Engineering Software},
+volume = {211},
+pages = {104043},
+doi = {https://doi.org/10.1016/j.advengsoft.2025.104043},
+url = {https://www.sciencedirect.com/science/article/pii/S0965997825001814},
+}
+```
 
----
 
 ## Presentations
 
 1. 2025-04-17 -- [MOD Research Group Meeting - Overview of SUN-DIC](presentations/2025_sundic_mod.pdf) 
 
 
----
 
 ## Acknowledgments
 
@@ -291,16 +280,12 @@ If you use SUN-DIC in academic work, please cite the publication listed above.
 - **GUI development**: initial development by [Elijah Stockhall](https://github.com/EMStockhall/)
 - **Graphical design**: Dr. Melody Neaves
 
----
 
 ## License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
----
 
 ## Author
 
 Developed by [Gerhard Venter](https://github.com/gventer/).
-
----
