@@ -1,7 +1,8 @@
-__version__ = "0.0.32a"
+__version__ = "0.0.32b"
 # 0.0.33 - Add post-processing functions to obtain displacement and strain time history 
 #          at specific points.  Both data and plots can be generated.
 #        - Updated the example Jupyter notebook file and manual accordingly.
+#        - Updated the GUI to support this new functionality as well.
 # 0.0.32 - Use pandas 3.0.3 instead of 3.0.4 which is not yet available
 # 0.0.31 - Improved interpolator for better performance
 #        - Minor changes to the readme file and user manual
