@@ -79,12 +79,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 
 > **Note** The `ray` library providing the parallel computing functionality is typically not supported for the latest Python releases on Windows. If you run into a `ray` dependency issue during installation, please try an older version of Python.
 
-> **Note** If you are installing on a Mac equipped with an Apple Silicon processor (Mac M1/M2/M3), using the standard Anaconda distribution may cause version conflicts or C++ compilation errors (eg, with `llvmlite` or `ray`). This is typically due to Anaconda defaulting to x86_64 emulation.  To ensure a seamless, native ARM64 installation without needing to modify the `requirements.txt` file, it is recommended to use **[Miniforge](https://github.com/conda-forge/miniforge)** instead of Anaconda. 
-
-**Setup instructions for Apple Silicon:**
-1. Install the macOS arm64 version of Miniforge.
-2. Open a new terminal to ensure Miniforge is active (you should see the base environment).
-3. Proceed with the standard installation using `conda` as described below.
+> **Note** If you are installing on a Mac equipped with an Apple Silicon processor (Mac M1/M2/M3), using the standard Anaconda distribution may cause version conflicts or C++ compilation errors (eg, with `llvmlite` or `ray`). This is typically due to Anaconda defaulting to x86_64 emulation.  To ensure a seamless, native ARM64 installation without needing to modify the `requirements.txt` file, it is recommended to use **[Miniforge](https://github.com/conda-forge/miniforge)** instead of Anaconda as outlined below.
 
 ## General Steps
 
@@ -175,6 +170,11 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
    copy-examples
    ```
 
+## Instructions for Apple Silicon
+1. Install the macOS arm64 version of Miniforge.
+2. Open a new terminal to ensure Miniforge is active (you should see the base environment).
+3. Proceed with the standard installation using `conda` as described above.
+  
 
 ## Installing Directly from GitHub (Advanced Users)
 

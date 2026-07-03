@@ -270,7 +270,7 @@ A complete list of parameters for the \code{plotDispCutLine}  and \code{plotStra
 #                     (Default = 0  -> no dilation)
 # interpolate (bool): whether to interpolate the data
 #                     (Default is False -> no interpolation)
-# -----------------------------------------------------------
+# ------------------------------------------------------------------
 \end{lstlisting}
 
 \newpage
@@ -282,6 +282,70 @@ As for the contour plots, there is an additional optional parameter \code{dispCo
 \end{lstlisting}
 
 For \code{plotStrainCutLine} the corresponding parameter to identify the strain component to plot is \code{strainComp} and available \code{strainComp} values are  \code{X\_STRAIN}, \code{Y\_STRAIN}, \code{SHEAR\_STRAIN}, and \code{VM\_STRAIN}.
+
+\begin{lstlisting}
+# strainComp (int)  : the strain component to plot
+#                     (Default is sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+\subsection{Time History Plots}
+When the analysis contains more than one image pair (thus more than two images), time history plots can be created to investigate how a displacement or strain component develops over time for one more points in the ROI.  The \code{plotDispTimeHistory} and \code{plotStrainTimeHistory} functions can be used to create these plots.  The listing below shows how to generate time history graphs for the displacement magnitude for points located at (300,300), (800,300) and (900,300) pixels.  This results in a 2D graph with three lines.  The second function call in the listing generates a similar plot for the Von Mises strain for the same three points, also resulting in a graph with three lines.  These functions will use all image pairs available in the results file.
+
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+# Setup the list of points to track
+points=[(300,300), (800,300), (900,300)]
+
+# Create the displacement time history graph
+sdpp.plotDispTimeHistory('results.sdic', points, 
+	dispComp=sdpp.DispComp.DISP_MAG)
+
+# Create the strain time history graph
+sdpp.plotStrainTimeHistory('results.sdic', points, 
+	strainComp=sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+A complete list of parameters for the \code{plotDispTimeHistory} and \code{plotStrainTimeHistory} functions are summarized below.
+
+\newpage
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# points (list)     : list of (x, y) tuples in pixel coordinates
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# gridLines (bool)  : whether to plot grid lines
+#                     (Default is True -> Plot grid lines)
+# showPlot (bool)   : whether to show the plot here
+#                     (Default is True -> Show the plot)
+# fileName (str)    : the file name to save the plot to
+#                     (Default is '' -> No file saved)
+# smoothWindow (int): the size of the smoothing window
+#                     this is the number of surrounding subSets to 
+#                     consider in the smoothing
+#                     (Default is 0 -> no smoothing for displacements
+#                                 9 -> smoothing for strains)
+# smoothOrder (int) : the order of the smoothing polynomial
+#                     (Default is 2 -> quadratic smoothing)
+# interpolate (bool): flag to interpolate values at the specified 
+#                     points
+#                     (Default is False -> Use nearest subset value)
+# ------------------------------------------------------------------
+\end{lstlisting}
+
+If the \code{interpolate} flag is set to \code{False}, the nearest subset point to the specified point will be used to create the time history plots.  If this flag is set to \code{True}, the data will be interpolated to the specified point.
+
+As for the line cut plots, there is an additional optional parameter \code{dispComp} to identify the displacement component to plot when calling \code{plotDispTimeHistory}.  Available \code{dispComp} values are \code{X\_DISP}, \code{Y\_DISP}, and \code{DISP\_MAG}.
+
+\begin{lstlisting}
+# dispComp (int)    : the displacement component to plot
+#                     (Default is sdpp.DispComp.MAG -> Magnitude)
+\end{lstlisting}
+
+For \code{plotStrainTimeHistory} the corresponding parameter to identify the strain component to plot is \code{strainComp} and available \code{strainComp} values are  \code{X\_STRAIN}, \code{Y\_STRAIN}, \code{SHEAR\_STRAIN}, and \code{VM\_STRAIN}.
 
 \begin{lstlisting}
 # strainComp (int)  : the strain component to plot
@@ -346,4 +410,68 @@ A complete list of parameters for the \code{getDisplacements}  and \code{getStra
 #          above
 # nRows  : the number of subset rows in the image
 # nCols  : the number of subset columns in the image
+\end{lstlisting}
+
+\subsection{Accessing Raw Time History Data}
+
+For custom analysis or export, the displacement and strain time history data can be retrieved directly as \code{NumPy} arrays using the \code{getDispTimeHistory} and \code{getStrainTimeHistory} functions.  The following listing retrieves the displacement and strain time history.
+
+\begin{lstlisting}
+import sundic.post_process as sdpp
+
+# Setup some points to track
+points = [(300,300), (800,300), (900,300)]
+
+# Get the displacement time  history data for these points
+imgPairs, dispHist, usedPnts = sdpp.getDispTimeHistory('results.sdic', 
+                points, dispComp=sdpp.DispComp.X_DISP)
+
+# Get the strain time  history data for these points
+imgPairs, strnHist, usedPnts = sdpp.getStrainTimeHistory(
+                'results.sdic', points, 
+                strainComp=sdpp.StrainComp.VM_STRAIN)
+\end{lstlisting}
+
+A complete list of parameters for the \code{getDispTimeHistory}  and \code{getStrainTimeHistory} functions are summarized below.
+
+\begin{lstlisting}
+# Required Parameters:
+# ------------------------------------------------------------------
+# resultsFile (str) : the binary results file name to read
+# points (list)     : list of (x, y) tuples in pixel coordinates
+# 
+# Optional Parameters:
+# ------------------------------------------------------------------
+# smoothWindow (int): the size of the smoothing window
+#                     this is the number of surrounding subSets to 
+#                     consider in the smoothing 
+#                     (Default is 0 -> no smoothing for displacements
+#                                 9 -> smoothing for strains)
+# smoothOrder (int) : the order of the smoothing polynomial 
+#                     (Default is 2 -> quadratic smoothing)
+# interpolate (bool): flag to interpolate values at the specified 
+#                     points
+#                     (Default is False -> Use nearest subset value)
+#
+# Returns:
+# --------
+# imgPairs (ndarray): the image pair indices, shape (nPairs,)
+# hist (ndarray)    : the time history values, shape (nPoints, nPairs)
+# usedPoints (list) : List of (x, y) points used to sample data
+#                     If interpolate=False -> nearest subset
+#                     If interpolate=True -> the requested input points
+\end{lstlisting}
+
+As for the time history plots, there is an additional optional parameter \code{dispComp} to identify the displacement component to consider when calling \code{getDispTimeHistory}.  Available \code{dispComp} values are \code{X\_DISP}, \code{Y\_DISP}, and \code{DISP\_MAG}.
+
+\begin{lstlisting}
+# dispComp (int)    : the displacement component to plot
+#                     (Default is sdpp.DispComp.MAG -> Magnitude)
+\end{lstlisting}
+
+For \code{getStrainTimeHistory} the corresponding parameter to identify the strain component to consider is \code{strainComp} and available \code{strainComp} values are  \code{X\_STRAIN}, \code{Y\_STRAIN}, \code{SHEAR\_STRAIN}, and \code{VM\_STRAIN}.
+
+\begin{lstlisting}
+# strainComp (int)  : the strain component to plot
+#                     (Default is sdpp.StrainComp.VM_STRAIN)
 \end{lstlisting}
