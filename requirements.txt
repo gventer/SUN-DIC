@@ -1,6 +1,6 @@
 numpy>=2.4.6
 natsort>=8.4.0
-opencv_python_headless>=4.13.0.92
+opencv_python_headless>=5.0.0.93
 scikit-image>=0.26.0
 ray>=2.55.1
 numba>=0.65.1
