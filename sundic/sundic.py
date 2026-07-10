@@ -1400,7 +1400,7 @@ def _akazeDetect_(adPoints, adActive, F, G):
         F, None, 0, 255, cv.NORM_MINMAX).astype('uint8')
 
     # Setup the akaze detector
-    akaze = cv.AKAZE_create()
+    akaze = cv.xfeatures2d.AKAZE_create()
 
     # Subset data to work with
     X = adPoints[:, :, CompID.XCoordID]
