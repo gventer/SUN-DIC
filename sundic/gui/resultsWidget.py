@@ -658,9 +658,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
                 showGraph(self, figure, self.verticalLayout)
 
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"An error occurred: {str(e)}")
-
+            pass
 
 class ResultsUILineCut(QWidget):
     """ Class for the results cutplot UI: Defines the layout and widgets for the 

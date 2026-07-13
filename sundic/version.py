@@ -1,5 +1,6 @@
-__version__ = "0.0.32b"
-# 0.0.33 - Add post-processing functions to obtain displacement and strain time history 
+__version__ = "0.0.33"
+# 0.0.33 - Resolved dependency issue with headless opencv and AKAZE
+#        - Add post-processing functions to obtain displacement and strain time history 
 #          at specific points.  Both data and plots can be generated.
 #        - Updated the example Jupyter notebook file and manual accordingly.
 #        - Updated the GUI to support this new functionality as well.
