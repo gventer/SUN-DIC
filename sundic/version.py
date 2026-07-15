@@ -1,4 +1,15 @@
-__version__ = "0.0.30"
+__version__ = "0.0.33a"
+# 0.0.34 - Update the readme file and user manual to reflect new functionality from
+#          version 0.0.33.
+#        - Added daily check workflow
+# 0.0.33 - Resolved dependency issue with headless opencv and AKAZE
+#        - Add post-processing functions to obtain displacement and strain time history 
+#          at specific points.  Both data and plots can be generated.
+#        - Updated the example Jupyter notebook file and manual accordingly.
+#        - Updated the GUI to support this new functionality as well.
+# 0.0.32 - Use pandas 3.0.3 instead of 3.0.4 which is not yet available
+# 0.0.31 - Improved interpolator for better performance
+#        - Minor changes to the readme file and user manual
 # 0.0.30 - Fix a problem with _setupSubSets_ when using different subsets sizes for
 #          each of the subsets (thus providing a 2D array with subset sizes, rather
 #          just a single subset size for all subsets).

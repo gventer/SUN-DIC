@@ -32,7 +32,7 @@ def showGraph(parent, figure, layout):
 
     # Remove old toolbar and canvas if they exist
     widgetNames = ["toolbar", "canvas"]
-    for i in range(layout.count(), 0, -1):
+    for i in range(layout.count() - 1, -1, -1):
         try:
             item = layout.itemAt(i)
             widget = item.widget()
@@ -46,6 +46,20 @@ def showGraph(parent, figure, layout):
     layout.addWidget(toolbar)
     layout.addWidget(canvas)
 
+# ------------------------------------------------------------------------------
+# Function to clear any graph/toolbar widgets from a layout
+def clearGraph(layout):
+    widgetNames = ["toolbar", "canvas"]
+    for i in range(layout.count() - 1, -1, -1):
+        item = layout.itemAt(i)
+        if item is None:
+            continue
+
+        widget = item.widget()
+        if widget is not None and widget.objectName() in widgetNames:
+            layout.takeAt(i)
+            widget.setParent(None)
+            widget.deleteLater()
 
 class ResultsUI(QWidget):
     """ Class for the results UI: Defines the layout and widgets for the
@@ -59,12 +73,14 @@ class ResultsUI(QWidget):
     resultsUIExport = None
     resultsUIContour = None
     resultsUILineCut = None
+    resultsUITimeHistory = None
 
     # The different tab indices for the stacked layout
-    EXPRT_TAB = 0
-    CONTOUR_TAB = 1
-    CUTLINE_TAB = 2
-
+    CONTOUR_TAB = 0
+    CUTLINE_TAB = 1
+    TIMEHIST_TAB = 2
+    EXPRT_TAB = 3
+ 
     # ------------------------------------------------------------------------------
     # Initialize the results UI
     def __init__(self, parent):
@@ -79,6 +95,7 @@ class ResultsUI(QWidget):
         self.resultsUIExport = ResultsUIExport(self)
         self.resultsUIContour = ResultsUIContour(self)
         self.resultsUILineCut = ResultsUILineCut(self)
+        self.resultsUITimeHistory = ResultsUITimeHistory(self)
 
         # Define a custom button style
         buttonStyle = "QPushButton{border: 2px  solid  rgb(0, 0, 0);\n" +\
@@ -112,14 +129,6 @@ class ResultsUI(QWidget):
         horizontalLayout = QHBoxLayout()
         horizontalLayout.setSpacing(0)
 
-        # The text output button
-        self.textBut = QPushButton(self)
-        self.textBut.setText("Text Output")
-        self.textBut.setStyleSheet(buttonStyle)
-        self.textBut.setCheckable(True)
-        self.textBut.setAutoExclusive(True)
-        horizontalLayout.addWidget(self.textBut)
-
         # The contour graph button
         self.contBut = QPushButton(self)
         self.contBut.setText("Contour Graph")
@@ -136,6 +145,22 @@ class ResultsUI(QWidget):
         self.lineBut.setAutoExclusive(True)
         horizontalLayout.addWidget(self.lineBut)
 
+        # The time history graph button
+        self.timeBut = QPushButton(self)
+        self.timeBut.setText("Time History")
+        self.timeBut.setStyleSheet(buttonStyle)
+        self.timeBut.setCheckable(True)
+        self.timeBut.setAutoExclusive(True)
+        horizontalLayout.addWidget(self.timeBut)
+
+        # The text output button
+        self.textBut = QPushButton(self)
+        self.textBut.setText("Text Output")
+        self.textBut.setStyleSheet(buttonStyle)
+        self.textBut.setCheckable(True)
+        self.textBut.setAutoExclusive(True)
+        horizontalLayout.addWidget(self.textBut)        
+
         spacerItem = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         horizontalLayout.addItem(spacerItem)
@@ -146,34 +171,64 @@ class ResultsUI(QWidget):
 
         # Setup the stacked layout to switch between the different UIs
         self.stackedLayout = QStackedLayout()
-        self.stackedLayout.addWidget(self.resultsUIExport)
         self.stackedLayout.addWidget(self.resultsUIContour)
         self.stackedLayout.addWidget(self.resultsUILineCut)
+        self.stackedLayout.addWidget(self.resultsUITimeHistory)
+        self.stackedLayout.addWidget(self.resultsUIExport)
         mainVLayout.addLayout(self.stackedLayout)
 
         # Setup the default tab view here
-        self.stackedLayout.setCurrentIndex(self.EXPRT_TAB)
-        self.textBut.setChecked(True)
-
+        self.stackedLayout.setCurrentIndex(self.CONTOUR_TAB)
+        self.contBut.setChecked(True)
+    
         # Add connections here
         self.textBut.clicked.connect(self.showTextUI)
         self.contBut.clicked.connect(self.showContUI)
         self.lineBut.clicked.connect(self.showLineUI)
+        self.timeBut.clicked.connect(self.showTimeUI)
+
+        # Render the default tab only if the results file is ready.  This is done with a 
+        # single shot timer to allow the GUI to finish initializing first.
+        QtCore.QTimer.singleShot(0, self._renderDefaultTabIfReady)
+
+    
+    # ------------------------------------------------------------------------------
+    # Function to render the default tab only if the results file is ready
+    def _renderDefaultTabIfReady(self):
+        if self.parent.savePath is not None and os.path.isfile(self.parent.savePath):
+            self.resultsUIContour.submitGraph()
 
     # ------------------------------------------------------------------------------
     # Function to make the export summary UI visible
     def showTextUI(self):
+        clearGraph(self.resultsUIContour.verticalLayout)
+        clearGraph(self.resultsUILineCut.verticalLayout)
+        clearGraph(self.resultsUITimeHistory.verticalLayout)
         self.stackedLayout.setCurrentIndex(self.EXPRT_TAB)
 
     # ------------------------------------------------------------------------------
     # Function to make the contour graph UI visible
     def showContUI(self):
+        clearGraph(self.resultsUILineCut.verticalLayout)
+        clearGraph(self.resultsUITimeHistory.verticalLayout)
         self.stackedLayout.setCurrentIndex(self.CONTOUR_TAB)
+        self.resultsUIContour.submitGraph()
 
     # ------------------------------------------------------------------------------
     # Function to make the line cut graph UI visible
     def showLineUI(self):
+        clearGraph(self.resultsUIContour.verticalLayout)
+        clearGraph(self.resultsUITimeHistory.verticalLayout)
         self.stackedLayout.setCurrentIndex(self.CUTLINE_TAB)
+        self.resultsUILineCut.submitGraph()
+
+    # ------------------------------------------------------------------------------
+    # Function to make the time history graph UI visible
+    def showTimeUI(self):
+        clearGraph(self.resultsUIContour.verticalLayout)
+        clearGraph(self.resultsUILineCut.verticalLayout)
+        self.stackedLayout.setCurrentIndex(self.TIMEHIST_TAB)
+        self.resultsUITimeHistory.submitGraph()
 
     # ------------------------------------------------------------------------------
     # Function to get the data from this class and store it in the class variables
@@ -556,13 +611,17 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
     # Function to submit the graph request
     def submitGraph(self):
 
+        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
+            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+            return
+        
         # Getting the required parameters
         alpha = float(self.alphaIn.text())
         smoothWindow = int(self.smoothWinIn.text())
         smoothOrder = int(self.smoothOrderIn.text())
         imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
         dilation = int(self.dilationIn.text())
-
+        
         # Plotting the graphs
         try:
             matplotlib.pyplot.close()
@@ -599,9 +658,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
                 showGraph(self, figure, self.verticalLayout)
 
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"An error occurred: {str(e)}")
-
+            pass
 
 class ResultsUILineCut(QWidget):
     """ Class for the results cutplot UI: Defines the layout and widgets for the 
@@ -790,6 +847,11 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
     # ------------------------------------------------------------------------------
     # Function that is called to generate the graph based on user input
     def submitGraph(self):
+
+        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
+            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+            return
+
         # Getting the required parameters
         imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
         cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[
@@ -830,3 +892,282 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         except Exception as e:
             QMessageBox.critical(
                 self, "Error", f"An error occurred: {str(e)}")
+
+
+class ResultsUITimeHistory(QWidget):
+    """ Class for the results time history UI: Defines the layout and widgets for the
+        results time history tab
+    """
+
+    # Define all the variables to store the user input
+    resultsCompType = 0  # 0=Displacement, 1=Strain
+    resultsComp = 0
+    resultsSmoothWin = 3
+    resultsSmoothOrder = 2
+    resultsGridLines = True
+    resultsInterp = False
+
+    DISP_INDEX = 0
+    STRAIN_INDEX = 1
+
+    # ------------------------------------------------------------------------------
+    # Function to initialize the UI
+    def __init__(self, parent):
+
+        super().__init__(parent)
+        self.parent = parent
+
+        # The main layout of the window
+        self.verticalLayout = QVBoxLayout(self)
+        self.verticalLayout.setSpacing(10)
+
+        # Add the results selector combo box
+        self.resultsSelector = QComboBox(self)
+        boxItems = ["Displacement", "Strain"]
+        for item in boxItems:
+            self.resultsSelector.addItem(item)
+        self.resultsSelector.setCurrentIndex(self.resultsCompType)
+        self.verticalLayout.addWidget(
+            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+
+        # Grid layout for controls
+        gridLayout = QGridLayout()
+        gridLayout.setHorizontalSpacing(10)
+        gridLayout.setVerticalSpacing(10)
+
+        # The points input and label
+        pointsLab = QLabel(self)
+        pointsLab.setText("Points (x,y):")
+        gridLayout.addWidget(pointsLab, 0, 0, 1, 1)
+
+        self.pointsIn = QLineEdit(self)
+        # Default point from ROI top-left-ish as simple starter
+        defaultX = int(self.parent.parent.settings.ROI[0])
+        defaultY = int(self.parent.parent.settings.ROI[1])
+        self.pointsIn.setText(f"{defaultX},{defaultY}")
+        self.pointsIn.setToolTip("""Comma-separated x,y pairs using semicolon between points.
+Example: 100,200;120,250;200,300""")
+        gridLayout.addWidget(self.pointsIn, 0, 1, 1, 1)
+
+        # The display component input and label
+        compLab = QLabel(self)
+        compLab.setText("Display Component:")
+        gridLayout.addWidget(compLab, 0, 2, 1, 1)
+
+        self.compIn = QComboBox(self)
+        for index, e in enumerate(sdpp.DispComp):
+            self.compIn.addItem(f"{e.display_name}")
+        self.compIn.setCurrentIndex(self.resultsComp)
+        self.compIn.setToolTip("The component to plot.")
+        gridLayout.addWidget(self.compIn, 0, 3, 1, 1)
+
+        # The smoothing window size input and label
+        smoothWinLab = QLabel(self)
+        smoothWinLab.setText("Smoothing Window:")
+        gridLayout.addWidget(smoothWinLab, 1, 0, 1, 1)
+
+        self.smoothWinIn = QLineEdit(self)
+        self.smoothWinIn.setText(str(self.resultsSmoothWin))
+        smoothWindowValidator = OddNumberValidator(0, None)
+        self.smoothWinIn.setValidator(smoothWindowValidator)
+        self.smoothWinIn.setToolTip("""The size of the window for smoothing the results. 
+Must be an odd number.
+A value of 0 means no smoothing but can only be set to zero for displacement.""")
+        gridLayout.addWidget(self.smoothWinIn, 1, 1, 1, 1)
+
+        # The smoothing order input and label
+        smoothOrderLab = QLabel(self)
+        smoothOrderLab.setText("Smoothing Order:")
+        gridLayout.addWidget(smoothOrderLab, 1, 2, 1, 1)
+
+        self.smoothOrderIn = QLineEdit(self)
+        self.smoothOrderIn.setText(str(self.resultsSmoothOrder))
+        smoothOrderValidator = ClampingIntValidator()
+        smoothOrderValidator.setBottom(1)
+        self.smoothOrderIn.setValidator(smoothOrderValidator)
+        self.smoothOrderIn.setToolTip(
+            "Order of the Savitzky-Golay smoothing polynomial.")
+        gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
+
+        # The interpolation checkbox and label
+        interpLab = QLabel(self)
+        interpLab.setText("Interpolate:")
+        gridLayout.addWidget(interpLab, 2, 0, 1, 1)
+
+        self.interpIn = QCheckBox(self)
+        self.interpIn.setChecked(self.resultsInterp)
+        self.interpIn.setToolTip("Whether to interpolate the data.")
+        gridLayout.addWidget(self.interpIn, 2, 1, 1, 1)
+
+        # The grid lines checkbox and label
+        gridLinesLab = QLabel(self)
+        gridLinesLab.setText("Grid Lines:")
+        gridLayout.addWidget(gridLinesLab, 2, 2, 1, 1)
+
+        self.gridLinesIn = QCheckBox(self)
+        self.gridLinesIn.setChecked(self.resultsGridLines)
+        self.gridLinesIn.setToolTip("Whether to show grid lines on the plot.")
+        gridLayout.addWidget(self.gridLinesIn, 2, 3, 1, 1)
+
+        self.verticalLayout.addLayout(gridLayout)
+
+        # Submit button
+        buttonLayout = QHBoxLayout()
+
+        self.submitGraphBut = QPushButton("Submit Graph", self)
+        buttonLayout.addWidget(self.submitGraphBut)
+        
+        self.exportDataBut = QPushButton("Export Data", self)
+        buttonLayout.addWidget(self.exportDataBut)
+
+        self.verticalLayout.addLayout(buttonLayout)
+
+        # Spacer
+        spacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum,
+                             QSizePolicy.Policy.Expanding)
+        self.verticalLayout.addItem(spacer)
+
+        # Connections
+        self.resultsSelector.currentIndexChanged.connect(self.resultsTimeChanged)
+        self.submitGraphBut.clicked.connect(self.submitGraph)
+        self.exportDataBut.clicked.connect(self.exportData)
+
+
+    # ------------------------------------------------------------------------------
+    # Function that is called to indicate that the data was changed by the user
+    def resultsTimeChanged(self):
+        # Update items in the components input field
+        self.compIn.clear()
+        if int(self.resultsSelector.currentIndex()) == self.DISP_INDEX:
+            for index, e in enumerate(sdpp.DispComp):
+                self.compIn.addItem(f"{e.display_name}")
+            # Allow zero smoothing for displacement
+            smoothWindowValidator = OddNumberValidator(0, None)
+            self.smoothWinIn.setValidator(smoothWindowValidator)
+        elif int(self.resultsSelector.currentIndex()) == self.STRAIN_INDEX:
+            for index, e in enumerate(sdpp.StrainComp):
+                self.compIn.addItem(f"{e.display_name}")
+            # For strain, force > 0 smoothing
+            smoothWindowValidator = OddNumberValidator(1, None)
+            self.smoothWinIn.setValidator(smoothWindowValidator)
+            if int(self.smoothWinIn.text()) == 0:
+                self.smoothWinIn.setText("3")
+
+    # ------------------------------------------------------------------------------
+    # Parse points text input into list of tuples
+    def _parsePoints(self, pointsText):
+        pts = []
+        rawPts = [p.strip() for p in pointsText.split(";") if p.strip() != ""]
+        for p in rawPts:
+            xy = [v.strip() for v in p.split(",")]
+            if len(xy) != 2:
+                raise ValueError("Points format must be: x1,y1;x2,y2;...")
+            pts.append((float(xy[0]), float(xy[1])))
+        if len(pts) == 0:
+            raise ValueError("At least one point must be provided.")
+        return pts
+
+    # ------------------------------------------------------------------------------
+    # Function that is called to generate the graph based on user input
+    def submitGraph(self):
+
+        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
+            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+            return
+
+        points = self._parsePoints(self.pointsIn.text())
+        gridlines = self.gridLinesIn.isChecked()
+        smoothWindow = int(self.smoothWinIn.text())
+        smoothOrder = int(self.smoothOrderIn.text())
+        interpolate = self.interpIn.isChecked()
+
+        try:
+            matplotlib.pyplot.close()
+
+            # Plotting displacement time history
+            if self.resultsSelector.currentIndex() == self.DISP_INDEX:
+                dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
+                    self.compIn.currentIndex()])
+                figure = sdpp.plotDispTimeHistory(
+                    self.parent.parent.savePath,
+                    points=points,
+                    dispComp=dispComp,
+                    gridLines=gridlines,
+                    showPlot=False,
+                    fileName='',
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                    return_fig=True
+                )
+                showGraph(self, figure, self.verticalLayout)
+
+            # Plotting strain time history
+            elif self.resultsSelector.currentIndex() == self.STRAIN_INDEX:
+                strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
+                    self.compIn.currentIndex()])
+                figure = sdpp.plotStrainTimeHistory(
+                    self.parent.parent.savePath,
+                    points=points,
+                    strainComp=strainComp,
+                    gridLines=gridlines,
+                    showPlot=False,
+                    fileName='',
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                    return_fig=True
+                )
+                showGraph(self, figure, self.verticalLayout)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error", f"An error occurred: {str(e)}")
+            
+
+    # ------------------------------------------------------------------------------
+    # Function that is called to export graph data to an Excel spreasheet
+    def exportData(self):
+        try:
+            if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
+                QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+                return
+
+            points = self._parsePoints(self.pointsIn.text())
+            smoothWindow = int(self.smoothWinIn.text())
+            smoothOrder = int(self.smoothOrderIn.text())
+            interpolate = self.interpIn.isChecked()
+
+            # Get the data
+            if self.resultsSelector.currentIndex() == self.DISP_INDEX:
+                comp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[self.compIn.currentIndex()])
+                imgPairs, vals, usedPoints = sdpp.getDispTimeHistory(
+                    self.parent.parent.savePath, points=points, dispComp=comp,
+                    smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+                    interpolate=interpolate)
+                yname = comp.display_name
+            else:
+                comp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[self.compIn.currentIndex()])
+                imgPairs, vals, usedPoints = sdpp.getStrainTimeHistory(
+                    self.parent.parent.savePath, points=points, strainComp=comp,
+                    smoothWindow=smoothWindow, smoothOrder=smoothOrder,
+                    interpolate=interpolate)
+                yname = comp.display_name
+
+            # Setup a dataframe
+            data = {"Image Pair Index": imgPairs}
+            for i, p in enumerate(usedPoints):
+                col = f"{yname} @ x={p[0]:.1f}, y={p[1]:.1f}"
+                data[col] = vals[i, :]
+            df = pd.DataFrame(data)
+
+            # Save as csv
+            csvPath, _ = QFileDialog.getSaveFileName(
+                self, "Save Time History Data", "", "CSV Files (*.csv)")
+            if csvPath:
+                if not csvPath.endswith(".csv"):
+                    csvPath += ".csv"
+                df.to_csv(csvPath, index=False)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")

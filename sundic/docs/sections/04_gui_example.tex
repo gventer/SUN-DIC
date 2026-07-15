@@ -147,6 +147,21 @@ The \codebf{Line Cut Graph} panel is used to create two-dimensional line plots t
 
 Click the \textbf{Submit Graph} button to generate the plot.
 
+\subsection{Time History}
+
+The \codebf{Time History} panel is used to create two-dimensional line plots of the selected output versus the image pair index.  It this provide a time history of the selected output.  One or more points can be tracked, with a line plot created for each point.  This panel provides the following options:
+
+\begin{itemize}
+	\item \codebf{Results} -- Choose Displacement or Strain data to plot.
+	\item \codebf{Points (x,y)} -- Comma-separated x,y pairs using semi-colon between points, e.g.\ \code{100,200; 120,250; 200,300}.
+	\item \codebf{Display Component} -- Select the field component: $u$ (X displacement), $v$ (Y displacement), displacement magnitude, $\varepsilon_x$, $\varepsilon_y$, $\varepsilon_{xy}$, or Von Mises strain $\varepsilon_\text{VM}$.
+	\item \codebf{Smoothing Window / Order} -- Window size and polynomial order for Savitzky--Golay smoothing.
+	\item \codebf{Interpolate} -- Interpolate data onto a uniform grid before plotting. When this option is selected, the exact cut values are used. Otherwise, the nearest row or column of subset centres is used.
+	\item \codebf{Grid Lines} -- Display grid lines on the graph.
+\end{itemize}
+
+Click the \textbf{Submit Graph} button to generate the plot or the \textbf{Export Data} button to export the graph data to a \code{.csv} output file.
+
 \subsection{Text Output}
 
 The \codebf{Text Output} panel is used to export the raw computed field data for external processing and provides the following options:

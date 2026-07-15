@@ -1,10 +1,10 @@
-numpy>=2.4.5
+numpy>=2.4.6
 natsort>=8.4.0
-opencv_python_headless>=4.13.0.92
+opencv-contrib-python-headless>=5.0.0.93
 scikit-image>=0.26.0
 ray>=2.55.1
 numba>=0.65.1
 msgpack-numpy>=0.4.8
-matplotlib>=3.10.9
+matplotlib>=3.11.0
 pandas>=3.0.3
 PyQT6>=6.11.0

@@ -1012,3 +1012,325 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
         ax.set_ylabel(ylabel)
 
     return fig, ax
+
+
+# --------------------------------------------------------------------------------------------
+def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
+                       smoothWindow=0, smoothOrder=2, interpolate=False):
+    """
+    Calculate and return displacement time history data at one or more points for all
+    image pairs in the results file.
+
+    Parameters:
+        - resultsFile (string): Results file from sundic.
+        - points (list): List of (x, y) tuples in pixel coordinates.
+        - dispComp (Comp, optional): Component of the displacement to return.
+            Default is DispComp.DISP_MAG.
+        - smoothWindow (int, optional): Size of the window used for Savitzky-Golay
+          smoothing. Must be an odd number and a value of 0 indicates no smoothing.
+          Default is 0.
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
+          Default is 2.
+        - interpolate (bool, optional): Flag to interpolate displacement values at the
+          specified points. Default is False, in which case nearest subset values are used.
+
+    Returns:
+        - imgPairs (ndarray): Image pair indices, shape (nPairs,).
+        - dispHist (ndarray): Displacement history values, shape (nPoints, nPairs).
+        - usedPoints (list): List of (x, y) points actually used to sample data.
+          If interpolate=False, these are nearest subset coordinates.
+          If interpolate=True, these are the requested input points.
+
+    Raises:
+        - ValueError: If an invalid dispComp argument is provided.
+        - ValueError: If points is empty or not in the expected format.
+    """
+
+    # Validate displacement component
+    if dispComp not in (DispComp.X_DISP, DispComp.Y_DISP, DispComp.DISP_MAG):
+        raise ValueError('Invalid dispComp argument - use the Comp object.')
+
+    # Validate points
+    if not points or not isinstance(points, (list, tuple)):
+        raise ValueError('Points must be a non-empty list of (x, y) tuples.')
+    for p in points:
+        if not isinstance(p, (list, tuple)) or len(p) != 2:
+            raise ValueError('Each point must be an (x, y) tuple.')
+
+    # Open results file and get number of image pairs from the first subset dimension
+    inFile = dataFile.DataFile.openReader(resultsFile)
+    nPairs = inFile.getNumImagePairs()
+    inFile.close()
+
+    imgPairs = np.arange(nPairs)
+
+    # Initialize output
+    nPoints = len(points)
+    dispHist = np.full((nPoints, nPairs), np.nan, dtype=float)
+
+    # Will hold nearest subset points when interpolate=False
+    usedPoints = [(float(p[0]), float(p[1])) for p in points]
+
+    # Loop over all image pairs and sample requested component at requested points
+    for pairIdx in imgPairs:
+        results, nRows, nCols = getDisplacements(
+            resultsFile, int(pairIdx), dilation=0,
+            smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+
+        dataX = results[:, CompID.XCoordID]
+        dataY = results[:, CompID.YCoordID]
+        dataZ = results[:, dispComp.value]
+
+        if interpolate:
+            # Interpolate requested component values onto the requested points
+            validMask = ~np.isnan(dataZ)
+            if np.any(validMask):
+                interp = NearestNDInterpolator(
+                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask])
+                for i, (px, py) in enumerate(points):
+                    dispHist[i, pairIdx] = float(interp(px, py))
+            # usedPoints remain the requested points
+        else:
+            # Use nearest subset-point values
+            for i, (px, py) in enumerate(points):
+                d2 = (dataX - px)**2 + (dataY - py)**2
+                idx = int(np.argmin(d2))
+                dispHist[i, pairIdx] = dataZ[idx]
+
+                # Store nearest point coordinates once (for first pair only)
+                if pairIdx == 0:
+                    usedPoints[i] = (float(dataX[idx]), float(dataY[idx]))
+
+    return imgPairs, dispHist, usedPoints
+
+
+# --------------------------------------------------------------------------------------------
+def plotDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
+                        gridLines=True, showPlot=True, fileName='',
+                        smoothWindow=0, smoothOrder=2,
+                        interpolate=False, return_fig=False):
+    """
+    Plot displacement time history for one or more points. The x-axis is image pair index
+    and the y-axis is the requested displacement component.
+
+    Parameters:
+        - resultsFile (string): Results file from sundic.
+        - points (list): List of (x, y) tuples in pixel coordinates.
+        - dispComp (Comp, optional): Component of the displacement to plot.
+            Default is DispComp.DISP_MAG.
+        - gridLines (bool, optional): Flag to plot grid lines. Default is True.
+        - showPlot (bool, optional): Flag to show the plot. Default is True.
+        - fileName (str, optional): Name of the file to save the plot. Default is ''.
+        - smoothWindow (int, optional): Size of the window used for Savitzky-Golay
+          smoothing. Must be an odd number and a value of 0 indicates no smoothing.
+          Default is 0.
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
+          Default is 2.
+        - interpolate (bool, optional): Flag to interpolate values at the specified points.
+          Default is False, in which case nearest subset values are used.
+        - return_fig (bool, optional): Flag to return the figure object. Default is False.
+
+    Returns:
+        - fig: The matplotlib plot object.
+    """
+
+    # Get time history data
+    imgPairs, dispHist, usedPoints = getDispTimeHistory(
+        resultsFile, points, dispComp=dispComp,
+        smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate)
+
+    # Setup y label
+    if dispComp == DispComp.DISP_MAG:
+        ylabel = 'Displacement Magnitude (pixels)'
+    elif dispComp == DispComp.X_DISP:
+        ylabel = 'Displacement X (pixels)'
+    elif dispComp == DispComp.Y_DISP:
+        ylabel = 'Displacement Y (pixels)'
+    else:
+        raise ValueError('Invalid dispComp argument - use the Comp object.')
+
+    # Create figure
+    fig, ax = plt.subplots()
+
+    # Plot each point history
+    for i, p in enumerate(usedPoints):
+        label = "x={0:.1f}, y={1:.1f}".format(p[0], p[1])
+        ax.plot(imgPairs, dispHist[i, :], label=label)
+
+    ax.set_xlabel('Image pair index')
+    ax.set_ylabel(ylabel)
+    ax.legend()
+
+    # Show gridlines if requested
+    if gridLines:
+        ax.grid()
+
+    # Show and or save the plot
+    if showPlot:
+        plt.show()
+    if fileName:
+        plt.savefig(fileName)
+
+    if return_fig:
+        return fig
+
+# --------------------------------------------------------------------------------------------
+def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
+                         smoothWindow=9, smoothOrder=2, interpolate=False):
+    """
+    Calculate and return strain time history data at one or more points for all
+    image pairs in the results file.
+
+    Parameters:
+        - resultsFile (string): Results file from sundic.
+        - points (list): List of (x, y) tuples in pixel coordinates.
+        - strainComp (Comp, optional): Component of the strain to return.
+            Default is StrainComp.VM_STRAIN.
+        - smoothWindow (int, optional): Size of the window used for Savitzky-Golay
+          smoothing. Must be an odd number larger than 0. Default is 9.
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
+          Default is 2.
+        - interpolate (bool, optional): Flag to interpolate strain values at the
+          specified points. Default is False, in which case nearest subset values are used.
+
+    Returns:
+        - imgPairs (ndarray): Image pair indices, shape (nPairs,).
+        - strainHist (ndarray): Strain history values, shape (nPoints, nPairs).
+        - usedPoints (list): List of (x, y) points actually used to sample data.
+          If interpolate=False, these are nearest subset coordinates.
+          If interpolate=True, these are the requested input points.
+
+    Raises:
+        - ValueError: If an invalid strainComp argument is provided.
+        - ValueError: If points is empty or not in the expected format.
+    """
+
+    # Validate strain component
+    if strainComp not in (StrainComp.X_STRAIN, StrainComp.Y_STRAIN,
+                          StrainComp.SHEAR_STRAIN, StrainComp.VM_STRAIN):
+        raise ValueError('Invalid strainComp argument - use the Comp object.')
+
+    # Validate points
+    if not points or not isinstance(points, (list, tuple)):
+        raise ValueError('points must be a non-empty list of (x, y) tuples.')
+    for p in points:
+        if not isinstance(p, (list, tuple)) or len(p) != 2:
+            raise ValueError('Each point must be an (x, y) tuple.')
+
+    # Open results file and get number of image pairs from the first subset dimension
+    inFile = dataFile.DataFile.openReader(resultsFile)
+    nPairs = inFile.getNumImagePairs()
+    inFile.close()
+
+    imgPairs = np.arange(nPairs)
+
+    # Initialize output
+    nPoints = len(points)
+    strainHist = np.full((nPoints, nPairs), np.nan, dtype=float)
+
+    # Will hold nearest subset points when interpolate=False
+    usedPoints = [(float(p[0]), float(p[1])) for p in points]
+
+    # Loop over all image pairs and sample requested component at requested points
+    for pairIdx in imgPairs:
+        results, _, _ = getStrains(
+            resultsFile, int(pairIdx), dilation=0,
+            smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+
+        dataX = results[:, CompID.XCoordID]
+        dataY = results[:, CompID.YCoordID]
+        dataZ = results[:, strainComp.value]
+
+        if interpolate:
+            # Interpolate requested component values onto the requested points
+            validMask = ~np.isnan(dataZ)
+            if np.any(validMask):
+                interp = NearestNDInterpolator(
+                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask])
+                for i, (px, py) in enumerate(points):
+                    strainHist[i, pairIdx] = float(interp(px, py))
+            # usedPoints remain the requested points
+        else:
+            # Use nearest subset-point values
+            for i, (px, py) in enumerate(points):
+                d2 = (dataX - px)**2 + (dataY - py)**2
+                idx = int(np.argmin(d2))
+                strainHist[i, pairIdx] = dataZ[idx]
+
+                # Store nearest point coordinates once (for first pair only)
+                if pairIdx == 0:
+                    usedPoints[i] = (float(dataX[idx]), float(dataY[idx]))
+
+    return imgPairs, strainHist, usedPoints
+
+
+# --------------------------------------------------------------------------------------------
+def plotStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
+                          gridLines=True, showPlot=True, fileName='',
+                          smoothWindow=9, smoothOrder=2,
+                          interpolate=False, return_fig=False):
+    """
+    Plot strain time history for one or more points. The x-axis is image pair index
+    and the y-axis is the requested strain component.
+
+    Parameters:
+        - resultsFile (string): Results file from sundic.
+        - points (list): List of (x, y) tuples in pixel coordinates.
+        - strainComp (Comp, optional): Component of the strain to plot.
+            Default is StrainComp.VM_STRAIN.
+        - gridLines (bool, optional): Flag to plot grid lines. Default is True.
+        - showPlot (bool, optional): Flag to show the plot. Default is True.
+        - fileName (str, optional): Name of the file to save the plot. Default is ''.
+        - smoothWindow (int, optional): Size of the window used for Savitzky-Golay
+          smoothing. Must be an odd number larger than 0. Default is 9.
+        - smoothOrder (int, optional): Order of the Savitzky-Golay smoothing polynomial.
+          Default is 2.
+        - interpolate (bool, optional): Flag to interpolate values at the specified points.
+          Default is False, in which case nearest subset values are used.
+        - return_fig (bool, optional): Flag to return the figure object. Default is False.
+
+    Returns:
+        - fig: The matplotlib plot object.
+    """
+
+    # Get time history data
+    imgPairs, strainHist, usedPoints = getStrainTimeHistory(
+        resultsFile, points, strainComp=strainComp,
+        smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate)
+
+    # Setup y label
+    if strainComp == StrainComp.SHEAR_STRAIN:
+        ylabel = 'Strain (XY component)'
+    elif strainComp == StrainComp.X_STRAIN:
+        ylabel = 'Strain (X component)'
+    elif strainComp == StrainComp.Y_STRAIN:
+        ylabel = 'Strain (Y component)'
+    elif strainComp == StrainComp.VM_STRAIN:
+        ylabel = 'Strain (Von Mises)'
+    else:
+        raise ValueError('Invalid strainComp argument - use the Comp object.')
+
+    # Create figure
+    fig, ax = plt.subplots()
+
+    # Plot each point history
+    for i, p in enumerate(usedPoints):
+        label = "x={0:.1f}, y={1:.1f}".format(p[0], p[1])
+        ax.plot(imgPairs, strainHist[i, :], label=label)
+
+    ax.set_xlabel('Image pair index')
+    ax.set_ylabel(ylabel)
+    ax.legend()
+
+    # Show gridlines if requested
+    if gridLines:
+        ax.grid()
+
+    # Show and or save the plot
+    if showPlot:
+        plt.show()
+    if fileName:
+        plt.savefig(fileName)
+
+    if return_fig:
+        return fig
