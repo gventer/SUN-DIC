@@ -38,4 +38,4 @@ jobs:
         run: copy-examples
 
       - name: Run daily SUN-DIC smoke test
-        run: pytest -q tests/test_daily_sundic.py -s
+        run: pytest -q sundic/tests/daily_test.py -s
