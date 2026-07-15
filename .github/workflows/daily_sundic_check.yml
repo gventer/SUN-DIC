@@ -35,7 +35,7 @@ jobs:
         run: python -m pip install pytest
 
       - name: Copy example files
-        run: make copy-examples
+        run: copy-examples
 
       - name: Run daily SUN-DIC smoke test
         run: pytest -q tests/test_daily_sundic.py -s
