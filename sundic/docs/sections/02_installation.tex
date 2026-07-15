@@ -18,6 +18,12 @@ python --version
 	\item On Linux, the GUI requires Qt6 system libraries (for example, \code{libxcb} and \code{xcb-util}). If the GUI fails to start, these libraries may need to be installed using your system package manager.
 	
 	\item On a Mac equipped with an Apple Silicon processor (Mac M1/M2/M3), using the standard Anaconda distribution may cause version conflicts or C++ compilation errors (eg, with \code{llvmlite} or \code{ray}). This is typically due to Anaconda defaulting to x86\_64 emulation.  To ensure a seamless, native ARM64 installation without needing to modify the \code{requirements.txt} file, it is recommended to use \href{https://github.com/conda-forge/miniforge}{Miniforge} instead of Anaconda. 
+	\textbf{Setup instructions:}
+	\begin{enumerate}
+		\item Install the macOS arm64 version of Miniforge.
+		\item Open a new terminal to ensure Miniforge is active (you should see the base environment).
+		\item Proceed with the standard installation using \code{conda} as described below.
+	\end{enumerate}
 \end{itemize}
 
 To avoid dependency conflicts, it is strongly recommended that SUN-DIC be installed in a dedicated virtual environment. The instructions below assume that such an environment is used. Installation can be performed either with \code{conda} in an Anaconda environment or with \code{pip} in a standard \code{venv} environment.
