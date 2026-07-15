@@ -279,8 +279,8 @@ url = {https://www.sciencedirect.com/science/article/pii/S0965997825001814},
 - **SUN-DIC analysis code**: based on work by **Ed Brisley** as part of his MEng degree at Stellenbosch University. His thesis is available through the [Stellenbosch University Library](https://scholar.sun.ac.za/items/7a519bf5-e62b-45cb-82f1-11f4969da23a).
 - **Interpolator**: uses `fast_interp` by David Stein, licensed under Apache 2.0. Repository: [fast_interp](https://github.com/dbstein/fast_interp)
 - **Smoothing algorithm**: implements the 2D Savitzky-Golay algorithm from the [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html)
-- **GUI development**: initial development by [Elijah Stockhall](https://github.com/EMStockhall/)
 - **Graphical design**: Dr. Melody Neaves
+- **Development**: Post-graduate students and visiting researchers from the [MOD Research Group](https://blogs.sun.ac.za/mod/) at Stellenbosch University
 
 
 # License
