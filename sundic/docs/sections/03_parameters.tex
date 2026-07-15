@@ -20,6 +20,10 @@ The \code{settings.ini} file is divided into five sections, which are described 
 		& & & 1 -- top-level output \\
 		& & & 2 -- per-iteration output \\
 		& & & Values outside 0--2 are silently clamped \\
+		\code{DataSaveMode} & str                  & \code{disp\_only}& Amount of data saved to the results file. \\
+		& & & \code{disp\_only} -- saves only the 7 essential variables (coordinates, displacements, CZNSSD, etc.) to reduce file size. \\
+		& & & \code{All} -- saves all 17 internal computation variables (useful for debugging). \\
+		\code{DataCompression} & bool               & \code{True}   & Enables zlib compression for the results file, reducing disk space requirements. \\
 		\code{ImageFolder}  & str                  & \code{images} & Path to image directory (absolute or relative to working directory) \\
 		\code{CPUCount}     & int or \code{auto}   & \code{1}      & Number of CPU cores to use \\
 		& & & \code{auto} uses all available cores \\

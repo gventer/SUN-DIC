@@ -12,6 +12,8 @@ class Settings:
 
     # Define the default class variables
     __defDebugLevel = 0
+    __defDataSaveMode = 'disp_only'
+    __defDataCompression = True
     __defImageFolder = 'images'
     __defCPUCount = 1
     __defDICType = 'Planar'
@@ -41,6 +43,8 @@ class Settings:
         Initialize the DIC settings object to the default values.
         """
         self.DebugLevel = self.__defDebugLevel
+        self.DataSaveMode = self.__defDataSaveMode
+        self.DataCompression = self.__defDataCompression
         self.ImageFolder = self.__defImageFolder
         self.CPUCount = self.__defCPUCount
         self.DICType = self.__defDICType
@@ -125,6 +129,8 @@ class Settings:
         retStr = '\nDIC Job Settings:\n'
         retStr += '------------------------------------------------\n'
         retStr += "  %25s : %s\n" % ('Debug Level', str(self.DebugLevel))
+        retStr += "  %25s : %s\n" % ('Data Save Mode', str(self.DataSaveMode))
+        retStr += "  %25s : %s\n" % ('Data Compression', str(self.DataCompression))
         retStr += "  %25s : %s\n" % ('Image Folder', str(self.ImageFolder))
         retStr += "  %25s : %s\n" % ('CPU Count', str(self.CPUCount))
         retStr += "  %25s : %s\n" % ('DIC Type', str(self.DICType))
@@ -299,6 +305,14 @@ class Settings:
             self.DebugLevel = 2
             print('WARNING: Config Parser - DebugLevel set to maximum value of 2')
 
+        self.DataSaveMode = cp.get(
+            'General', 'DataSaveMode', fallback=self.__defDataSaveMode)
+        if self.DataSaveMode not in ['disp_only', 'All']:
+            raise ValueError('Config Parser:  DataSaveMode must be disp_only or All')
+        
+        self.DataCompression = cp.getboolean(
+            'General', 'DataCompression', fallback=self.__defDataCompression)
+        
         self.ImageFolder = cp.get(
             'General', 'ImageFolder', fallback=self.__defImageFolder)
         if not os.path.isdir(self.ImageFolder):
@@ -456,6 +470,8 @@ class Settings:
 
         cp['General'] = {
             'DebugLevel': str(self.DebugLevel),
+            'DataSaveMode': str(self.DataSaveMode),
+            'DataCompression': str(self.DataCompression),
             'ImageFolder': str(self.ImageFolder),
             'CPUCount': str(self.CPUCount),
             'DICType': str(self.DICType),

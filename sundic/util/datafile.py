@@ -3,6 +3,7 @@ from datetime import datetime
 import sundic.version as version
 import msgpack as msgpack
 import msgpack_numpy as msgp_np
+import zlib
 
 # Setup the msgpack_numpy environment
 msgp_np.patch()
@@ -83,6 +84,11 @@ class DataFile:
         args:
             settings (dict) The settings dictionary to write to the file
         """
+
+        # Store the save mode and compression flag from settings for later use
+        self.dataSaveMode = getattr(settings, 'DataSaveMode', 'All')
+        self.dataCompression = getattr(settings, 'DataCompression', True)
+
         # Write the version number
         pVersion = msgpack.packb(version.__version__)
         self.__fh__.write(pVersion)
@@ -110,8 +116,15 @@ class DataFile:
         pImgPair = msgpack.packb(imgPair)
         self.__fh__.write(pImgPair)
 
+        # Filter data to save only essential columns if 'disp_only' mode is selected
+        save_mode = getattr(self, 'dataSaveMode', 'All')
+        if save_mode == 'disp_only':
+            data_to_write = data[:, :, [0, 1, 2, 3, 4, 5, 11]]
+        else:
+            data_to_write = data
+
         # Write the dimensions of the data
-        pDim = msgpack.packb(data.shape)
+        pDim = msgpack.packb(data_to_write.shape)
         self.__fh__.write(pDim)
 
         # Write the data
@@ -124,7 +137,16 @@ class DataFile:
         # is a need for it in the future.  However, an efficiency gain
         # could be made by only writing the x and y displacement data
         # --------------------------------------------------------------
-        pData = msgpack.packb(np.ravel(data))
+
+        # Pack the raw data
+        raw_packed_data = msgpack.packb(np.ravel(data_to_write))
+        
+        # Compress the data using zlib if enabled
+        if getattr(self, 'dataCompression', True):
+            compressed_data = zlib.compress(raw_packed_data, level=6)
+            pData = msgpack.packb(compressed_data)
+        else:
+            pData = raw_packed_data
         self.__fh__.write(pData)
 
     # --------------------------------------------------------------------------
@@ -172,19 +194,47 @@ class DataFile:
         _ = unp.unpack()
         _ = unp.unpack()
 
+        last_data = None
+        last_dim = None
+
         # Loop through the file to find the data
         try:
             while True:
                 currImgPair = unp.unpack()
                 dim = unp.unpack()
-                data = unp.unpack().reshape(dim)
+                
+                raw_payload = unp.unpack()
+
+                # Check if payload is compressed (bytes) and decompress, 
+                # otherwise read normally for backward compatibility with older files
+                if isinstance(raw_payload, bytes):
+                    decompressed_data = zlib.decompress(raw_payload)
+                    data_raw = msgpack.unpackb(decompressed_data).reshape(dim)
+                else:
+                    data_raw = raw_payload.reshape(dim)
+                
+                last_data = data_raw
+                last_dim = dim
+                
                 if currImgPair == imgPair:
                     break
         except msgpack.OutOfData:
             pass
 
-        return data
+        if last_data is None:
+            return None
 
+        # If data was saved in 'disp_only' mode (7 columns), pad with zeros 
+        # to recreate the 17-column structure expected by the post-processing tools
+        if len(last_dim) == 3 and last_dim[2] == 7:
+            full_data = np.zeros((last_dim[0], last_dim[1], 17))
+            full_data[:, :, [0, 1, 2, 3, 4, 5, 11]] = last_data
+            return full_data
+        else:
+            return last_data
+        
+    
+    
     # --------------------------------------------------------------------------
     def containsResults(self):
         """
