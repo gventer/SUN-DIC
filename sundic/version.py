@@ -1,7 +1,9 @@
-__version__ = "0.0.33a"
+__version__ = "0.0.34"
 # 0.0.34 - Update the readme file and user manual to reflect new functionality from
 #          version 0.0.33.
 #        - Added daily check workflow
+#        - Added an option to only save the required data for post-porocessing and to
+#          compress the results file to save disk space
 # 0.0.33 - Resolved dependency issue with headless opencv and AKAZE
 #        - Add post-processing functions to obtain displacement and strain time history 
 #          at specific points.  Both data and plots can be generated.

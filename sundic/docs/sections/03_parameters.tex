@@ -20,10 +20,10 @@ The \code{settings.ini} file is divided into five sections, which are described 
 		& & & 1 -- top-level output \\
 		& & & 2 -- per-iteration output \\
 		& & & Values outside 0--2 are silently clamped \\
-		\code{DataSaveMode} & str                  & \code{disp\_only}& Amount of data saved to the results file. \\
-		& & & \code{disp\_only} -- saves only the 7 essential variables (coordinates, displacements, CZNSSD, etc.) to reduce file size. \\
-		& & & \code{All} -- saves all 17 internal computation variables (useful for debugging). \\
-		\code{DataCompression} & bool               & \code{True}   & Enables zlib compression for the results file, reducing disk space requirements. \\
+		\code{DataSaveMode} & str                  & \code{DispOnly}& Data saved to the results file. \\
+		& & & \code{DispOnly} -- saves only the essential variables required for post-processing \\
+		& & & \code{All} -- saves all internal variables (useful for advanced users or specialized debugging) \\
+		\code{DataCompression} & bool               & \code{True}   & Enables \code{zlib} compression for the results file \\
 		\code{ImageFolder}  & str                  & \code{images} & Path to image directory (absolute or relative to working directory) \\
 		\code{CPUCount}     & int or \code{auto}   & \code{1}      & Number of CPU cores to use \\
 		& & & \code{auto} uses all available cores \\
@@ -127,7 +127,7 @@ The \code{settings.ini} file is divided into five sections, which are described 
 		& & & \code{IC-LM}: more robust for difficult cases, but computationally more expensive \\
 		& & & \code{Fast-IC-LM}: reduced-accuracy but faster variant of IC-LM \\
 		\code{MaxIterations}         & int   & \code{50}     & Maximum number of iterations per subset \\
-		\code{InterpolationOrder}    & int   & \code{5}      & \code{3} -- cubic interpolation (more stable, usually sufficient) \\
+		\code{InterpolationOrder}    & int   & \code{3}      & \code{3} -- cubic interpolation (more stable, usually sufficient) \\
 		& & & \code{5} -- quintic interpolation (potentially more accurate, higher cost) \\
 		\code{ConvergenceThreshold}  & float & \code{0.0001} & Stop when displacement change is below this threshold \\
 		& & & \code{0} disables this criterion \\

@@ -38,6 +38,7 @@ def test_daily_sundic_example_regression():
     # Load the settings file and set the debug level to 0 (no debug output)
     settings = sdset.Settings.fromSettingsFile(settings_file)
     settings.DebugLevel = 0
+    #print(settings.__repr__())
 
     # Run the planar DIC analysis
     sdic.planarDICLocal(settings, results_file)

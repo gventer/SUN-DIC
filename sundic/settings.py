@@ -12,7 +12,7 @@ class Settings:
 
     # Define the default class variables
     __defDebugLevel = 0
-    __defDataSaveMode = 'disp_only'
+    __defDataSaveMode = 'DispOnly'
     __defDataCompression = True
     __defImageFolder = 'images'
     __defCPUCount = 1
@@ -31,7 +31,7 @@ class Settings:
     __defBackgroundCutoff = 25
     __defOptimizationAlgorithm = 'IC-GN'
     __defMaxIterations = 50
-    __defInterpolationOrder = 5
+    __defInterpolationOrder = 3
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
     __defMaskFile = ''
@@ -307,8 +307,8 @@ class Settings:
 
         self.DataSaveMode = cp.get(
             'General', 'DataSaveMode', fallback=self.__defDataSaveMode)
-        if self.DataSaveMode not in ['disp_only', 'All']:
-            raise ValueError('Config Parser:  DataSaveMode must be disp_only or All')
+        if self.DataSaveMode not in ['DispOnly', 'All']:
+            raise ValueError('Config Parser:  DataSaveMode must be DispOnly or All')
         
         self.DataCompression = cp.getboolean(
             'General', 'DataCompression', fallback=self.__defDataCompression)
