@@ -185,14 +185,8 @@ class DataFile:
             data (numpy.ndarray) The subset data from the file
         """
 
-        # Go to the start of the file - always do this so that we know where we are
-        self.__fh__.seek(0)
-
-        # Setup the unpacker and ignore the heading
-        unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
-        _ = unp.unpack()
-        _ = unp.unpack()
-        _ = unp.unpack()
+        # Skip the header info in the file to get to the subset data
+        unp = self._skipHeader_()
 
         last_data = None
         last_dim = None
@@ -246,20 +240,25 @@ class DataFile:
         # Loop through the file to find the data
         try:
 
-            # Go to the start of the file - always do this so that we know where we are
-            self.__fh__.seek(0)
+            # Skip the header info in the file to get to the subset data
+            unp = self._skipHeader_()
 
-            # Setup the unpacker and ignore the heading
-            unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
-            _ = unp.unpack()
-            _ = unp.unpack()
-            _ = unp.unpack()
-
-            # Check if there is any image data results
+            # Check if there is any image data results           
             while True:
-                currImgPair = unp.unpack()
+                _ = unp.unpack()  # skip the image pair ID
                 dim = unp.unpack()
-                data = unp.unpack().reshape(dim)
+
+                # Get the raw payload and check if it's compressed or not
+                raw_payload = unp.unpack()
+
+                # Check if payload is compressed (bytes) and decompress, 
+                # otherwise read normally for backward compatibility with older files
+                if isinstance(raw_payload, bytes):
+                    decompressed_data = zlib.decompress(raw_payload)
+                    data_raw = msgpack.unpackb(decompressed_data).reshape(dim)
+                else:
+                    data_raw = raw_payload.reshape(dim) 
+
                 return True
 
         except msgpack.OutOfData:
@@ -279,20 +278,26 @@ class DataFile:
         # Loop through the file to find the data
         numImgPairs = 0
         try:
-            # Go to the start of the file - always do this so that we know where we are
-            self.__fh__.seek(0)
 
-            # Setup the unpacker and ignore the heading
-            unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
-            _ = unp.unpack()
-            _ = unp.unpack()
-            _ = unp.unpack()
+            # Skip the header info in the file to get to the subset data
+            unp = self._skipHeader_()
 
             # Count the image pairs
             while True:
-                currImgPair = unp.unpack()
+                _ = unp.unpack() # Skip the image pair ID
                 dim = unp.unpack()
-                data = unp.unpack().reshape(dim)
+
+                # Get the raw payload and check if it's compressed or not
+                raw_payload = unp.unpack()
+
+                # Check if payload is compressed (bytes) and decompress, 
+                # otherwise read normally for backward compatibility with older files
+                if isinstance(raw_payload, bytes):
+                    decompressed_data = zlib.decompress(raw_payload)
+                    data_raw = msgpack.unpackb(decompressed_data).reshape(dim)
+                else:
+                    data_raw = raw_payload.reshape(dim) 
+
                 numImgPairs = numImgPairs + 1
 
         # Handle any exceptions - like end of the file
@@ -301,3 +306,26 @@ class DataFile:
 
         # Return the number of image pairs found
         return numImgPairs
+
+
+    def _skipHeader_(self):
+        """
+        Skip the header of the data file
+
+        This is a helper function to skip the header of the data file when reading
+        the subset data.  It is used to avoid reading the header multiple times
+        when reading multiple image pairs.
+
+        args:
+            self (DataFile) The DataFile object
+        """
+        # Go to the start of the file - always do this so that we know where we are
+        self.__fh__.seek(0)
+
+        # Setup the unpacker and ignore the heading
+        unp = msgpack.Unpacker(self.__fh__, raw=False, max_buffer_size=0)
+        _ = unp.unpack()
+        _ = unp.unpack()
+        _ = unp.unpack()
+
+        return unp
