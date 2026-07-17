@@ -1,4 +1,5 @@
-__version__ = "0.0.34"
+__version__ = "0.0.35"
+# 0.0.35 - Quick fix to handle compressed data in the datafile from the GUI
 # 0.0.34 - Update the readme file and user manual to reflect new functionality from
 #          version 0.0.33.
 #        - Added daily check workflow
