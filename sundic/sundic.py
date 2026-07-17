@@ -113,15 +113,19 @@ def _getImageList_(imgSubFolder, debugLevel=0):
 
 
 # --------------------------------------------------------------------------------------------
-def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
+def _temporalMatch_(initSubSetPnts, imgSet, settings, resultsFile, externalRay=False, guiThread=None):
     """
-    Perform local planar (2D) Digital Image Correlation (DIC) analysis.
+    Internal function used to perform local planar (2D) Digital Image
+    Correlation (DIC) analysis.
 
-    This function takes a dictionary of settings as input and performs local DIC analysis
-    based on the specified settings. The analysis involves processing a series of image pairs
-    to obtain displacement and strain data.
+    This function takes an array of initial subset points, a list of images to
+    be analysed, and dictionary of settings as input and performs local DIC
+    analysis based on the specified settings. The analysis involves processing a
+    series of image pairs to obtain displacement and strain data.
 
     Parameters:
+        - initSubSetPnts: An array of initial subsets points.
+        - imgSet: A list of image filenames that will be analysed.
         - settings: A Settings object containing the settings for the DIC analysis.
         - resultsFile: The name of the file to store the results in.
         - externalRay: A boolean indicating whether to use an external ray server or not.
@@ -137,26 +141,16 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
 
     Raises:
         - ValueError: If an invalid optimization algorithm is specified.
+
     """
     try:
         # Store the debug level
         debugLevel = settings.DebugLevel
 
-        # Get the images to work with
-        imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
-
-        # Get the Region of Interest (ROI)
-        ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
-
-        # Define measurement points using the settings specified in the config file
-        # These are the center points of the subsets
-        subSetSize = settings.SubsetSize
-        stepSize = settings.StepSize
-        shapeFn = settings.ShapeFunctions
-        subSetPnts = _setupSubSets_(
-            subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel)
+        # Define measurement points
+        subSetPnts = initSubSetPnts
         if subSetPnts.size == 0:
-            raise ValueError("No valid subset centers could be created for the specified ROI/subset size.")
+            raise ValueError("No valid subsets found.")
 
         # Deal with a binary mask if specified
         roiMask = None
@@ -174,10 +168,10 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
                 print('---------------------------------')
                 print(f'  Active subsets   : {nActive}')
                 print(f'  Inactive subsets : {nTotal - nActive}')
-    
+
         if not np.any(activeSubsets):
             raise ValueError("The specified mask excludes all subset centers. No active subsets remain.")
-        
+
         # Get the image pair information
         imgDatum = settings.DatumImage
         imgTarget = settings.TargetImage
@@ -245,7 +239,7 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
                 for i in range(mRows*mCols):
                     iRow, iCol = np.unravel_index(i, (mRows, mCols))
                     procIDs.append(_rmt_icOptimization_.remote(
-                        settings, iRow, iCol, subMatrices[iRow][iCol], 
+                        settings, iRow, iCol, subMatrices[iRow][iCol],
                         activeSubMatrices[iRow][iCol], imgSet, img, guiThread=guiThread))
 
                     if nDebugOld > 0:
@@ -314,6 +308,61 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
     except Exception as e:
         if settings.CPUCount > 1:
             _safeRayShutdown_(externalRay, debugLevel=debugLevel)
+        raise e
+
+
+# --------------------------------------------------------------------------------------------
+def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
+    """
+    Perform local planar (2D) Digital Image Correlation (DIC) analysis.
+
+    This function takes a dictionary of settings as input and performs local DIC analysis
+    based on the specified settings. The analysis involves processing a series of image pairs
+    to obtain displacement and strain data.
+
+    Parameters:
+        - settings: A Settings object containing the settings for the DIC analysis.
+        - resultsFile: The name of the file to store the results in.
+        - externalRay: A boolean indicating whether to use an external ray server or not.
+        - guiThread: The GUI thread object if running from the GUI, otherwise None. Used to 
+                    cleanly stop the analysis if requested from the GUI.
+
+    Returns:
+        - returnData (list): A list of subSetPoint arrays. Each subSetPoint array is a
+            3D matrix where the first plane contains the x-coordinates
+            the second plane the y-coordinates and the remaining planes the subset size,
+            shapeFn, CZNSSD value and model coefficients.  This array can be processed to
+            obtain displacement and strain data and to generate graphs.
+
+    Raises:
+        - ValueError: If an invalid optimization algorithm is specified.
+    """
+    try:
+        # Store the debug level
+        debugLevel = settings.DebugLevel
+
+        # Get the images to work with
+        imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
+
+        # Get the Region of Interest (ROI)
+        ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
+
+        # Define measurement points using the settings specified in the config file
+        # These are the center points of the subsets
+        subSetSize = settings.SubsetSize
+        stepSize = settings.StepSize
+        shapeFn = settings.ShapeFunctions
+        subSetPnts = _setupSubSets_(
+            subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel)
+        if subSetPnts.size == 0:
+            raise ValueError("No valid subset centers could be created for the specified ROI/subset size.")
+
+        # Perform local planar DIC analysis using the created subsets
+        returnData = _temporalMatch_(subSetPnts, imgSet, settings, resultsFile, externalRay, guiThread)
+
+        return returnData
+
+    except Exception as e:
         raise e
 
 
