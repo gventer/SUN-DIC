@@ -2,7 +2,7 @@ name: SUN-DIC CI & Daily Check
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, test-ci-workflows ]
   pull_request:
     branches: [ main, dev ]
   schedule:
