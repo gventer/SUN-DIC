@@ -21,7 +21,7 @@ import numpy as np
 
 
 # --------------------------------------------------------------------------------------------
-@numba.njit(cache=True, fastmath=True, parallel=True)
+@numba.njit(cache=True, fastmath=False, parallel=True)
 def _eval_interp2d_k3_(img, y_pts, x_pts, out):
     """
     Evaluate the 3rd order (bicubic) Taylor series interpolation for a given
@@ -79,7 +79,7 @@ def _eval_interp2d_k3_(img, y_pts, x_pts, out):
 
 
 # --------------------------------------------------------------------------------------------
-@numba.njit(cache=True, fastmath=True, parallel=True)
+@numba.njit(cache=True, fastmath=False, parallel=True)
 def _eval_interp2d_k5_(img, y_pts, x_pts, out):
     """
     Evaluate the 5th order (biquintic) Taylor series interpolation for a given
