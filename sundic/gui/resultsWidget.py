@@ -1,21 +1,36 @@
-import sundic.post_process as sdpp
-import sundic.util.datafile as dataFile
-from sundic.gui.validators import OddNumberValidator, ClampingIntValidator
-from sundic.gui.validators import ClampingDblValidator
 import os
+
+import matplotlib
 import numpy as np
 import pandas as pd
-
-from PyQt6 import QtCore, QtGui
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
+from PyQt6 import QtCore
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton,
-    QComboBox, QCheckBox, QSpacerItem, QSizePolicy, QTextEdit, QFileDialog,
-    QMessageBox, QStackedLayout, QLayout
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QStackedLayout,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt
 
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
-import matplotlib
+import sundic.post_process as sdpp
+import sundic.util.datafile as dataFile
+from sundic.gui.validators import (
+    ClampingDblValidator,
+    ClampingIntValidator,
+    OddNumberValidator,
+)
+
 matplotlib.use("qtagg")
 
 
@@ -25,8 +40,7 @@ def showGraph(parent, figure, layout):
 
     canvas = FigureCanvasQTAgg(figure)
     canvas.setObjectName("canvas")
-    canvas.setSizePolicy(QSizePolicy.Policy.Expanding,
-                         QSizePolicy.Policy.Expanding)
+    canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
     toolbar = NavigationToolbar(canvas, parent)
     toolbar.setObjectName("toolbar")
 
@@ -39,12 +53,13 @@ def showGraph(parent, figure, layout):
             if widget is not None and widget.objectName() in widgetNames:
                 widget.setParent(None)
                 widget.deleteLater()
-        except Exception as e:
+        except Exception:
             pass
 
     # Add the new ones
     layout.addWidget(toolbar)
     layout.addWidget(canvas)
+
 
 # ------------------------------------------------------------------------------
 # Function to clear any graph/toolbar widgets from a layout
@@ -61,9 +76,10 @@ def clearGraph(layout):
             widget.setParent(None)
             widget.deleteLater()
 
+
 class ResultsUI(QWidget):
-    """ Class for the results UI: Defines the layout and widgets for the
-        results tab
+    """Class for the results UI: Defines the layout and widgets for the
+    results tab
     """
 
     # Number of image pairs
@@ -80,7 +96,7 @@ class ResultsUI(QWidget):
     CUTLINE_TAB = 1
     TIMEHIST_TAB = 2
     EXPRT_TAB = 3
- 
+
     # ------------------------------------------------------------------------------
     # Initialize the results UI
     def __init__(self, parent):
@@ -98,29 +114,31 @@ class ResultsUI(QWidget):
         self.resultsUITimeHistory = ResultsUITimeHistory(self)
 
         # Define a custom button style
-        buttonStyle = "QPushButton{border: 2px  solid  rgb(0, 0, 0);\n" +\
-            "background: rgb(255, 255, 255);\n" +\
-            "border-style: outset;\n" + \
-            "border-width: 1px 1px 1px 1px;\n" + \
-            "border-radius: 0px;\n" + \
-            "color: black;\n" + \
-            "padding: 5px 5px 5px 5px;\n" + \
-            "} \n" + \
-            "QPushButton:checked {\n" + \
-            "border-style: inset;\n" + \
-            "background: qradialgradient(\n" + \
-            "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n" + \
-            "radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n" + \
-            ");\n" + \
-            "}\n" + \
-            "QPushButton:disabled {\n" + \
-            "border-style: outset;\n" + \
-            "background: qradialgradient(\n" + \
-            "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n" + \
-            "radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n" + \
-            ");\n" + \
-            "}\n" + \
-            ""
+        buttonStyle = (
+            "QPushButton{border: 2px  solid  rgb(0, 0, 0);\n"
+            + "background: rgb(255, 255, 255);\n"
+            + "border-style: outset;\n"
+            + "border-width: 1px 1px 1px 1px;\n"
+            + "border-radius: 0px;\n"
+            + "color: black;\n"
+            + "padding: 5px 5px 5px 5px;\n"
+            + "} \n"
+            + "QPushButton:checked {\n"
+            + "border-style: inset;\n"
+            + "background: qradialgradient(\n"
+            + "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+            + "radius: 1.35, stop: 0 #fff, stop: 1 #90D5FF\n"
+            + ");\n"
+            + "}\n"
+            + "QPushButton:disabled {\n"
+            + "border-style: outset;\n"
+            + "background: qradialgradient(\n"
+            + "cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+            + "radius: 1.35, stop: 0 #fff, stop: 1 #ddd\n"
+            + ");\n"
+            + "}\n"
+            + ""
+        )
 
         mainVLayout = QVBoxLayout(self)
         mainVLayout.setContentsMargins(10, 10, 10, 10)
@@ -159,10 +177,11 @@ class ResultsUI(QWidget):
         self.textBut.setStyleSheet(buttonStyle)
         self.textBut.setCheckable(True)
         self.textBut.setAutoExclusive(True)
-        horizontalLayout.addWidget(self.textBut)        
+        horizontalLayout.addWidget(self.textBut)
 
         spacerItem = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
         horizontalLayout.addItem(spacerItem)
         mainVLayout.addLayout(horizontalLayout)
 
@@ -180,18 +199,17 @@ class ResultsUI(QWidget):
         # Setup the default tab view here
         self.stackedLayout.setCurrentIndex(self.CONTOUR_TAB)
         self.contBut.setChecked(True)
-    
+
         # Add connections here
         self.textBut.clicked.connect(self.showTextUI)
         self.contBut.clicked.connect(self.showContUI)
         self.lineBut.clicked.connect(self.showLineUI)
         self.timeBut.clicked.connect(self.showTimeUI)
 
-        # Render the default tab only if the results file is ready.  This is done with a 
+        # Render the default tab only if the results file is ready.  This is done with a
         # single shot timer to allow the GUI to finish initializing first.
         QtCore.QTimer.singleShot(0, self._renderDefaultTabIfReady)
 
-    
     # ------------------------------------------------------------------------------
     # Function to render the default tab only if the results file is ready
     def _renderDefaultTabIfReady(self):
@@ -235,7 +253,8 @@ class ResultsUI(QWidget):
     def updateImagePairs(self):
         if self.parent.savePath is not None and os.path.isfile(self.parent.savePath):
             self.numImagePairs = dataFile.DataFile.openReader(
-                self.parent.savePath).getNumImagePairs()
+                self.parent.savePath
+            ).getNumImagePairs()
         else:
             self.numImagePairs = 0
 
@@ -243,8 +262,8 @@ class ResultsUI(QWidget):
 
 
 class ResultsUIExport(QWidget):
-    """ Class for the results summary UI: Defines the layout and widgets for the
-        results summary tab
+    """Class for the results summary UI: Defines the layout and widgets for the
+    results summary tab
     """
 
     # These are the default values shown in this tab
@@ -322,7 +341,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
 
         # The remove NaN's checkbox and label
         removeNanLab = QLabel(self)
-        removeNanLab.setText("Remove NaN\'s:")
+        removeNanLab.setText("Remove NaN's:")
         gridLayout.addWidget(removeNanLab, 0, 2, 1, 1)
 
         self.removeNanIn = QCheckBox(self)
@@ -342,7 +361,8 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         smoothOrderValidator.setBottom(0)
         self.smoothOrderIn.setValidator(smoothOrderValidator)
         self.smoothOrderIn.setToolTip(
-            "Order of the Savitzky-Golay smoothing polynomial.")
+            "Order of the Savitzky-Golay smoothing polynomial."
+        )
         gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
 
         # The include strains checkbox and label
@@ -358,10 +378,12 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         self.writeDataBut = QPushButton(self)
         self.writeDataBut.setText("Export Data")
         verticalLayout_2.addWidget(
-            self.writeDataBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+            self.writeDataBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter
+        )
 
         spacerItem = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         verticalLayout_2.addItem(spacerItem)
 
         # Add connections here
@@ -392,33 +414,62 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
             # Getting required data
             if self.incDispIn.isChecked():
                 dispResults, _, _ = sdpp.getDisplacements(
-                    self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
-                    dilation=dilation, smoothOrder=smoothOrder)
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    smoothWindow=smoothWindow,
+                    dilation=dilation,
+                    smoothOrder=smoothOrder,
+                )
             if self.incStrainsIn.isChecked():
                 strainResults, _, _ = sdpp.getStrains(
-                    self.parent.parent.savePath, imgPair=imgPair, smoothWindow=smoothWindow,
-                    smoothOrder=smoothOrder)
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                )
 
             # Optional remove NaN
             if self.removeNanIn.isChecked():
                 if self.incDispIn.isChecked():
-                    dispResults = dispResults[~np.isnan(
-                        dispResults).any(axis=1)]
+                    dispResults = dispResults[~np.isnan(dispResults).any(axis=1)]
                 if self.incStrainsIn.isChecked():
-                    strainResults = strainResults[~np.isnan(
-                        strainResults).any(axis=1)]
+                    strainResults = strainResults[~np.isnan(strainResults).any(axis=1)]
 
             # Saving the data as data frames
             if self.incDispIn.isChecked():
-                dispDataFrame = pd.DataFrame(dispResults, columns=[
-                    "X Coord", "Y Coord", "Z Coord", "X Disp", "Y Disp", "Z Disp", "Disp Magnitude"])
+                dispDataFrame = pd.DataFrame(
+                    dispResults,
+                    columns=[
+                        "X Coord",
+                        "Y Coord",
+                        "Z Coord",
+                        "X Disp",
+                        "Y Disp",
+                        "Z Disp",
+                        "Disp Magnitude",
+                    ],
+                )
             if self.incStrainsIn.isChecked():
-                strainDataFrame = pd.DataFrame(strainResults, columns=[
-                    "X Coord", "Y Coord", "Z Coord", "X Strain Comp", "Y Strain Comp", "XY Strain Comp", "Von Mises Strain"])
+                strainDataFrame = pd.DataFrame(
+                    strainResults,
+                    columns=[
+                        "X Coord",
+                        "Y Coord",
+                        "Z Coord",
+                        "X Strain Comp",
+                        "Y Strain Comp",
+                        "XY Strain Comp",
+                        "Von Mises Strain",
+                    ],
+                )
 
             if self.incDispIn.isChecked() and self.incStrainsIn.isChecked():
-                results = pd.merge(dispDataFrame, strainDataFrame, how="right", on=[
-                                   "X Coord", "Y Coord", "Z Coord"])
+                results = pd.merge(
+                    dispDataFrame,
+                    strainDataFrame,
+                    how="right",
+                    on=["X Coord", "Y Coord", "Z Coord"],
+                )
             elif self.incDispIn.isChecked():
                 results = dispDataFrame
             elif self.incStrainsIn.isChecked():
@@ -426,7 +477,8 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
 
             # Saving the data to a CSV file
             csvPath, _ = QFileDialog.getSaveFileName(
-                self, "Save File", "", "CSV Files (*.csv)")
+                self, "Save File", "", "CSV Files (*.csv)"
+            )
             if csvPath:
                 if not csvPath.endswith(".csv"):
                     csvPath = csvPath + ".csv"
@@ -434,13 +486,12 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         except Exception as e:
             # Capture the standard error and display it in a popup
             error_message = str(e)
-            QMessageBox.critical(
-                self, "Error", f"{error_message}")
+            QMessageBox.critical(self, "Error", f"{error_message}")
 
 
 class ResultsUIContour(QWidget):
-    """ Class for the results contourplot UI: Defines the layout and widgets for the
-        results contourplot tab
+    """Class for the results contourplot UI: Defines the layout and widgets for the
+    results contourplot tab
     """
 
     # Define all the variables to store the user input
@@ -473,7 +524,8 @@ class ResultsUIContour(QWidget):
             self.resultsSelector.addItem(item)
         self.resultsSelector.setCurrentIndex(self.resultsType)
         self.verticalLayout.addWidget(
-            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft
+        )
 
         # Now the grid layout
         self.gridLayout = QGridLayout()
@@ -527,7 +579,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         smoothOrderValidator.setBottom(0)
         self.smoothOrderIn.setValidator(smoothOrderValidator)
         self.smoothOrderIn.setToolTip(
-            "Order of the Savitzky-Golay smoothing polynomial.")
+            "Order of the Savitzky-Golay smoothing polynomial."
+        )
         self.gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
 
         # The alpha input and label
@@ -540,7 +593,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         alphaValidator = ClampingDblValidator(0.0, 1.0)
         self.alphaIn.setValidator(alphaValidator)
         self.alphaIn.setToolTip(
-            "The transparency of the contour plot. Must be between 0 and 1.")
+            "The transparency of the contour plot. Must be between 0 and 1."
+        )
         self.gridLayout.addWidget(self.alphaIn, 2, 1, 1, 1)
 
         self.verticalLayout.addLayout(self.gridLayout)
@@ -563,16 +617,17 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         # Creating and adding the Submit Graph button
         self.submitGraphBut = QPushButton("Submit Graph", self)
         self.verticalLayout.addWidget(
-            self.submitGraphBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+            self.submitGraphBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter
+        )
 
         # Creating a spacer to neaten up the layout
-        spacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum,
-                             QSizePolicy.Policy.Expanding)
+        spacer = QSpacerItem(
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         self.verticalLayout.addItem(spacer)
 
         # Connecting the input fields to the resultsConChanged method
-        self.resultsSelector.currentIndexChanged.connect(
-            self.resultsConChanged)
+        self.resultsSelector.currentIndexChanged.connect(self.resultsConChanged)
 
         self.submitGraphBut.clicked.connect(self.submitGraph)
 
@@ -611,58 +666,87 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
     # Function to submit the graph request
     def submitGraph(self):
 
-        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
-            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+        if self.parent.parent.savePath is None or not os.path.isfile(
+            self.parent.parent.savePath
+        ):
+            QMessageBox.warning(
+                self, "No Results File", "Please run/load results first."
+            )
             return
-        
+
         # Getting the required parameters
         alpha = float(self.alphaIn.text())
         smoothWindow = int(self.smoothWinIn.text())
         smoothOrder = int(self.smoothOrderIn.text())
         imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
         dilation = int(self.dilationIn.text())
-        
+
         # Plotting the graphs
         try:
             matplotlib.pyplot.close()
 
             # Plotting the displacement contour
             if self.resultsSelector.currentIndex() == self.DISP_INDEX:
-                dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
-                    self.compIn.currentIndex()])
-                figure = sdpp.plotDispContour(self.parent.parent.savePath, imgPair=imgPair, dispComp=dispComp,
-                                              alpha=alpha, plotImage=True,
-                                              showPlot=False, fileName='',
-                                              dilation=dilation,
-                                              smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                                              return_fig=True)
+                dispComp = getattr(
+                    sdpp.DispComp,
+                    sdpp.DispComp._member_names_[self.compIn.currentIndex()],
+                )
+                figure = sdpp.plotDispContour(
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    dispComp=dispComp,
+                    alpha=alpha,
+                    plotImage=True,
+                    showPlot=False,
+                    fileName="",
+                    dilation=dilation,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    return_fig=True,
+                )
                 showGraph(self, figure, self.verticalLayout)
 
             # Plotting the strain contour
             elif self.resultsSelector.currentIndex() == self.STRAIN_INDEX:
-                strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
-                    self.compIn.currentIndex()])
-                figure = sdpp.plotStrainContour(self.parent.parent.savePath, imgPair=imgPair, strainComp=strainComp,
-                                                alpha=alpha, plotImage=True,
-                                                showPlot=False, fileName='',
-                                                dilation=dilation,
-                                                smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                                                return_fig=True)
+                strainComp = getattr(
+                    sdpp.StrainComp,
+                    sdpp.StrainComp._member_names_[self.compIn.currentIndex()],
+                )
+                figure = sdpp.plotStrainContour(
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    strainComp=strainComp,
+                    alpha=alpha,
+                    plotImage=True,
+                    showPlot=False,
+                    fileName="",
+                    dilation=dilation,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    return_fig=True,
+                )
                 showGraph(self, figure, self.verticalLayout)
 
             # Plotting the correlation contour
             elif self.resultsSelector.currentIndex() == self.CORELLATION_INDEX:
-                figure = sdpp.plotZNCCContour(self.parent.parent.savePath, imgPair=imgPair,
-                                              alpha=0.75, plotImage=True, showPlot=False,
-                                              fileName='', return_fig=True)
+                figure = sdpp.plotZNCCContour(
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    alpha=0.75,
+                    plotImage=True,
+                    showPlot=False,
+                    fileName="",
+                    return_fig=True,
+                )
                 showGraph(self, figure, self.verticalLayout)
 
-        except Exception as e:
+        except Exception:
             pass
 
+
 class ResultsUILineCut(QWidget):
-    """ Class for the results cutplot UI: Defines the layout and widgets for the 
-        results cutplot tab
+    """Class for the results cutplot UI: Defines the layout and widgets for the
+    results cutplot tab
     """
 
     # Define all the variables to store the user input
@@ -695,7 +779,8 @@ class ResultsUILineCut(QWidget):
         for item in boxItems:
             self.resultsSelector.addItem(item)
         self.verticalLayout.addWidget(
-            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft
+        )
 
         # Now the grid layout
         gridLayout = QGridLayout()
@@ -746,8 +831,7 @@ Must be a comma separated list of integers.""")
             if e.display_name != None:
                 self.cutCompIn.addItem(f"{e.display_name}")
         self.cutCompIn.setCurrentIndex(self.resultsCutComp)
-        self.cutCompIn.setToolTip(
-            "The direction to cut the data along.")
+        self.cutCompIn.setToolTip("The direction to cut the data along.")
         gridLayout.addWidget(self.cutCompIn, 1, 1, 1, 1)
 
         # The smoothing window size input and label
@@ -775,7 +859,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         smoothOrderValidator.setBottom(1)
         self.smoothOrderIn.setValidator(smoothOrderValidator)
         self.smoothOrderIn.setToolTip(
-            "Order of the Savitzky-Golay smoothing polynomial.")
+            "Order of the Savitzky-Golay smoothing polynomial."
+        )
         gridLayout.addWidget(self.smoothOrderIn, 2, 3, 1, 1)
 
         # Add the dilation input and label in the row after the smoothing parameters
@@ -800,8 +885,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
 
         self.interpIn = QCheckBox(self)
         self.interpIn.setChecked(self.resultsInterp)
-        self.interpIn.setToolTip(
-            "Whether to interpolate the data.")
+        self.interpIn.setToolTip("Whether to interpolate the data.")
         gridLayout.addWidget(self.interpIn, 4, 1, 1, 1)
 
         # The grid lines checkbox and label
@@ -811,8 +895,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
 
         self.gridLinesIn = QCheckBox(self)
         self.gridLinesIn.setChecked(self.resultsGridLines)
-        self.gridLinesIn.setToolTip(
-            "Whether to show grid lines on the plot.")
+        self.gridLinesIn.setToolTip("Whether to show grid lines on the plot.")
         gridLayout.addWidget(self.gridLinesIn, 4, 3, 1, 1)
 
         self.verticalLayout.addLayout(gridLayout)
@@ -820,16 +903,17 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
         # Creating and adding the Submit Graph button
         self.submitGraphBut = QPushButton("Submit Graph", self)
         self.verticalLayout.addWidget(
-            self.submitGraphBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
+            self.submitGraphBut, 0, QtCore.Qt.AlignmentFlag.AlignHCenter
+        )
 
         # Creating a spacer to neaten up the layout
-        spacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum,
-                             QSizePolicy.Policy.Expanding)
+        spacer = QSpacerItem(
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         self.verticalLayout.addItem(spacer)
 
         # Connecting the Submit Graph button to the submitGraph method
-        self.resultsSelector.currentIndexChanged.connect(
-            self.resultsCutChanged)
+        self.resultsSelector.currentIndexChanged.connect(self.resultsCutChanged)
         self.submitGraphBut.clicked.connect(self.submitGraph)
 
     # ------------------------------------------------------------------------------
@@ -848,16 +932,20 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
     # Function that is called to generate the graph based on user input
     def submitGraph(self):
 
-        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
-            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+        if self.parent.parent.savePath is None or not os.path.isfile(
+            self.parent.parent.savePath
+        ):
+            QMessageBox.warning(
+                self, "No Results File", "Please run/load results first."
+            )
             return
 
         # Getting the required parameters
         imgPair = self.parent.numImagePairs - self.imgPairIn.currentIndex() - 1
-        cutComp = getattr(sdpp.CompID, sdpp.CompID._member_names_[
-                          self.cutCompIn.currentIndex()])
-        cutValues = [int(i)
-                     for i in self.cutValIn.text().split(",")]
+        cutComp = getattr(
+            sdpp.CompID, sdpp.CompID._member_names_[self.cutCompIn.currentIndex()]
+        )
+        cutValues = [int(i) for i in self.cutValIn.text().split(",")]
         gridlines = self.gridLinesIn.isChecked()
         smoothWindow = int(self.smoothWinIn.text())
         smoothOrder = int(self.smoothOrderIn.text())
@@ -869,34 +957,58 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
 
             # Plotting the displacement cut line
             if self.resultsSelector.currentIndex() == self.DISP_INDEX:
-                dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
-                    self.compIn.currentIndex()])
-                figure = sdpp.plotDispCutLine(self.parent.parent.savePath, imgPair=imgPair, dispComp=dispComp,
-                                              cutComp=cutComp, cutValues=cutValues, gridLines=gridlines,
-                                              showPlot=False, fileName='', 
-                                              dilation=dilation, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                                              interpolate=interpolate, return_fig=True)
+                dispComp = getattr(
+                    sdpp.DispComp,
+                    sdpp.DispComp._member_names_[self.compIn.currentIndex()],
+                )
+                figure = sdpp.plotDispCutLine(
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    dispComp=dispComp,
+                    cutComp=cutComp,
+                    cutValues=cutValues,
+                    gridLines=gridlines,
+                    showPlot=False,
+                    fileName="",
+                    dilation=dilation,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                    return_fig=True,
+                )
 
                 showGraph(self, figure, self.verticalLayout)
 
             # Plotting the strain cut line
             elif self.resultsSelector.currentIndex() == self.STRAIN_INDEX:
-                strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
-                    self.compIn.currentIndex()])
-                figure = sdpp.plotStrainCutLine(self.parent.parent.savePath, imgPair=imgPair, strainComp=strainComp, cutComp=cutComp,
-                                                cutValues=cutValues, gridLines=gridlines, showPlot=False,
-                                                fileName='', dilation=dilation, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                                                interpolate=interpolate, return_fig=True)
+                strainComp = getattr(
+                    sdpp.StrainComp,
+                    sdpp.StrainComp._member_names_[self.compIn.currentIndex()],
+                )
+                figure = sdpp.plotStrainCutLine(
+                    self.parent.parent.savePath,
+                    imgPair=imgPair,
+                    strainComp=strainComp,
+                    cutComp=cutComp,
+                    cutValues=cutValues,
+                    gridLines=gridlines,
+                    showPlot=False,
+                    fileName="",
+                    dilation=dilation,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                    return_fig=True,
+                )
 
                 showGraph(self, figure, self.verticalLayout)
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"An error occurred: {str(e)}")
+            QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")
 
 
 class ResultsUITimeHistory(QWidget):
-    """ Class for the results time history UI: Defines the layout and widgets for the
-        results time history tab
+    """Class for the results time history UI: Defines the layout and widgets for the
+    results time history tab
     """
 
     # Define all the variables to store the user input
@@ -928,7 +1040,8 @@ class ResultsUITimeHistory(QWidget):
             self.resultsSelector.addItem(item)
         self.resultsSelector.setCurrentIndex(self.resultsCompType)
         self.verticalLayout.addWidget(
-            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+            self.resultsSelector, 0, QtCore.Qt.AlignmentFlag.AlignLeft
+        )
 
         # Grid layout for controls
         gridLayout = QGridLayout()
@@ -986,7 +1099,8 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
         smoothOrderValidator.setBottom(1)
         self.smoothOrderIn.setValidator(smoothOrderValidator)
         self.smoothOrderIn.setToolTip(
-            "Order of the Savitzky-Golay smoothing polynomial.")
+            "Order of the Savitzky-Golay smoothing polynomial."
+        )
         gridLayout.addWidget(self.smoothOrderIn, 1, 3, 1, 1)
 
         # The interpolation checkbox and label
@@ -1016,22 +1130,22 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
 
         self.submitGraphBut = QPushButton("Submit Graph", self)
         buttonLayout.addWidget(self.submitGraphBut)
-        
+
         self.exportDataBut = QPushButton("Export Data", self)
         buttonLayout.addWidget(self.exportDataBut)
 
         self.verticalLayout.addLayout(buttonLayout)
 
         # Spacer
-        spacer = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum,
-                             QSizePolicy.Policy.Expanding)
+        spacer = QSpacerItem(
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         self.verticalLayout.addItem(spacer)
 
         # Connections
         self.resultsSelector.currentIndexChanged.connect(self.resultsTimeChanged)
         self.submitGraphBut.clicked.connect(self.submitGraph)
         self.exportDataBut.clicked.connect(self.exportData)
-
 
     # ------------------------------------------------------------------------------
     # Function that is called to indicate that the data was changed by the user
@@ -1071,8 +1185,12 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
     # Function that is called to generate the graph based on user input
     def submitGraph(self):
 
-        if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
-            QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+        if self.parent.parent.savePath is None or not os.path.isfile(
+            self.parent.parent.savePath
+        ):
+            QMessageBox.warning(
+                self, "No Results File", "Please run/load results first."
+            )
             return
 
         points = self._parsePoints(self.pointsIn.text())
@@ -1086,51 +1204,57 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
 
             # Plotting displacement time history
             if self.resultsSelector.currentIndex() == self.DISP_INDEX:
-                dispComp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[
-                    self.compIn.currentIndex()])
+                dispComp = getattr(
+                    sdpp.DispComp,
+                    sdpp.DispComp._member_names_[self.compIn.currentIndex()],
+                )
                 figure = sdpp.plotDispTimeHistory(
                     self.parent.parent.savePath,
                     points=points,
                     dispComp=dispComp,
                     gridLines=gridlines,
                     showPlot=False,
-                    fileName='',
+                    fileName="",
                     smoothWindow=smoothWindow,
                     smoothOrder=smoothOrder,
                     interpolate=interpolate,
-                    return_fig=True
+                    return_fig=True,
                 )
                 showGraph(self, figure, self.verticalLayout)
 
             # Plotting strain time history
             elif self.resultsSelector.currentIndex() == self.STRAIN_INDEX:
-                strainComp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[
-                    self.compIn.currentIndex()])
+                strainComp = getattr(
+                    sdpp.StrainComp,
+                    sdpp.StrainComp._member_names_[self.compIn.currentIndex()],
+                )
                 figure = sdpp.plotStrainTimeHistory(
                     self.parent.parent.savePath,
                     points=points,
                     strainComp=strainComp,
                     gridLines=gridlines,
                     showPlot=False,
-                    fileName='',
+                    fileName="",
                     smoothWindow=smoothWindow,
                     smoothOrder=smoothOrder,
                     interpolate=interpolate,
-                    return_fig=True
+                    return_fig=True,
                 )
                 showGraph(self, figure, self.verticalLayout)
 
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"An error occurred: {str(e)}")
-            
+            QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")
 
     # ------------------------------------------------------------------------------
     # Function that is called to export graph data to an Excel spreasheet
     def exportData(self):
         try:
-            if self.parent.parent.savePath is None or not os.path.isfile(self.parent.parent.savePath):
-                QMessageBox.warning(self, "No Results File", "Please run/load results first.")
+            if self.parent.parent.savePath is None or not os.path.isfile(
+                self.parent.parent.savePath
+            ):
+                QMessageBox.warning(
+                    self, "No Results File", "Please run/load results first."
+                )
                 return
 
             points = self._parsePoints(self.pointsIn.text())
@@ -1140,18 +1264,32 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
 
             # Get the data
             if self.resultsSelector.currentIndex() == self.DISP_INDEX:
-                comp = getattr(sdpp.DispComp, sdpp.DispComp._member_names_[self.compIn.currentIndex()])
+                comp = getattr(
+                    sdpp.DispComp,
+                    sdpp.DispComp._member_names_[self.compIn.currentIndex()],
+                )
                 imgPairs, vals, usedPoints = sdpp.getDispTimeHistory(
-                    self.parent.parent.savePath, points=points, dispComp=comp,
-                    smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                    interpolate=interpolate)
+                    self.parent.parent.savePath,
+                    points=points,
+                    dispComp=comp,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                )
                 yname = comp.display_name
             else:
-                comp = getattr(sdpp.StrainComp, sdpp.StrainComp._member_names_[self.compIn.currentIndex()])
+                comp = getattr(
+                    sdpp.StrainComp,
+                    sdpp.StrainComp._member_names_[self.compIn.currentIndex()],
+                )
                 imgPairs, vals, usedPoints = sdpp.getStrainTimeHistory(
-                    self.parent.parent.savePath, points=points, strainComp=comp,
-                    smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-                    interpolate=interpolate)
+                    self.parent.parent.savePath,
+                    points=points,
+                    strainComp=comp,
+                    smoothWindow=smoothWindow,
+                    smoothOrder=smoothOrder,
+                    interpolate=interpolate,
+                )
                 yname = comp.display_name
 
             # Setup a dataframe
@@ -1163,11 +1301,12 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
 
             # Save as csv
             csvPath, _ = QFileDialog.getSaveFileName(
-                self, "Save Time History Data", "", "CSV Files (*.csv)")
+                self, "Save Time History Data", "", "CSV Files (*.csv)"
+            )
             if csvPath:
                 if not csvPath.endswith(".csv"):
                     csvPath += ".csv"
                 df.to_csv(csvPath, index=False)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+            QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")

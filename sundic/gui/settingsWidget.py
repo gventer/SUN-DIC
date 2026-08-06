@@ -1,17 +1,28 @@
-import sundic.util.datafile as dataFile
-import sundic.settings as sdset
-from sundic.gui.validators import OddNumberValidator, IntListValidator, ClampingIntValidator
-from sundic.gui.validators import ClampingDblValidator
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QComboBox,
-    QSpacerItem, QSizePolicy
+    QComboBox,
+    QGridLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+import sundic.settings as sdset
+from sundic.gui.validators import (
+    ClampingDblValidator,
+    ClampingIntValidator,
+    IntListValidator,
+    OddNumberValidator,
 )
 
 
 class SettingsUI(QWidget):
-    """ Class for the settings UI: Defines the layout and widgets for the settings tab
-        in the main window. Also contains functions to get and set the data from the
-        settings object.
+    """Class for the settings UI: Defines the layout and widgets for the settings tab
+    in the main window. Also contains functions to get and set the data from the
+    settings object.
     """
 
     # ------------------------------------------------------------------------------
@@ -53,8 +64,7 @@ Currently only planar is available.""")
         shapeFuncBoxItems = ["Affine", "Quadratic"]
         for item in shapeFuncBoxItems:
             self.shapeFuncBox.addItem(item)
-        self.shapeFuncBox.setToolTip(
-            "Subset shape functions to use.")
+        self.shapeFuncBox.setToolTip("Subset shape functions to use.")
         gridLayout.addWidget(self.shapeFuncBox, 1, 1, 1, 1)
 
         # Add the subset size input and label
@@ -176,13 +186,15 @@ Must be 1, 3 or 5.""")
         self.maxIterIn.setToolTip(
             """The maximum number of iterations used for the optimization algorithm. 
 Must be larger than or equal to 1.
-The default value (50) is set conservatively high and should rarely be changed.""")
+The default value (50) is set conservatively high and should rarely be changed."""
+        )
         gridLayout.addWidget(self.maxIterIn, 5, 3, 1, 1)
 
         # Add the grid layout to the vertical layout
         verticalLayout.addLayout(gridLayout)
         spacerItemV1 = QSpacerItem(
-            10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+            10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum
+        )
         verticalLayout.addItem(spacerItemV1)
 
         # Set defaults button
@@ -192,7 +204,8 @@ The default value (50) is set conservatively high and should rarely be changed."
 
         # Add a spacer to push everything to the top
         spacerItemV = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         verticalLayout.addItem(spacerItemV)
 
         # Add all the connections here
@@ -232,16 +245,16 @@ The default value (50) is set conservatively high and should rarely be changed."
         self.refBox.blockSignals(True)
         self.algoTypeBox.blockSignals(True)
 
-        self.dicTypeBox.setCurrentIndex(
-            self.dicTypeBox.findText(settings.DICType))
+        self.dicTypeBox.setCurrentIndex(self.dicTypeBox.findText(settings.DICType))
         self.shapeFuncBox.setCurrentIndex(
-            self.shapeFuncBox.findText(settings.ShapeFunctions))
+            self.shapeFuncBox.findText(settings.ShapeFunctions)
+        )
         self.subsetSizeIn.setText(str(settings.SubsetSize))
         self.stepSizeIn.setText(str(settings.StepSize))
-        self.refBox.setCurrentIndex(
-            self.refBox.findText(settings.ReferenceStrategy))
+        self.refBox.setCurrentIndex(self.refBox.findText(settings.ReferenceStrategy))
         self.algoTypeBox.setCurrentIndex(
-            self.algoTypeBox.findText(settings.OptimizationAlgorithm))
+            self.algoTypeBox.findText(settings.OptimizationAlgorithm)
+        )
         self.startingPIn.setText(str(settings.StartingPoints))
         self.convergenceIn.setText(str(settings.ConvergenceThreshold))
         self.znccTolIn.setText(str(settings.NZCCThreshold))

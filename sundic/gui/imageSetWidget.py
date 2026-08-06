@@ -1,20 +1,31 @@
 import os
-import natsort as ns
 
+import natsort as ns
 from PyQt6 import QtCore
+from PyQt6.QtGui import QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit,
-    QPushButton, QListView, QGroupBox, QSpacerItem, QSizePolicy, QToolButton,
-    QFileDialog, QLayout, QFrame
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListView,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
 
 import sundic.settings as sdset
 from sundic.gui.validators import ClampingIntValidator, OddNumberValidator
 
 
 class ImageSetUI(QWidget):
-    """ Class for the image selection UI: Defines the layout and widgets for 
+    """Class for the image selection UI: Defines the layout and widgets for
     the image selection tab
     """
 
@@ -32,8 +43,7 @@ class ImageSetUI(QWidget):
 
         # The image folder label and input
         folderLab = QLabel(self)
-        sizePolicy = QSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         folderLab.setSizePolicy(sizePolicy)
         folderLab.setText("Folder:")
         horizontalLayout.addWidget(folderLab)
@@ -42,8 +52,7 @@ class ImageSetUI(QWidget):
         self.folderDisp.setText("PATH to Images...")
         self.folderDisp.setFrameShape(QFrame.Shape.Panel)
         self.folderDisp.setFrameShadow(QFrame.Shadow.Plain)
-        self.folderDisp.setToolTip(
-            "The folder containing the image set to analyze.")
+        self.folderDisp.setToolTip("The folder containing the image set to analyze.")
         horizontalLayout.addWidget(self.folderDisp)
 
         self.selFolderBut = QPushButton(self)
@@ -53,7 +62,8 @@ class ImageSetUI(QWidget):
 
         verticalLayout.addLayout(horizontalLayout)
         spacerItemV = QSpacerItem(
-            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+        )
         verticalLayout.addItem(spacerItemV)
 
         horizontalLayout_2 = QHBoxLayout()
@@ -94,12 +104,12 @@ Starts from 1.""")
         incValidator = ClampingIntValidator()
         incValidator.setBottom(1)
         self.incIn.setValidator(incValidator)
-        self.incIn.setToolTip(
-            "The increment between images to use in the analysis.")
+        self.incIn.setToolTip("The increment between images to use in the analysis.")
         gridLayout.addWidget(self.incIn, 2, 1, 1, 1)
 
         spacerItemH = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
         gridLayout.addItem(spacerItemH, 0, 2, 1, 1)
 
         # Set the maximum button
@@ -112,8 +122,7 @@ Starts from 1.""")
         # Images label
         imagesLab = QLabel(self)
         imagesLab.setText("Images:")
-        horizontalLayout_2.addWidget(
-            imagesLab, 0, QtCore.Qt.AlignmentFlag.AlignTop)
+        horizontalLayout_2.addWidget(imagesLab, 0, QtCore.Qt.AlignmentFlag.AlignTop)
 
         # The image display list
         self.imageModel = QStandardItemModel()
@@ -121,20 +130,21 @@ Starts from 1.""")
         self.dispImages.setFrameShape(QFrame.Shape.Panel)
         self.dispImages.setFrameShadow(QFrame.Shadow.Plain)
         self.dispImages.setModel(self.imageModel)
-        self.dispImages.setToolTip(
-            "The currently selected image set to analyze.")
+        self.dispImages.setToolTip("The currently selected image set to analyze.")
         row_height = imagesLab.sizeHint().height()
-        self.dispImages.setMaximumSize(
-            QtCore.QSize(16777215, 5*row_height + 5))
+        self.dispImages.setMaximumSize(QtCore.QSize(16777215, 5 * row_height + 5))
         self.dispImages.setHorizontalScrollBarPolicy(
-            QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
         horizontalLayout_2.addWidget(
-            self.dispImages, 0, QtCore.Qt.AlignmentFlag.AlignTop)
+            self.dispImages, 0, QtCore.Qt.AlignmentFlag.AlignTop
+        )
 
         verticalLayout.addLayout(horizontalLayout_2)
 
         spacerItemV2 = QSpacerItem(
-            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+        )
         verticalLayout.addItem(spacerItemV2)
 
         # The group Box for advanced settings
@@ -142,7 +152,8 @@ Starts from 1.""")
         groupBox.setTitle("Advanced Settings")
         groupBox.setEnabled(True)
         sizePolicy = QSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
         groupBox.setSizePolicy(sizePolicy)
         groupBox.setStyleSheet("QGroupBox { background-color: white; }")
 
@@ -151,7 +162,8 @@ Starts from 1.""")
         gridLayout.setContentsMargins(10, 10, 10, 10)
 
         spacerItem3 = QSpacerItem(
-            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
         gridLayout.addItem(spacerItem3, 0, 2, 1, 1)
 
         # The gaussian blur input and label
@@ -185,7 +197,8 @@ Starts from 1.""")
         verticalLayout.addWidget(groupBox)
 
         spacerItemV1 = QSpacerItem(
-            10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+            10, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum
+        )
         verticalLayout.addItem(spacerItemV1)
 
         # Set defaults button
@@ -194,7 +207,8 @@ Starts from 1.""")
         verticalLayout.addWidget(self.defaultsBut)
 
         spacerItemV3 = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
         verticalLayout.addItem(spacerItemV3)
 
         # Set the connections here
@@ -252,7 +266,7 @@ Starts from 1.""")
 
             # Do a natural sort on the filenames and display them in the image list
             files = ns.os_sorted(files)
-        except Exception as e:
+        except Exception:
             files = None
 
         # Setup the ItemModel from the start, end and increment values
@@ -293,7 +307,8 @@ Starts from 1.""")
         # Open a file dialog to select the image folder
         options = QFileDialog.Option.ShowDirsOnly
         directory = QFileDialog.getExistingDirectory(
-            self, "Select Directory", "", options=options)
+            self, "Select Directory", "", options=options
+        )
 
         # If a directory was selected, update the folder display and image list
         if directory:
@@ -311,7 +326,7 @@ Starts from 1.""")
         try:
             files = os.listdir(self.folderDisp.text())
             return len(files)
-        except Exception as e:
+        except Exception:
             return 2
 
     # ------------------------------------------------------------------------------

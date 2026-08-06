@@ -1,18 +1,19 @@
 import os
+
 import numpy as np
 
+import sundic.post_process as sdpp
 import sundic.settings as sdset
 import sundic.sundic as sdic
-import sundic.post_process as sdpp
 
 # ---------------------------------------------------------------------
 # Daily regression test for SUN-DIC
 #
 # Just make sure the code is still running with the latest dependencies
-# and that the results are within a reasonable tolerance of the expected 
+# and that the results are within a reasonable tolerance of the expected
 # values.
 #
-# This is called from the an github action workflow, but can also be run 
+# This is called from the an github action workflow, but can also be run
 # locally.
 #
 # For this to run, the settings.ini file and the planar_images directory
@@ -22,6 +23,7 @@ import sundic.post_process as sdpp
 # To run, issue the following command
 #     pytest -q daily_test.py -s
 # ---------------------------------------------------------------------
+
 
 def test_daily_sundic_example_regression():
 
@@ -38,7 +40,7 @@ def test_daily_sundic_example_regression():
     # Load the settings file and set the debug level to 0 (no debug output)
     settings = sdset.Settings.fromSettingsFile(settings_file)
     settings.DebugLevel = 0
-    #print(settings.__repr__())
+    # print(settings.__repr__())
 
     # Run the planar DIC analysis
     sdic.planarDICLocal(settings, results_file)
@@ -96,4 +98,6 @@ def test_daily_sundic_example_regression():
     # Make the comparison on the results
     for k, exp in expected.items():
         val = stats[k]
-        assert abs(val - exp) <= atol, f"{k}: got {val:.4f}, expected {exp:.4f}, |Δ|={abs(val-exp):.4f} > {atol}"
+        assert abs(val - exp) <= atol, (
+            f"{k}: got {val:.4f}, expected {exp:.4f}, |Δ|={abs(val - exp):.4f} > {atol}"
+        )

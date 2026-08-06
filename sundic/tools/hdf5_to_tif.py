@@ -1,5 +1,5 @@
 ################################################################################
-# This file provides a simple utility that converts an image contained in hdf5 
+# This file provides a simple utility that converts an image contained in hdf5
 # container to a tif file format.
 #
 # Usage: First edit the DIR, EXT and DATA_SET variables to match your needs.
@@ -17,35 +17,34 @@
 # Author: G Venter
 # Date: 2025/05/12
 ################################################################################
-import h5py
-import cv2
-import numpy as np
 import os
 
+import cv2
+import h5py
+import numpy as np
+
 # Define some constants for the script to match your needs
-DIR='.'
-EXT='.hdf5'
-DATA_SET='correlation_load_series_camera_1/camera_pos_1'
+DIR = "."
+EXT = ".hdf5"
+DATA_SET = "correlation_load_series_camera_1/camera_pos_1"
 
 # Loop through all files in the current directory and process files
 # with the HDF5 extension
 for f in os.listdir(DIR):
     if f.endswith(EXT):
-
-        hdf5_file_path = os.path.join(DIR,f)
+        hdf5_file_path = os.path.join(DIR, f)
 
         # Perform actions on the file here
-        print(f"\n-----------------------------------------------------")
+        print("\n-----------------------------------------------------")
         print(f"Processing file: {hdf5_file_path}")
-        print(f"-----------------------------------------------------")
+        print("-----------------------------------------------------")
 
         # Example: Open and read the file
         try:
             with h5py.File(hdf5_file_path, "r") as hdf5_file:
-
                 # List all data sets in the file
-                print(f"\nList of all data sets in file:")
-                print(f"------------------------------")
+                print("\nList of all data sets in file:")
+                print("------------------------------")
 
                 def list_datasets(name, obj):
                     if isinstance(obj, h5py.Dataset):
@@ -55,9 +54,8 @@ for f in os.listdir(DIR):
 
                 # Now process the specified data set
                 if DATA_SET in hdf5_file:
-
                     print(f"\nProcessing dataset: {DATA_SET}")
-                    print(f"------------------------------")
+                    print("------------------------------")
 
                     # Read the image data from the specified dataset
                     image_data = hdf5_file[DATA_SET][:]

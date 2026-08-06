@@ -5,15 +5,16 @@
 ##    https: // scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html
 ##
 ################################################################################
-import scipy.signal as signal
 import numpy as np
+from scipy import signal
+
 
 # -----------------------------------------------------------------------------
 def sgolay2d(z, window_size, order, derivative=None):
     """
     Apply 2D Savitzky-Golay filtering to the input array.
     This is a copy of the function found in the scipy cookbook:
-    
+
     https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html
 
     Parameters:
@@ -39,10 +40,11 @@ def sgolay2d(z, window_size, order, derivative=None):
 
     # Check that the window size is odd and that the order is not too high
     if window_size % 2 == 0:
-        raise ValueError('Savitsky-Golay window_size must be odd.')
+        raise ValueError("Savitsky-Golay window_size must be odd.")
     if window_size**2 < n_terms:
         raise ValueError(
-            'Savitsky-Golay polynomial order is too high for the window size')
+            "Savitsky-Golay polynomial order is too high for the window size"
+        )
 
     # Get the half window size
     half_size = window_size // 2
@@ -53,77 +55,88 @@ def sgolay2d(z, window_size, order, derivative=None):
     # the exponents of the k-th term. First element of tuple is for x
     # second element for y.
     # Ex. exps = [(0,0), (1,0), (0,1), (2,0), (1,1), (0,2), ...]
-    exps = [(k-n, n) for k in range(order+1) for n in range(k+1)]
+    exps = [(k - n, n) for k in range(order + 1) for n in range(k + 1)]
 
     # Coordinates of points
-    ind = np.arange(-half_size, half_size+1, dtype=np.float64)
+    ind = np.arange(-half_size, half_size + 1, dtype=np.float64)
     dx = np.repeat(ind, window_size)
-    dy = np.tile(ind, [window_size, 1]).reshape(window_size**2, )
+    dy = np.tile(ind, [window_size, 1]).reshape(
+        window_size**2,
+    )
 
     # Build matrix of system of equations
     A = np.empty((window_size**2, len(exps)))
     for i, exp in enumerate(exps):
-        A[:, i] = (dx**exp[0]) * (dy**exp[1])
+        A[:, i] = (dx ** exp[0]) * (dy ** exp[1])
 
     # Pad input array with appropriate values at the four borders
-    new_shape = z.shape[0] + 2*half_size, z.shape[1] + 2*half_size
-    Z = np.zeros((new_shape))
+    new_shape = z.shape[0] + 2 * half_size, z.shape[1] + 2 * half_size
+    Z = np.zeros(new_shape)
 
     # Top band
     band = z[0, :]
-    Z[:half_size, half_size:-half_size] = band - \
-        np.abs(np.flipud(z[1:half_size+1, :]) - band)
+    Z[:half_size, half_size:-half_size] = band - np.abs(
+        np.flipud(z[1 : half_size + 1, :]) - band
+    )
 
     # Bottom band
     band = z[-1, :]
-    Z[-half_size:, half_size:-half_size] = band + \
-        np.abs(np.flipud(z[-half_size-1:-1, :]) - band)
+    Z[-half_size:, half_size:-half_size] = band + np.abs(
+        np.flipud(z[-half_size - 1 : -1, :]) - band
+    )
 
     # Left band
     band = np.tile(z[:, 0].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, :half_size] = band - \
-        np.abs(np.fliplr(z[:, 1:half_size+1]) - band)
+    Z[half_size:-half_size, :half_size] = band - np.abs(
+        np.fliplr(z[:, 1 : half_size + 1]) - band
+    )
 
     # Right band
     band = np.tile(z[:, -1].reshape(-1, 1), [1, half_size])
-    Z[half_size:-half_size, -half_size:] = band + \
-        np.abs(np.fliplr(z[:, -half_size-1:-1]) - band)
+    Z[half_size:-half_size, -half_size:] = band + np.abs(
+        np.fliplr(z[:, -half_size - 1 : -1]) - band
+    )
 
     # Central band
     Z[half_size:-half_size, half_size:-half_size] = z
 
     # Top left corner
     band = z[0, 0]
-    Z[:half_size, :half_size] = band - \
-        np.abs(np.flipud(np.fliplr(z[1:half_size+1, 1:half_size+1])) - band)
+    Z[:half_size, :half_size] = band - np.abs(
+        np.flipud(np.fliplr(z[1 : half_size + 1, 1 : half_size + 1])) - band
+    )
 
     # Bottom right corner
     band = z[-1, -1]
-    Z[-half_size:, -half_size:] = band + \
-        np.abs(
-            np.flipud(np.fliplr(z[-half_size-1:-1, -half_size-1:-1])) - band)
+    Z[-half_size:, -half_size:] = band + np.abs(
+        np.flipud(np.fliplr(z[-half_size - 1 : -1, -half_size - 1 : -1])) - band
+    )
 
     # Top right corner
     band = Z[half_size, -half_size:]
-    Z[:half_size, -half_size:] = band - \
-        np.abs(np.flipud(Z[half_size+1:2*half_size+1, -half_size:]) - band)
+    Z[:half_size, -half_size:] = band - np.abs(
+        np.flipud(Z[half_size + 1 : 2 * half_size + 1, -half_size:]) - band
+    )
 
     # Bottom left corner
     band = Z[-half_size:, half_size].reshape(-1, 1)
-    Z[-half_size:, :half_size] = band - \
-        np.abs(np.fliplr(Z[-half_size:, half_size+1:2*half_size+1]) - band)
+    Z[-half_size:, :half_size] = band - np.abs(
+        np.fliplr(Z[-half_size:, half_size + 1 : 2 * half_size + 1]) - band
+    )
 
     # Solve system and convolve
     if derivative == None:
         m = np.linalg.pinv(A)[0].reshape((window_size, -1))
-        return signal.fftconvolve(Z, m, mode='valid')
-    elif derivative == 'col':
+        return signal.fftconvolve(Z, m, mode="valid")
+    elif derivative == "col":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
-        return signal.fftconvolve(Z, -c, mode='valid')
-    elif derivative == 'row':
+        return signal.fftconvolve(Z, -c, mode="valid")
+    elif derivative == "row":
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return signal.fftconvolve(Z, -r, mode='valid')
-    elif derivative == 'both':
+        return signal.fftconvolve(Z, -r, mode="valid")
+    elif derivative == "both":
         c = np.linalg.pinv(A)[1].reshape((window_size, -1))
         r = np.linalg.pinv(A)[2].reshape((window_size, -1))
-        return signal.fftconvolve(Z, -r, mode='valid'), signal.fftconvolve(Z, -c, mode='valid')
+        return signal.fftconvolve(Z, -r, mode="valid"), signal.fftconvolve(
+            Z, -c, mode="valid"
+        )

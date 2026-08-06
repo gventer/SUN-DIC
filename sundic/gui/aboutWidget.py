@@ -1,13 +1,19 @@
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QPainter
-
 import os
+
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPainter, QPixmap
+from PyQt6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 
 class AboutDialog(QDialog):
-    """ Class for the About dialog
-    """
+    """Class for the About dialog"""
 
     def __init__(self, parent=None, version="1.0.0"):
 
@@ -26,7 +32,8 @@ class AboutDialog(QDialog):
 
         # Title and version
         nameVersion = QLabel(
-            f"<b><span style='font-size:18pt'>SUN-DIC</span></b> <span style='font-size:12pt'>v{version}</span>")
+            f"<b><span style='font-size:18pt'>SUN-DIC</span></b> <span style='font-size:12pt'>v{version}</span>"
+        )
         nameVersion.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(nameVersion)
 
@@ -37,14 +44,16 @@ class AboutDialog(QDialog):
         )
         desc.setWordWrap(True)
         desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        desc.setSizePolicy(QSizePolicy.Policy.Preferred,
-                           QSizePolicy.Policy.Minimum)
+        desc.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         desc.setMaximumWidth(420)
         layout.addWidget(desc)
 
         # Spacer
-        layout.addSpacerItem(QSpacerItem(
-            10, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        layout.addSpacerItem(
+            QSpacerItem(
+                10, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            )
+        )
 
         # Github repository link
         githubLink = QLabel(
@@ -57,7 +66,7 @@ class AboutDialog(QDialog):
         # Copyright/license
         copyright = QLabel(
             '<span style="font-size:8pt; color:black;">&copy; 2023-2025 SUN-DIC contributors. '
-            'Distributed under the MIT License.</span>'
+            "Distributed under the MIT License.</span>"
         )
         copyright.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -71,7 +80,7 @@ class AboutDialog(QDialog):
 
         # Auto-resize the dialog to fit content
         self.adjustSize()
-        self.setMinimumWidth(380)   # Optional: ensure dialog is not too narrow
+        self.setMinimumWidth(380)  # Optional: ensure dialog is not too narrow
 
     # ------------------------------
     # Custom paint event to draw background image
@@ -94,9 +103,10 @@ class AboutDialog(QDialog):
             scaledWidth = int(scaledHeight * pixmapRatio)
 
         scaledPixmap = self.bgPixmap.scaled(
-            scaledWidth, scaledHeight,
+            scaledWidth,
+            scaledHeight,
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
+            Qt.TransformationMode.SmoothTransformation,
         )
 
         # Draw the scaled image as background in the center
