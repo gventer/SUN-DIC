@@ -1,4 +1,9 @@
-__version__ = "0.0.35"
+__version__ = "0.0.35b"
+# 0.0.36 - Added the compress datafile and file ouput options to the GUI
+#        - Merged the changes to split the planarDICLocal function into two
+#          functions to better support the stereo DIC implementation
+#        - Updated daily check to include dev branch
+#        - Updated the readme file to include links to MOD research group
 # 0.0.35 - Quick fix to handle compressed data in the datafile from the GUI
 # 0.0.34 - Update the readme file and user manual to reflect new functionality from
 #          version 0.0.33.

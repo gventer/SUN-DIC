@@ -5,7 +5,7 @@ import time
 
 from PyQt6.QtCore import QThread, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
+    QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QLineEdit, QPushButton, QComboBox, QSpacerItem, QSizePolicy,
     QTextEdit, QMessageBox, QFrame
 )
@@ -63,6 +63,28 @@ Must be larger than or equal to 1.""")
         for item in debugInItems:
             self.debugIn.addItem(item)
         gridLayout.addWidget(self.debugIn, 0, 1, 1, 1)
+
+        # Compress data file checkbox and label
+        self.compressCheck = QCheckBox(self)
+        self.compressCheck.setText("Compress Data File")
+        self.compressCheck.setToolTip("""If checked, the results data file will be compressed 
+to reduce its size.""")
+        gridLayout.addWidget(self.compressCheck, 0, 2, 1, 2)
+
+        # Data ouput dropdown and label
+        self.dataOutLab = QLabel(self)
+        self.dataOutLab.setText("Data Output:")
+        gridLayout.addWidget(self.dataOutLab, 1, 2, 1, 1)
+
+        self.dataOutIn = QComboBox(self)
+        self.dataOutIn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.dataOutIn.setToolTip("""Select the type of data to output to the results file.
+DispOnly is all that is required for post-processing.  All will output all internal data, 
+which is only required by advanced users and for specialized debugging.""")
+        dataOutInItems = ["DispOnly", "All"]
+        for item in dataOutInItems:
+            self.dataOutIn.addItem(item)
+        gridLayout.addWidget(self.dataOutIn, 1, 3, 1, 1)
 
         spacerItem1 = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
@@ -136,22 +158,33 @@ Must be larger than or equal to 1.""")
         # Connecting to input
         self.debugIn.currentIndexChanged.connect(self.changedAnalysis)
         self.cpuIn.editingFinished.connect(self.changedAnalysis)
+        self.compressCheck.stateChanged.connect(self.changedAnalysis)
+        self.dataOutIn.currentIndexChanged.connect(self.changedAnalysis)
 
     # ------------------------------------------------------------------------------
     # Function to get the data from the settings UI and set it in the settings object
     def getData(self, settings):
         settings.DebugLevel = self.debugIn.currentIndex()
         settings.CPUCount = int(self.cpuIn.text())
+        settings.DataCompression = self.compressCheck.isChecked()
+        settings.DataSaveMode = self.dataOutIn.currentText()
 
     # ------------------------------------------------------------------------------
     # Function to get the data from this class and store it in the settings object
     def setData(self, settings):
         self.debugIn.blockSignals(True)
+        self.compressCheck.blockSignals(True)
+        self.dataOutIn.blockSignals(True)
 
         self.debugIn.setCurrentIndex(settings.DebugLevel)
         self.cpuIn.setText(str(settings.CPUCount))
+        self.compressCheck.setChecked(settings.DataCompression)
+        self.dataOutIn.setCurrentIndex(
+            self.dataOutIn.findText(settings.DataSaveMode))
 
         self.debugIn.blockSignals(False)
+        self.compressCheck.blockSignals(False)
+        self.dataOutIn.blockSignals(False)
 
     # ------------------------------------------------------------------------------
     # Function that is called to indicate that the data was changed by the user

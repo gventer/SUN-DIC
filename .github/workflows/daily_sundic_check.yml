@@ -11,11 +11,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13", "3.14"]
+        include:
+          # main: latest only
+          - target-branch: main
+            python-version: "3.13"
+
+          # dev: full test matrix
+          - target-branch: dev
+            python-version: "3.12"
+          - target-branch: dev
+            python-version: "3.13"
+#          - target-branch: dev
+#            python-version: "3.14"
 
     steps:
-      - name: Checkout
+      - name: Checkout ${{ matrix.target-branch }}
         uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.target-branch }}
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5

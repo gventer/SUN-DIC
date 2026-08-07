@@ -5,7 +5,7 @@
 # Stellenbosch University Digital Image Correlation (DIC) Code
 
 
-SUN-DIC is an open-source Python package for **2D digital image correlation (DIC)** developed at **Stellenbosch University**. It provides both a **graphical user interface (GUI)** and a **Python API** for displacement and strain analysis from image sets, making it suitable for both interactive use and research workflows.
+SUN-DIC is an open-source Python package for **2D digital image correlation (DIC)** developed in the [MOD Research Group](https://blogs.sun.ac.za/mod/) at **Stellenbosch University**. It provides both a **graphical user interface (GUI)** and a **Python API** for displacement and strain analysis from image sets, making it suitable for both interactive use and research workflows.
 
 [![PyPI version](https://img.shields.io/pypi/v/SUN-DIC?style=flat-square&color=2C7BE5)](https://pypi.org/project/SUN-DIC/) [![Python version](https://img.shields.io/pypi/pyversions/SUN-DIC?style=flat-square&color=F0B429)](https://pypi.org/project/SUN-DIC/) [![License: MIT](https://img.shields.io/badge/License-MIT-2EA44F.svg?style=flat-square)](LICENSE) [![PyPI Downloads](https://img.shields.io/pypi/dm/SUN-DIC?style=flat-square&color=0F766E&cacheSeconds=86400)](https://pypi.org/project/SUN-DIC/) [![GitHub stars](https://img.shields.io/github/stars/gventer/SUN-DIC.svg?style=flat-square&color=D97706&cacheSeconds=86400)](https://github.com/gventer/SUN-DIC/stargazers)
 
@@ -280,7 +280,7 @@ url = {https://www.sciencedirect.com/science/article/pii/S0965997825001814},
 - **Interpolator**: uses `fast_interp` by David Stein, licensed under Apache 2.0. Repository: [fast_interp](https://github.com/dbstein/fast_interp)
 - **Smoothing algorithm**: implements the 2D Savitzky-Golay algorithm from the [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html)
 - **Graphical design**: Dr. Melody Neaves
-- **Development**: Post-graduate students and visiting researchers from the [MOD Research Group](https://blogs.sun.ac.za/mod/) at Stellenbosch University
+- **Development**: Post-graduate students from and visiting researchers to the [MOD Research Group](https://blogs.sun.ac.za/mod/) at Stellenbosch University
 
 
 # License

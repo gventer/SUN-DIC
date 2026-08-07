@@ -89,6 +89,8 @@ The \codebf{Analysis} tab is used to perform the DIC analysis. Two runtime param
 \begin{itemize}
 	\item \codebf{Debug Level} -- Controls verbosity of console output where 0 is no debug output, 1 corresponds to top-level output and 2 corresponds to per-iteration level output.  Note that debug output is limited when running the analysis in parallel.
 	\item \codebf{CPU Count} -- The number of parallel worker processes to use during the analysis.
+	\item \codebf{Compress Data File} -- Turns compression on/off for the output data file.  Turning compression on reduces the file size with little additional computational overhead and should be a good option in most cases.
+	\item \codebf{Data Output} -- The data to store in the output file.  \code{DispOnly} stores only displacement data, which is all the data required for post-processing.  \code{All} stores all internal data of the algorithm, which is only needed in rare cases by advanced users.  The \code{DispOnly} option is appropriate for most cases.
 \end{itemize}
 
 Click the \codebf{Start} button to begin the analysis. Live output is displayed in the output panel. The status indicator turns blue while running, green when complete, and red if the run is interrupted. Click the \codebf{Stop} button to abort execution.
