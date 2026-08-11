@@ -2,7 +2,7 @@ name: Code Quality (Lint & Format)
 
 on:
   push:
-    branches: [ main, dev, test-ci-workflows ]
+    branches: [ main, dev ]
   pull_request:
     branches: [ main, dev ]
 

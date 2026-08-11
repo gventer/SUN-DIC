@@ -11,7 +11,7 @@
 # - Stripped 1D and 3D implementations to strictly focus on 2D planar interpolation.
 # - Replaced dynamic RAM allocation (NumPy arrays) inside loops with CPU-register tuples.
 # - Replaced edge padding arrays with mathematical clamping for memory safety.
-# - Applied aggressive Numba JIT compilation flags (cache=True, fastmath=True).
+# - Applied aggressive Numba JIT compilation flags (cache=True).
 # - Simplified the Python class structure into a lightweight wrapper.
 ################################################################################
 
@@ -21,7 +21,7 @@ import numpy as np
 
 
 # --------------------------------------------------------------------------------------------
-@numba.njit(cache=True, fastmath=False, parallel=True)
+@numba.njit(cache=True, parallel=True)
 def _eval_interp2d_k3_(img, y_pts, x_pts, out):
     """
     Evaluate the 3rd order (bicubic) Taylor series interpolation for a given
@@ -79,7 +79,7 @@ def _eval_interp2d_k3_(img, y_pts, x_pts, out):
 
 
 # --------------------------------------------------------------------------------------------
-@numba.njit(cache=True, fastmath=False, parallel=True)
+@numba.njit(cache=True, parallel=True)
 def _eval_interp2d_k5_(img, y_pts, x_pts, out):
     """
     Evaluate the 5th order (biquintic) Taylor series interpolation for a given
