@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    name: Linter (Logique)
+    name: Linter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,7 +23,7 @@ jobs:
         run: ruff check .
 
   format:
-    name: Formatter (Esthétique)
+    name: Formatter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
