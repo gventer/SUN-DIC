@@ -3,7 +3,7 @@
 
 \section{Requirements}
 
-SUN-DIC has been tested on Windows, macOS, and Linux, with Linux serving as the primary development platform. The examples in this manual assume \textbf{Python 3.11}. Before proceeding, verify your Python version by running the following command from a terminal or command prompt:
+SUN-DIC has been tested on Windows, macOS, and Linux, with Linux serving as the primary development platform. The examples in this manual assume \textbf{Python \pyversion}. Before proceeding, verify your Python version by running the following command from a terminal or command prompt:
 
 \begin{lstlisting}[language=bash]
 python --version
@@ -35,7 +35,7 @@ To avoid dependency conflicts, it is strongly recommended that SUN-DIC be instal
 Create and activate a dedicated virtual environment named \code{sundic}:
 
 \begin{lstlisting}[language=bash]
-conda create -n sundic python=3.11
+conda create -n sundic python=(*@\pyversion@*)
 conda activate sundic
 \end{lstlisting}
 
@@ -44,7 +44,7 @@ conda activate sundic
 Create a virtual environment named \code{sundic}:
 
 \begin{lstlisting}[language=bash]
-python3.11 -m venv sundic
+python(*@\pyversion@*) -m venv sundic
 \end{lstlisting}
 
 \noindent

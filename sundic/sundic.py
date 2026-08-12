@@ -331,10 +331,10 @@ def _temporalMatch_(
         return returnData
 
     # Handle exceptions and shutdown ray if required
-    except Exception as e:
+    except Exception:
         if settings.CPUCount > 1:
             _safeRayShutdown_(externalRay, debugLevel=debugLevel)
-        raise e
+        raise
 
 
 # --------------------------------------------------------------------------------------------
@@ -363,38 +363,35 @@ def planarDICLocal(settings, resultsFile, externalRay=False, guiThread=None):
     Raises:
         - ValueError: If an invalid optimization algorithm is specified.
     """
-    try:
-        # Store the debug level
-        debugLevel = settings.DebugLevel
 
-        # Get the images to work with
-        imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
+    # Store the debug level
+    debugLevel = settings.DebugLevel
 
-        # Get the Region of Interest (ROI)
-        ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
+    # Get the images to work with
+    imgSet = _getImageList_(settings.ImageFolder, debugLevel=debugLevel)
 
-        # Define measurement points using the settings specified in the config file
-        # These are the center points of the subsets
-        subSetSize = settings.SubsetSize
-        stepSize = settings.StepSize
-        shapeFn = settings.ShapeFunctions
-        subSetPnts = _setupSubSets_(
-            subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel
-        )
-        if subSetPnts.size == 0:
-            raise ValueError(
-                "No valid subset centers could be created for the specified ROI/subset size."
-            )
+    # Get the Region of Interest (ROI)
+    ROI = _setupROI_(settings.ROI, imgSet[0], debugLevel=debugLevel)
 
-        # Perform local planar DIC analysis using the created subsets
-        returnData = _temporalMatch_(
-            subSetPnts, imgSet, settings, resultsFile, externalRay, guiThread
+    # Define measurement points using the settings specified in the config file
+    # These are the center points of the subsets
+    subSetSize = settings.SubsetSize
+    stepSize = settings.StepSize
+    shapeFn = settings.ShapeFunctions
+    subSetPnts = _setupSubSets_(
+        subSetSize, stepSize, shapeFn, ROI, imgSet[0], debugLevel=debugLevel
+    )
+    if subSetPnts.size == 0:
+        raise ValueError(
+            "No valid subset centers could be created for the specified ROI/subset size."
         )
 
-        return returnData
+    # Perform local planar DIC analysis using the created subsets
+    returnData = _temporalMatch_(
+        subSetPnts, imgSet, settings, resultsFile, externalRay, guiThread
+    )
 
-    except Exception as e:
-        raise e
+    return returnData
 
 
 # --------------------------------------------------------------------------------------------

@@ -20,7 +20,7 @@ SUN-DIC is an open-source Python package for **2D digital image correlation (DIC
 > **Note:** Please see detailed installation instructions for both `pip` and `conda` further down in this `README` file.
 
 ```bash
-python3.11 -m venv sundic
+python3.12 -m venv sundic
 source sundic/bin/activate
 pip install SUN-DIC
 copy-examples
@@ -105,7 +105,7 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 1. Create a virtual environment (e.g., `sundic`):
 
    ```bash
-   python3.11 -m venv sundic
+   python3.12 -m venv sundic
    ```
 
 2. Activate the virtual environment:
@@ -140,10 +140,10 @@ Although SUN-DIC can be installed without creating a virtual environment, using 
 
 ## Using `conda`
 
-1. Create a virtual environment with Python 3.11:
+1. Create a virtual environment with Python 3.12:
 
    ```bash
-   conda create -n sundic python=3.11
+   conda create -n sundic python=3.12
    ```
 
 2. Activate the environment:

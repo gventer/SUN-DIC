@@ -1054,7 +1054,7 @@ def _fillMissingData_(dataX, dataY, dataVal):
             )
             newMsg += "the step size."
 
-            raise Exception(newMsg) from e
+            raise ValueError(newMsg) from e
 
     return dataVal
 

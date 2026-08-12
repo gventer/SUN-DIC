@@ -1,5 +1,10 @@
-__version__ = "0.0.35b"
-# 0.0.36 - Added the compress datafile and file ouput options to the GUI
+__version__ = "0.0.36"
+# 0.0.36 - Added ruff linting and formatting
+#        - Changed daily checks to run when push/pull requests are received
+#        - Disabled fastmath in interpolator
+#        - Dependency mangement - add version ceiling and ignore minor updates
+#        - Changed minimum python version to 3.12 from 3.11
+#        - Added the compress datafile and file output options to the GUI
 #        - Merged the changes to split the planarDICLocal function into two
 #          functions to better support the stereo DIC implementation
 #        - Updated daily check to include dev branch

@@ -1,5 +1,5 @@
 import zlib
-from datetime import datetime
+from datetime import UTC, datetime
 
 import msgpack
 import msgpack_numpy as msgp_np
@@ -95,9 +95,11 @@ class DataFile:
         pVersion = msgpack.packb(version.__version__)
         self.__fh__.write(pVersion)
 
-        # Write the date and time
-        now = datetime.now()
-        pDate = msgpack.packb(now.strftime("%d/%m/%Y %H:%M:%S"))
+        # Write the date and time (timezone-aware, UTC)
+        now = datetime.now(UTC)
+
+        # Store an ISO 8601 string (includes timezone, e.g. "2026-08-12T14:02:03+00:00")
+        pDate = msgpack.packb(now.isoformat())
         self.__fh__.write(pDate)
 
         # Write the settings dictionary

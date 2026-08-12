@@ -129,42 +129,30 @@ class Settings:
         """
         retStr = "\nDIC Job Settings:\n"
         retStr += "------------------------------------------------\n"
-        retStr += "  %25s : %s\n" % ("Debug Level", str(self.DebugLevel))
-        retStr += "  %25s : %s\n" % ("Data Save Mode", str(self.DataSaveMode))
-        retStr += "  %25s : %s\n" % ("Data Compression", str(self.DataCompression))
-        retStr += "  %25s : %s\n" % ("Image Folder", str(self.ImageFolder))
-        retStr += "  %25s : %s\n" % ("CPU Count", str(self.CPUCount))
-        retStr += "  %25s : %s\n" % ("DIC Type", str(self.DICType))
-        retStr += "  %25s : %s\n" % ("Subset Size", str(self.SubsetSize))
-        retStr += "  %25s : %s\n" % ("Step Size", str(self.StepSize))
-        retStr += "  %25s : %s\n" % ("Shape Functions", str(self.ShapeFunctions))
-        retStr += "  %25s : %s\n" % ("Reference Strategy", str(self.ReferenceStrategy))
-        retStr += "  %25s : %s\n" % ("Starting Points", str(self.StartingPoints))
-        retStr += "  %25s : %s\n" % ("Gaussian Blur Size", str(self.GaussianBlurSize))
-        retStr += "  %25s : %s\n" % (
-            "Gaussian Blur StdDev",
-            str(self.GaussianBlurStdDev),
-        )
-        retStr += "  %25s : %s\n" % ("Datum Image", str(self.DatumImage))
-        retStr += "  %25s : %s\n" % ("Target Image", str(self.TargetImage))
-        retStr += "  %25s : %s\n" % ("Increment", str(self.Increment))
-        retStr += "  %25s : %s\n" % ("ROI", str(self.ROI))
-        retStr += "  %25s : %s\n" % ("Background Cutoff", str(self.BackgroundCutoff))
-        retStr += "  %25s : %s\n" % ("Mask File", str(self.MaskFile))
-        retStr += "  %25s : %s\n" % (
-            "Optimization Algorithm",
-            str(self.OptimizationAlgorithm),
-        )
-        retStr += "  %25s : %s\n" % ("Max Iterations", str(self.MaxIterations))
-        retStr += "  %25s : %s\n" % (
-            "Interpolation Order",
-            str(self.InterpolationOrder),
-        )
-        retStr += "  %25s : %s\n" % (
-            "Convergence Threshold",
-            str(self.ConvergenceThreshold),
-        )
-        retStr += "  %25s : %s\n" % ("NZCC Threshold", str(self.NZCCThreshold))
+        retStr += f"  {'Debug Level':>25} : {self.DebugLevel}\n"
+        retStr += f"  {'Data Save Mode':>25} : {self.DataSaveMode}\n"
+        retStr += f"  {'Data Compression':>25} : {self.DataCompression}\n"
+        retStr += f"  {'Image Folder':>25} : {self.ImageFolder}\n"
+        retStr += f"  {'CPU Count':>25} : {self.CPUCount}\n"
+        retStr += f"  {'DIC Type':>25} : {self.DICType}\n"
+        retStr += f"  {'Subset Size':>25} : {self.SubsetSize}\n"
+        retStr += f"  {'Step Size':>25} : {self.StepSize}\n"
+        retStr += f"  {'Shape Functions':>25} : {self.ShapeFunctions}\n"
+        retStr += f"  {'Reference Strategy':>25} : {self.ReferenceStrategy}\n"
+        retStr += f"  {'Starting Points':>25} : {self.StartingPoints}\n"
+        retStr += f"  {'Gaussian Blur Size':>25} : {self.GaussianBlurSize}\n"
+        retStr += f"  {'Gaussian Blur StdDev':>25} : {self.GaussianBlurStdDev}\n"
+        retStr += f"  {'Datum Image':>25} : {self.DatumImage}\n"
+        retStr += f"  {'Target Image':>25} : {self.TargetImage}\n"
+        retStr += f"  {'Increment':>25} : {self.Increment}\n"
+        retStr += f"  {'ROI':>25} : {self.ROI}\n"
+        retStr += f"  {'Background Cutoff':>25} : {self.BackgroundCutoff}\n"
+        retStr += f"  {'Mask File':>25} : {self.MaskFile}\n"
+        retStr += f"  {'Optimization Algorithm':>25} : {self.OptimizationAlgorithm}\n"
+        retStr += f"  {'Max Iterations':>25} : {self.MaxIterations}\n"
+        retStr += f"  {'Interpolation Order':>25} : {self.InterpolationOrder}\n"
+        retStr += f"  {'Convergence Threshold':>25} : {self.ConvergenceThreshold}\n"
+        retStr += f"  {'NZCC Threshold':>25} : {self.NZCCThreshold}\n"
 
         return retStr
 
@@ -186,7 +174,7 @@ class Settings:
         self._loadMsgPackDict_(setDict)
 
         # Close the file
-        df.close
+        df.close()
 
     # --------------------------------------------------------------------------------------------
     def _loadMsgPackDict_(self, setDict):
