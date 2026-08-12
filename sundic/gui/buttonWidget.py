@@ -1,14 +1,12 @@
-from PyQt6 import QtWidgets, QtGui, QtCore
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 
 class LeftIconButton(QtWidgets.QPushButton):
-    """ A QPushButton subclass that places the icon on the left side of the button
-    """
+    """A QPushButton subclass that places the icon on the left side of the button"""
 
     # -------------------------------------------------------------------------------
     def __init__(self, *args, stylesheet=None, **kwargs):
-        """ Constructor - optional stylesheet argument
-        """
+        """Constructor - optional stylesheet argument"""
         super().__init__(*args, **kwargs)
 
         if stylesheet is not None:
@@ -16,8 +14,7 @@ class LeftIconButton(QtWidgets.QPushButton):
 
     # ------------------------------------------------------------------------------
     def sizeHint(self):
-        """ Override the sizeHint method to calculate the size based on text and icon
-        """
+        """Override the sizeHint method to calculate the size based on text and icon"""
 
         # Get base size for text
         fontMetrics = QtGui.QFontMetrics(self.font())
@@ -41,16 +38,15 @@ class LeftIconButton(QtWidgets.QPushButton):
 
     # ------------------------------------------------------------------------------
     def paintEvent(self, event):
-        """ Override the paintEvent method to custom draw the button
-        """
+        """Override the paintEvent method to custom draw the button"""
 
         # The painter and button style
         painter = QtGui.QPainter(self)
         option = QtWidgets.QStyleOptionButton()
         self.initStyleOption(option)
         self.style().drawControl(
-            QtWidgets.QStyle.ControlElement.CE_PushButtonBevel,
-            option, painter, self)
+            QtWidgets.QStyle.ControlElement.CE_PushButtonBevel, option, painter, self
+        )
 
         # Draw text centered
         rect = self.rect()
@@ -58,11 +54,12 @@ class LeftIconButton(QtWidgets.QPushButton):
         text = self.text()
         fontMetrics = QtGui.QFontMetrics(self.font())
         textRect = fontMetrics.boundingRect(
-            rect, QtCore.Qt.AlignmentFlag.AlignCenter, text)
+            rect, QtCore.Qt.AlignmentFlag.AlignCenter, text
+        )
 
         # Reserve space for icon on the left
-        textRect.setRight(textRect.right()+iconSize.width()//2)
-        textRect.setLeft(textRect.left()+iconSize.width()//2)
+        textRect.setRight(textRect.right() + iconSize.width() // 2)
+        textRect.setLeft(textRect.left() + iconSize.width() // 2)
         painter.drawText(textRect, QtCore.Qt.AlignmentFlag.AlignLeft, text)
 
         # Draw icon on the left

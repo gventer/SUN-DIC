@@ -7,16 +7,17 @@
 # Date: 2024/06/05
 ################################################################################
 from enum import IntEnum
+
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 from scipy import ndimage
-import skimage.morphology as morphology
-from scipy.interpolate import RectBivariateSpline, NearestNDInterpolator
-import sundic.sundic as sdic
-from sundic.util.savitsky_golay import sgolay2d
-import sundic.util.datafile as dataFile
+from scipy.interpolate import NearestNDInterpolator, RectBivariateSpline
+from skimage import morphology
+
 import sundic.settings as sdset
+import sundic.sundic as sdic
+import sundic.util.datafile as dataFile
+from sundic.util.savitsky_golay import sgolay2d
 
 # --------------------------------------------------------------------------------------------
 
@@ -31,10 +32,11 @@ class DispComp(IntEnum):
         - Z_DISP (int): The Z component.
         - DISP_MAG (int): The magnitude component.
     """
-    X_DISP = (3, 'X Displacement')
-    Y_DISP = (4, 'Y Displacement')
-    Z_DISP = (5, 'Z Displacement')
-    DISP_MAG = (6, 'Displacement Magnitude')
+
+    X_DISP = (3, "X Displacement")
+    Y_DISP = (4, "Y Displacement")
+    Z_DISP = (5, "Z Displacement")
+    DISP_MAG = (6, "Displacement Magnitude")
 
     # Add a display name to the enumeration
     def __new__(cls, value, display_name=None):
@@ -54,10 +56,11 @@ class StrainComp(IntEnum):
         - SHEAR_STRAIN (int): The shear component.
         - VM_STRAIN (int): The Von Mises component.
     """
-    X_STRAIN = (3, 'X Strain')
-    Y_STRAIN = (4, 'Y Strain')
-    SHEAR_STRAIN = (5, 'Shear Strain')
-    VM_STRAIN = (6, 'Von Mises Strain')
+
+    X_STRAIN = (3, "X Strain")
+    Y_STRAIN = (4, "Y Strain")
+    SHEAR_STRAIN = (5, "Shear Strain")
+    VM_STRAIN = (6, "Von Mises Strain")
 
     # Add a display name to the enumeration
     def __new__(cls, value, display_name=None):
@@ -76,13 +79,18 @@ class CompID(IntEnum):
         - YCoordID (int): The Y coordinate.
         - XDispID (int): The X displacement.
     """
-    XCoordID = (0, 'X Coordinate')
-    YCoordID = (1, 'Y Coordinate')
-    SSSizeID = 2   # The subset size
-    ShapeFnID = 3   # The shape function - 0 = affine, 1 = quadratic
-    CZNSSDID = 4   # The CZNSSD value for the subset
-    XDispID = 5   # The x-displacement of the subset point - start of x model coefficients
-    YDispID = 11  # The y-displacement of the subset point - start of y model coefficients
+
+    XCoordID = (0, "X Coordinate")
+    YCoordID = (1, "Y Coordinate")
+    SSSizeID = 2  # The subset size
+    ShapeFnID = 3  # The shape function - 0 = affine, 1 = quadratic
+    CZNSSDID = 4  # The CZNSSD value for the subset
+    XDispID = (
+        5  # The x-displacement of the subset point - start of x model coefficients
+    )
+    YDispID = (
+        11  # The y-displacement of the subset point - start of y model coefficients
+    )
 
     # Add a display name to the enumeration
     def __new__(cls, value, display_name=None):
@@ -147,57 +155,82 @@ def getDisplacements(resultsFile, imgPair, dilation=0, smoothWindow=0, smoothOrd
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, CompID.XCoordID] = subSetPnts[:, :,
-                                             CompID.XCoordID].reshape(nSubSets, order='F')
-    results[:, CompID.YCoordID] = subSetPnts[:, :,
-                                             CompID.YCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.XCoordID] = subSetPnts[:, :, CompID.XCoordID].reshape(
+        nSubSets, order="F"
+    )
+    results[:, CompID.YCoordID] = subSetPnts[:, :, CompID.YCoordID].reshape(
+        nSubSets, order="F"
+    )
 
     # Store the x displacement component
-    results[:, DispComp.X_DISP] = subSetPnts[:, :,
-                                             CompID.XDispID].reshape(nSubSets, order='F')
+    results[:, DispComp.X_DISP] = subSetPnts[:, :, CompID.XDispID].reshape(
+        nSubSets, order="F"
+    )
 
     # Get the y displacement component based on the shape functions used
-    results[:, DispComp.Y_DISP] = subSetPnts[:, :,
-                                             CompID.YDispID].reshape(nSubSets, order='F')
+    results[:, DispComp.Y_DISP] = subSetPnts[:, :, CompID.YDispID].reshape(
+        nSubSets, order="F"
+    )
 
     # Calculate the displacement magnitude and store in the correct column of the
     # results array
-    results[:, DispComp.DISP_MAG] = np.sqrt(results[:, DispComp.X_DISP]**2 +
-                                            results[:, DispComp.Y_DISP]**2)
-       
+    results[:, DispComp.DISP_MAG] = np.sqrt(
+        results[:, DispComp.X_DISP] ** 2 + results[:, DispComp.Y_DISP] ** 2
+    )
+
     # If smoothing is requested, apply Savitzky-Golay smoothing
     nRows = subSetPnts.shape[0]
     nCols = subSetPnts.shape[1]
     if smoothWindow > 0:
-        results[:, DispComp.X_DISP] = _smoothResults_(nRows, nCols, stepSize, results,
-                                                      DispComp.X_DISP, smoothWindow=smoothWindow,
-                                                      smoothOrder=smoothOrder)
-        results[:, DispComp.Y_DISP] = _smoothResults_(nRows, nCols, stepSize, results,
-                                                      DispComp.Y_DISP, smoothWindow=smoothWindow,
-                                                      smoothOrder=smoothOrder)
-        results[:, DispComp.DISP_MAG] = _smoothResults_(nRows, nCols, stepSize, results,
-                                                        DispComp.DISP_MAG, smoothWindow=smoothWindow,
-                                                        smoothOrder=smoothOrder)
+        results[:, DispComp.X_DISP] = _smoothResults_(
+            nRows,
+            nCols,
+            stepSize,
+            results,
+            DispComp.X_DISP,
+            smoothWindow=smoothWindow,
+            smoothOrder=smoothOrder,
+        )
+        results[:, DispComp.Y_DISP] = _smoothResults_(
+            nRows,
+            nCols,
+            stepSize,
+            results,
+            DispComp.Y_DISP,
+            smoothWindow=smoothWindow,
+            smoothOrder=smoothOrder,
+        )
+        results[:, DispComp.DISP_MAG] = _smoothResults_(
+            nRows,
+            nCols,
+            stepSize,
+            results,
+            DispComp.DISP_MAG,
+            smoothWindow=smoothWindow,
+            smoothOrder=smoothOrder,
+        )
 
     # Apply dilation of NaN mask if required
     # Start by getting the current NaN mask based on the displacement magnitude values
     if dilation > 0:
         disk = morphology.disk(1)
-        rsltX   = results[:, DispComp.X_DISP].reshape(nRows, nCols, order='F')
-        rsltY   = results[:, DispComp.Y_DISP].reshape(nRows, nCols, order='F')
-        rsltMag = results[:, DispComp.DISP_MAG].reshape(nRows, nCols, order='F')
+        rsltX = results[:, DispComp.X_DISP].reshape(nRows, nCols, order="F")
+        rsltY = results[:, DispComp.Y_DISP].reshape(nRows, nCols, order="F")
+        rsltMag = results[:, DispComp.DISP_MAG].reshape(nRows, nCols, order="F")
         maskX = np.isnan(rsltX)
         maskY = np.isnan(rsltY)
         maskMag = np.isnan(rsltMag)
         grownMaskX = ndimage.binary_dilation(maskX, iterations=dilation, structure=disk)
         grownMaskY = ndimage.binary_dilation(maskY, iterations=dilation, structure=disk)
-        grownMaskMag = ndimage.binary_dilation(maskMag, iterations=dilation, structure=disk)
+        grownMaskMag = ndimage.binary_dilation(
+            maskMag, iterations=dilation, structure=disk
+        )
         rsltX[grownMaskX] = np.nan
         rsltY[grownMaskY] = np.nan
         rsltMag[grownMaskMag] = np.nan
-        results[:, DispComp.X_DISP]   = rsltX.reshape(nSubSets, order='F')
-        results[:, DispComp.Y_DISP]   = rsltY.reshape(nSubSets, order='F')
-        results[:, DispComp.DISP_MAG] = rsltMag.reshape(nSubSets, order='F')
+        results[:, DispComp.X_DISP] = rsltX.reshape(nSubSets, order="F")
+        results[:, DispComp.Y_DISP] = rsltY.reshape(nSubSets, order="F")
+        results[:, DispComp.DISP_MAG] = rsltMag.reshape(nSubSets, order="F")
 
     return results, nRows, nCols
 
@@ -226,8 +259,7 @@ def getCznssd(resultsFile, imgPair):
     inFile = dataFile.DataFile.openReader(resultsFile)
 
     # Ingore the heading
-    _, _, setDict = inFile.readHeading()
-    settings = sdset.Settings.fromMsgPackDict(setDict)
+    _, _, _ = inFile.readHeading()
 
     # Get the data
     subSetPnts = inFile.readSubSetData(imgPair)
@@ -243,14 +275,15 @@ def getCznssd(resultsFile, imgPair):
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
-    results[:, CompID.XCoordID] = subSetPnts[:, :,
-                                             CompID.XCoordID].reshape(nSubSets, order='F')
-    results[:, CompID.YCoordID] = subSetPnts[:, :,
-                                             CompID.YCoordID].reshape(nSubSets, order='F')
+    results[:, CompID.XCoordID] = subSetPnts[:, :, CompID.XCoordID].reshape(
+        nSubSets, order="F"
+    )
+    results[:, CompID.YCoordID] = subSetPnts[:, :, CompID.YCoordID].reshape(
+        nSubSets, order="F"
+    )
 
     # Store the Cznssd component
-    results[:, -1] = subSetPnts[:, :,
-                                CompID.CZNSSDID].reshape(nSubSets, order='F')
+    results[:, -1] = subSetPnts[:, :, CompID.CZNSSDID].reshape(nSubSets, order="F")
     results[:, -1][results[:, -1] == sdic.IntConst.CNZSSD_MAX] = np.nan
 
     return results, nRows, nCols
@@ -291,7 +324,7 @@ def getStrains(resultsFile, imgPair, dilation=0, smoothWindow=9, smoothOrder=2):
 
     # Make sure the smoothFactor is larger than zero
     if smoothWindow <= 0:
-        raise ValueError('smoothWindow must be larger than zero.')
+        raise ValueError("smoothWindow must be larger than zero.")
 
     # Load the results file to get the stepSize
     inFile = dataFile.DataFile.openReader(resultsFile)
@@ -310,7 +343,7 @@ def getStrains(resultsFile, imgPair, dilation=0, smoothWindow=9, smoothOrder=2):
     disp, nRows, nCols = getDisplacements(resultsFile, imgPair, smoothWindow=0)
 
     # Setup a results array
-    results = np.zeros((nRows*nCols, 7))
+    results = np.zeros((nRows * nCols, 7))
 
     # Store the x and y coordinates of the subset points in the 1st and 2nd
     # columns of the results array
@@ -319,54 +352,86 @@ def getStrains(resultsFile, imgPair, dilation=0, smoothWindow=9, smoothOrder=2):
 
     # Apply Savitzky-Golay smoothing with gradient calculation
     dudy, dudx = _smoothResults_(
-        nRows, nCols, stepSize, disp, DispComp.X_DISP, smoothWindow=smoothWindow,
-        smoothOrder=smoothOrder, derivative='both')
+        nRows,
+        nCols,
+        stepSize,
+        disp,
+        DispComp.X_DISP,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        derivative="both",
+    )
     dvdy, dvdx = _smoothResults_(
-        nRows, nCols, stepSize, disp, DispComp.Y_DISP, smoothWindow=smoothWindow,
-        smoothOrder=smoothOrder, derivative='both')
+        nRows,
+        nCols,
+        stepSize,
+        disp,
+        DispComp.Y_DISP,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        derivative="both",
+    )
 
     # Store the strain components
     results[:, StrainComp.X_STRAIN] = dudx
     results[:, StrainComp.Y_STRAIN] = dvdy
     results[:, StrainComp.SHEAR_STRAIN] = 0.5 * (dudy + dvdx)
-    results[:, StrainComp.VM_STRAIN] = np.sqrt(results[:, StrainComp.X_STRAIN]**2 +
-                                               results[:, StrainComp.Y_STRAIN]**2 -
-                                               results[:, StrainComp.X_STRAIN] *
-                                               results[:, StrainComp.Y_STRAIN] +
-                                               3 * results[:, StrainComp.SHEAR_STRAIN]**2)
+    results[:, StrainComp.VM_STRAIN] = np.sqrt(
+        results[:, StrainComp.X_STRAIN] ** 2
+        + results[:, StrainComp.Y_STRAIN] ** 2
+        - results[:, StrainComp.X_STRAIN] * results[:, StrainComp.Y_STRAIN]
+        + 3 * results[:, StrainComp.SHEAR_STRAIN] ** 2
+    )
 
     # Apply dilation of NaN mask if required
     if dilation > 0:
         disk = morphology.disk(3)
-        rsltX   = results[:, StrainComp.X_STRAIN].reshape(nRows, nCols, order='F')
-        rsltY   = results[:, StrainComp.Y_STRAIN].reshape(nRows, nCols, order='F')
-        rsltShear = results[:, StrainComp.SHEAR_STRAIN].reshape(nRows, nCols, order='F')
-        rsltVM = results[:, StrainComp.VM_STRAIN].reshape(nRows, nCols, order='F')
+        rsltX = results[:, StrainComp.X_STRAIN].reshape(nRows, nCols, order="F")
+        rsltY = results[:, StrainComp.Y_STRAIN].reshape(nRows, nCols, order="F")
+        rsltShear = results[:, StrainComp.SHEAR_STRAIN].reshape(nRows, nCols, order="F")
+        rsltVM = results[:, StrainComp.VM_STRAIN].reshape(nRows, nCols, order="F")
         maskX = np.isnan(rsltX)
         maskY = np.isnan(rsltY)
         maskShear = np.isnan(rsltShear)
         maskVM = np.isnan(rsltVM)
         grownMaskX = ndimage.binary_dilation(maskX, iterations=dilation, structure=disk)
         grownMaskY = ndimage.binary_dilation(maskY, iterations=dilation, structure=disk)
-        grownMaskShear = ndimage.binary_dilation(maskShear, iterations=dilation, structure=disk)
-        grownMaskVM = ndimage.binary_dilation(maskVM, iterations=dilation, structure=disk)
+        grownMaskShear = ndimage.binary_dilation(
+            maskShear, iterations=dilation, structure=disk
+        )
+        grownMaskVM = ndimage.binary_dilation(
+            maskVM, iterations=dilation, structure=disk
+        )
         rsltX[grownMaskX] = np.nan
         rsltY[grownMaskY] = np.nan
         rsltShear[grownMaskShear] = np.nan
         rsltVM[grownMaskVM] = np.nan
-        results[:, StrainComp.X_STRAIN] = rsltX.reshape(nRows*nCols, order='F')
-        results[:, StrainComp.Y_STRAIN] = rsltY.reshape(nRows*nCols, order='F')
-        results[:, StrainComp.SHEAR_STRAIN] = rsltShear.reshape(nRows*nCols, order='F')
-        results[:, StrainComp.VM_STRAIN] = rsltVM.reshape(nRows*nCols, order='F')
+        results[:, StrainComp.X_STRAIN] = rsltX.reshape(nRows * nCols, order="F")
+        results[:, StrainComp.Y_STRAIN] = rsltY.reshape(nRows * nCols, order="F")
+        results[:, StrainComp.SHEAR_STRAIN] = rsltShear.reshape(
+            nRows * nCols, order="F"
+        )
+        results[:, StrainComp.VM_STRAIN] = rsltVM.reshape(nRows * nCols, order="F")
 
     return results, nRows, nCols
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
-                    alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                    dilation=0,
-                    smoothWindow=0, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
+def plotDispContour(
+    resultsFile,
+    imgPair,
+    dispComp=DispComp.DISP_MAG,
+    alpha=0.75,
+    plotImage=True,
+    showPlot=True,
+    fileName="",
+    dilation=0,
+    smoothWindow=0,
+    smoothOrder=2,
+    maxValue=None,
+    minValue=None,
+    return_fig=False,
+):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -399,14 +464,20 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
 
     # Get the displacement results
     results, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-        dilation=dilation)
+        resultsFile,
+        imgPair,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        dilation=dilation,
+    )
 
     # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
-        results[:, DispComp.X_DISP].reshape(nCols, nRows)
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + \
-        results[:, DispComp.Y_DISP].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + results[
+        :, DispComp.X_DISP
+    ].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + results[
+        :, DispComp.Y_DISP
+    ].reshape(nCols, nRows)
     if dispComp == DispComp.DISP_MAG:
         Z = results[:, DispComp.DISP_MAG].reshape(nCols, nRows)
     elif dispComp == DispComp.X_DISP:
@@ -414,8 +485,8 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
     elif dispComp == DispComp.Y_DISP:
         Z = results[:, DispComp.Y_DISP].reshape(nCols, nRows)
     else:
-        raise ValueError('Invalid dispComp argument - use the Comp object.')
-    
+        raise ValueError("Invalid dispComp argument - use the Comp object.")
+
     # Apply maximum and minimum values if provided
     if maxValue:
         Z[Z > maxValue] = maxValue
@@ -439,12 +510,12 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
         else:
             imgPair = imgPair + 1
         img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
-        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap="gray", vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
-    ax.set_xlabel('x (pixels)')
-    ax.set_ylabel('y (pixels)')
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap="jet")
+    ax.set_xlabel("x (pixels)")
+    ax.set_ylabel("y (pixels)")
     fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
@@ -458,10 +529,21 @@ def plotDispContour(resultsFile, imgPair, dispComp=DispComp.DISP_MAG,
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
-                      alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                      dilation=0,
-                      smoothWindow=9, smoothOrder=2, maxValue=None, minValue=None, return_fig=False):
+def plotStrainContour(
+    resultsFile,
+    imgPair,
+    strainComp=StrainComp.VM_STRAIN,
+    alpha=0.75,
+    plotImage=True,
+    showPlot=True,
+    fileName="",
+    dilation=0,
+    smoothWindow=9,
+    smoothOrder=2,
+    maxValue=None,
+    minValue=None,
+    return_fig=False,
+):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -476,7 +558,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         - showPlot (bool, optional): Flag to show the plot. Default is True.
         - fileName (str, optional): Name of the file to save the plot. Default is ''.
         - dilation (int, optional): Number of pixels to dilate the mask around automatically
-                    detected features (eg holes) where the results maybe of poor quality. 
+                    detected features (eg holes) where the results maybe of poor quality.
                     Default is 0 which means no dilation.
         - smoothWindow (int, optional): Size of the window size used for the Savitzky-Golay
           smoothing.  Must be an odd number larger than zero.  Default is 9.
@@ -495,16 +577,23 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
     # Get the strain results
     dispResults, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow=0, smoothOrder=2)
+        resultsFile, imgPair, smoothWindow=0, smoothOrder=2
+    )
     results, nRows, nCols = getStrains(
-        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder,
-        dilation=dilation)
+        resultsFile,
+        imgPair,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        dilation=dilation,
+    )
 
     # Setup the plot arrays
-    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + \
-        dispResults[:, DispComp.X_DISP].reshape(nCols, nRows)
-    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + \
-        dispResults[:, DispComp.Y_DISP].reshape(nCols, nRows)
+    X = results[:, CompID.XCoordID].reshape(nCols, nRows) + dispResults[
+        :, DispComp.X_DISP
+    ].reshape(nCols, nRows)
+    Y = results[:, CompID.YCoordID].reshape(nCols, nRows) + dispResults[
+        :, DispComp.Y_DISP
+    ].reshape(nCols, nRows)
 
     if strainComp == StrainComp.SHEAR_STRAIN:
         Z = results[:, StrainComp.SHEAR_STRAIN].reshape(nCols, nRows)
@@ -515,7 +604,7 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     elif strainComp == StrainComp.VM_STRAIN:
         Z = results[:, StrainComp.VM_STRAIN].reshape(nCols, nRows)
     else:
-        raise ValueError('Invalid strainComp argument - use the Comp object.')
+        raise ValueError("Invalid strainComp argument - use the Comp object.")
 
     # Apply maximum and minimum values if provided
     if maxValue:
@@ -540,12 +629,12 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
         else:
             imgPair = imgPair + 1
         img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
-        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap="gray", vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
-    ax.set_xlabel('x (pixels)')
-    ax.set_ylabel('y (pixels)')
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap="jet")
+    ax.set_xlabel("x (pixels)")
+    ax.set_ylabel("y (pixels)")
     fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
@@ -559,8 +648,17 @@ def plotStrainContour(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
 
 # --------------------------------------------------------------------------------------------
-def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=True, fileName='',
-                    maxValue=None, minValue=None, return_fig=False):
+def plotZNCCContour(
+    resultsFile,
+    imgPair,
+    alpha=0.75,
+    plotImage=True,
+    showPlot=True,
+    fileName="",
+    maxValue=None,
+    minValue=None,
+    return_fig=False,
+):
     """
     Plot the displacement contour based on the subset points and coefficients.
 
@@ -585,17 +683,20 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
 
     # Get the displacement results
     dispResults, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow=0, smoothOrder=2)
+        resultsFile, imgPair, smoothWindow=0, smoothOrder=2
+    )
     Cznssd, nRows, nCols = getCznssd(resultsFile, imgPair)
 
     # Setup the plot arrays
-    X = dispResults[:, CompID.XCoordID].reshape(nCols, nRows) + \
-        dispResults[:, DispComp.X_DISP].reshape(nCols, nRows)
-    Y = dispResults[:, CompID.YCoordID].reshape(nCols, nRows) + \
-        dispResults[:, DispComp.Y_DISP].reshape(nCols, nRows)
+    X = dispResults[:, CompID.XCoordID].reshape(nCols, nRows) + dispResults[
+        :, DispComp.X_DISP
+    ].reshape(nCols, nRows)
+    Y = dispResults[:, CompID.YCoordID].reshape(nCols, nRows) + dispResults[
+        :, DispComp.Y_DISP
+    ].reshape(nCols, nRows)
 
     # Calculate the ZNCC form the stored Cznssd values
-    Z = (1. - 0.5*Cznssd[:, -1]).reshape(nCols, nRows)
+    Z = (1.0 - 0.5 * Cznssd[:, -1]).reshape(nCols, nRows)
 
     # Apply maximum and minimum values if provided
     if maxValue:
@@ -620,12 +721,12 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
         else:
             imgPair = imgPair + 1
         img = sdic.readImage(imgSet[imgPair], normalize8Bit=True)
-        ax.imshow(img, zorder=1, cmap='gray', vmin=0, vmax=255)
+        ax.imshow(img, zorder=1, cmap="gray", vmin=0, vmax=255)
 
     # Setup the contour plot and plot on top of the image
-    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap='jet')
-    ax.set_xlabel('x (pixels)')
-    ax.set_ylabel('y (pixels)')
+    contour = ax.contourf(X, Y, Z, alpha=alpha, zorder=2, cmap="jet")
+    ax.set_xlabel("x (pixels)")
+    ax.set_ylabel("y (pixels)")
     fig.colorbar(contour, ax=ax)
 
     # Show and or save the plot
@@ -639,10 +740,21 @@ def plotZNCCContour(resultsFile, imgPair, alpha=0.75, plotImage=True, showPlot=T
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=CompID.YCoordID,
-                    cutValues=[0], gridLines=True, showPlot=True, fileName='',
-                    dilation=0,
-                    smoothWindow=0, smoothOrder=2, interpolate=False, return_fig=False):
+def plotDispCutLine(
+    resultsFile,
+    imgPair,
+    dispComp=DispComp.DISP_MAG,
+    cutComp=CompID.YCoordID,
+    cutValues=[0],
+    gridLines=True,
+    showPlot=True,
+    fileName="",
+    dilation=0,
+    smoothWindow=0,
+    smoothOrder=2,
+    interpolate=False,
+    return_fig=False,
+):
     """
     Plot a displacement cut line based on the subset points and coefficients.  The cut line
     is shown for the specified displacement component in specified direction.
@@ -677,24 +789,36 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 
     # Get the displacement results
     results, nRows, nCols = getDisplacements(
-        resultsFile, imgPair, smoothWindow=smoothWindow, smoothOrder=smoothOrder, 
-        dilation=dilation)
+        resultsFile,
+        imgPair,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        dilation=dilation,
+    )
 
     # Setup the y label based on the requested component
-    ylabel = ''
+    ylabel = ""
     if dispComp == DispComp.DISP_MAG:
-        ylabel = 'Displacement Magnitude (pixels)'
+        ylabel = "Displacement Magnitude (pixels)"
     elif dispComp == DispComp.X_DISP:
-        ylabel = 'Displacement X (pixels)'
+        ylabel = "Displacement X (pixels)"
     elif dispComp == DispComp.Y_DISP:
-        ylabel = 'Displacement Y (pixels)'
+        ylabel = "Displacement Y (pixels)"
     else:
-        raise ValueError('Invalid dispComp argument - use the Comp object.')
+        raise ValueError("Invalid dispComp argument - use the Comp object.")
 
     # Create the cutline plot
-    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
-                                   results[:,CompID.YCoordID], results[:,dispComp.value],
-                                   cutValues, cutComp, ylabel, interpolate)
+    fig, ax = _createCutLineGraph_(
+        nCols,
+        nRows,
+        results[:, CompID.XCoordID],
+        results[:, CompID.YCoordID],
+        results[:, dispComp.value],
+        cutValues,
+        cutComp,
+        ylabel,
+        interpolate,
+    )
 
     # Show gridlines if requested
     if gridLines:
@@ -711,11 +835,21 @@ def plotDispCutLine(resultsFile, imgPair, dispComp=DispComp.DISP_MAG, cutComp=Co
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
-                      cutComp=CompID.YCoordID, cutValues=[0],
-                      gridLines=True, showPlot=True, fileName='',
-                      dilation=0,
-                      smoothWindow=9, smoothOrder=2, interpolate=False, return_fig=False):
+def plotStrainCutLine(
+    resultsFile,
+    imgPair,
+    strainComp=StrainComp.VM_STRAIN,
+    cutComp=CompID.YCoordID,
+    cutValues=[0],
+    gridLines=True,
+    showPlot=True,
+    fileName="",
+    dilation=0,
+    smoothWindow=9,
+    smoothOrder=2,
+    interpolate=False,
+    return_fig=False,
+):
     """
     Plot a strain cut line based on the subset points and coefficients.  The cut line
     is shown for the specified strain component in the specified direction.
@@ -749,30 +883,39 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
     """
 
     # Get the strain results
-    results, nRows, nCols = getStrains( resultsFile, imgPair, smoothWindow=smoothWindow, 
-                                       smoothOrder=smoothOrder, dilation=dilation)
+    results, nRows, nCols = getStrains(
+        resultsFile,
+        imgPair,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        dilation=dilation,
+    )
 
     # Setup the plot arrays
-    ylabel = ''
+    ylabel = ""
     if strainComp == StrainComp.SHEAR_STRAIN:
-        ylabel = 'Strain (XY component)'
-        Z = results[:, StrainComp.SHEAR_STRAIN].reshape(nCols, nRows)
+        ylabel = "Strain (XY component)"
     elif strainComp == StrainComp.X_STRAIN:
-        ylabel = 'Strain (X component)'
-        Z = results[:, StrainComp.X_STRAIN].reshape(nCols, nRows)
+        ylabel = "Strain (X component)"
     elif strainComp == StrainComp.Y_STRAIN:
-        ylabel = 'Strain (Y component)'
-        Z = results[:, StrainComp.Y_STRAIN].reshape(nCols, nRows)
+        ylabel = "Strain (Y component)"
     elif strainComp == StrainComp.VM_STRAIN:
-        ylabel = 'Strain (Von Mises)'
-        Z = results[:, StrainComp.VM_STRAIN].reshape(nCols, nRows)
+        ylabel = "Strain (Von Mises)"
     else:
-        raise ValueError('Invalid strainComp argument - use the Comp object.')
+        raise ValueError("Invalid strainComp argument - use the Comp object.")
 
     # Create the cutline plot
-    fig, ax = _createCutLineGraph_(nCols, nRows, results[:, CompID.XCoordID],
-                                   results[:,CompID.YCoordID], results[:,strainComp.value],
-                                   cutValues, cutComp, ylabel, interpolate)
+    fig, ax = _createCutLineGraph_(
+        nCols,
+        nRows,
+        results[:, CompID.XCoordID],
+        results[:, CompID.YCoordID],
+        results[:, strainComp.value],
+        cutValues,
+        cutComp,
+        ylabel,
+        interpolate,
+    )
 
     # Show gridlines if requested
     if gridLines:
@@ -789,8 +932,16 @@ def plotStrainCutLine(resultsFile, imgPair, strainComp=StrainComp.VM_STRAIN,
 
 
 # --------------------------------------------------------------------------------------------
-def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoothOrder=2,
-                    derivative='none'):
+def _smoothResults_(
+    nRows,
+    nCols,
+    stepSize,
+    results,
+    comp,
+    smoothWindow=3,
+    smoothOrder=2,
+    derivative="none",
+):
     """
     Smooths the results of a computation over a grid using Savitzky-Golay smoothing.
 
@@ -814,7 +965,7 @@ def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoot
     """
     # Make sure the smoothWindow is odd and raise an exception if not
     if smoothWindow % 2 == 0:
-        raise ValueError('smoothWindow must be an odd number.')
+        raise ValueError("smoothWindow must be an odd number.")
 
     # Get the result to smooth
     smoothRslt = results[:, comp]
@@ -825,26 +976,32 @@ def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoot
 
     # Drop all NaN values and fill with nearest neighbor interpolation - only do this when
     # there are NaN values
-    smoothRslt = _fillMissingData_(results[:, CompID.XCoordID],
-                                   results[:, CompID.YCoordID], smoothRslt)
+    smoothRslt = _fillMissingData_(
+        results[:, CompID.XCoordID], results[:, CompID.YCoordID], smoothRslt
+    )
 
     # Apply Savitzky-Golay smoothing and reset the NaN values to indicate points not found
-    if derivative == 'none':
-        smoothRslt = sgolay2d(smoothRslt.reshape(
-            nCols, nRows), smoothWindow, smoothOrder)
+    if derivative == "none":
+        smoothRslt = sgolay2d(
+            smoothRslt.reshape(nCols, nRows), smoothWindow, smoothOrder
+        )
         smoothRslt[~mask.reshape(nCols, nRows)] = np.nan
-        smoothRslt = smoothRslt.reshape(-1, order='C')
+        smoothRslt = smoothRslt.reshape(-1, order="C")
 
         return smoothRslt
 
     # If we asked for the derivatives
-    elif derivative == 'both':
-        drdc, drdr = sgolay2d(smoothRslt.reshape(
-            nCols, nRows), smoothWindow, smoothOrder, derivative='both')
+    elif derivative == "both":
+        drdc, drdr = sgolay2d(
+            smoothRslt.reshape(nCols, nRows),
+            smoothWindow,
+            smoothOrder,
+            derivative="both",
+        )
         drdc[~mask.reshape(nCols, nRows)] = np.nan
         drdr[~mask.reshape(nCols, nRows)] = np.nan
-        drdc = drdc.reshape(-1, order='C') / float(stepSize)
-        drdr = drdr.reshape(-1, order='C') / float(stepSize)
+        drdc = drdc.reshape(-1, order="C") / float(stepSize)
+        drdr = drdr.reshape(-1, order="C") / float(stepSize)
 
         # Correct for subset step size
 
@@ -853,7 +1010,8 @@ def _smoothResults_(nRows, nCols, stepSize, results, comp, smoothWindow=3, smoot
     # Else throw an exception
     else:
         raise ValueError(
-            'Invalid derivative argument - only none or both are supported.')
+            "Invalid derivative argument - only none or both are supported."
+        )
 
 
 # --------------------------------------------------------------------------------------------
@@ -867,7 +1025,7 @@ def _fillMissingData_(dataX, dataY, dataVal):
       - dataVal (numpy.ndarray): Array of data values.
 
     Returns:
-      - numpy.ndarray: Array of data values with missing values filled using 
+      - numpy.ndarray: Array of data values with missing values filled using
         linear interpolation.
     """
 
@@ -880,16 +1038,21 @@ def _fillMissingData_(dataX, dataY, dataVal):
             # Setup the nearest neighbor interpolator
             # interp = LinearNDInterpolator(
             interp = NearestNDInterpolator(
-                list(zip(dataX[mask], dataY[mask])), dataVal[mask])
+                list(zip(dataX[mask], dataY[mask])), dataVal[mask]
+            )
 
             # Interpoloate all nan values
             dataVal[~mask] = interp(dataX[~mask], dataY[~mask])
 
         except Exception as e:
-            newMsg = 'Not enough matched subsets for smoothing.  For displacement data, '
-            newMsg += 'smoothing can be turned off by setting smoothWindow=0.  For strain data, '
-            newMsg += 'smoothing is required.  Try increasing the subset size or decreasing '
-            newMsg += 'the step size.'
+            newMsg = (
+                "Not enough matched subsets for smoothing.  For displacement data, "
+            )
+            newMsg += "smoothing can be turned off by setting smoothWindow=0.  For strain data, "
+            newMsg += (
+                "smoothing is required.  Try increasing the subset size or decreasing "
+            )
+            newMsg += "the step size."
 
             raise Exception(newMsg) from e
 
@@ -897,8 +1060,9 @@ def _fillMissingData_(dataX, dataY, dataVal):
 
 
 # --------------------------------------------------------------------------------------------
-def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
-                         ylabel, interpolate):
+def _createCutLineGraph_(
+    nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp, ylabel, interpolate
+):
     """
     Create a cut line graph based on the given data.  Used for both displacement and
     strain plots
@@ -933,12 +1097,13 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
     fig, ax = plt.subplots()
     colormap = plt.cm.hsv
     lsmap = ["-", ":", "--", "-."]
-    ax.set_prop_cycle(color=[colormap(i) for i in np.linspace(0, 1, len(cutValues))],
-                      ls=np.resize(lsmap, len(cutValues)))
+    ax.set_prop_cycle(
+        color=[colormap(i) for i in np.linspace(0, 1, len(cutValues))],
+        ls=np.resize(lsmap, len(cutValues)),
+    )
 
-   # Setup the data to plot - first the interpolation case
+    # Setup the data to plot - first the interpolation case
     if interpolate:
-
         # Fill missing data and setup the interpolator
         Z = _fillMissingData_(dataX, dataY, dataZ)
         Z = Z.reshape(nCols, nRows)
@@ -947,28 +1112,30 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
         # Setup the x and y data and create the plot depending on the cutComp
         if cutComp == CompID.XCoordID:
             # Setup the data
-            xlabel = 'y (pixels)'
+            xlabel = "y (pixels)"
             x = np.linspace(np.min(Y), np.max(Y), 101)
-            y = np.dot(np.ones((x.shape[0], 1)), np.array(
-                cutValues).reshape(1, len(cutValues)))
+            y = np.dot(
+                np.ones((x.shape[0], 1)), np.array(cutValues).reshape(1, len(cutValues))
+            )
 
             # Make the plots based on the interpolation
-            for col in range(0, y.shape[1]):
+            for col in range(y.shape[1]):
                 z = rbs.ev(y[:, col], x)
-                label = "x={0:d} px".format(cutValues[col])
+                label = f"x={cutValues[col]:d} px"
                 ax.plot(x, z, label=label)
 
         elif cutComp == CompID.YCoordID:
             # Setup the data
-            xlabel = 'x (pixels)'
+            xlabel = "x (pixels)"
             x = np.linspace(np.min(X), np.max(X), 101)
-            y = np.dot(np.ones((x.shape[0], 1)), np.array(
-                cutValues).reshape(1, len(cutValues)))
+            y = np.dot(
+                np.ones((x.shape[0], 1)), np.array(cutValues).reshape(1, len(cutValues))
+            )
 
             # Make the plots based on the interpolation
-            for col in range(0, y.shape[1]):
+            for col in range(y.shape[1]):
                 z = rbs.ev(x, y[:, col])
-                label = "y={0:d} px".format(cutValues[col])
+                label = f"y={cutValues[col]:d} px"
                 ax.plot(x, z, label=label)
 
         # Add the legend and the x, y labels
@@ -985,25 +1152,25 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
         indices = np.zeros_like(cutValues)
         if cutComp == CompID.XCoordID:
             # Setup the data
-            xlabel = 'y (pixels)'
+            xlabel = "y (pixels)"
             for idx, val in enumerate(cutValues):
                 indices[idx] = np.abs(X - val).argmin()
             x = Y
             y = Z[indices, :]
-            for i in range(0, len(cutValues)):
-                label = "x={0:d} px".format(int(X[indices[i]]))
+            for i in range(len(cutValues)):
+                label = f"x={int(X[indices[i]]):d} px"
                 ax.plot(x, y[i, :], label=label)
             ax.legend()
 
         elif cutComp == CompID.YCoordID:
             # Setup the data
-            xlabel = 'x (pixels)'
+            xlabel = "x (pixels)"
             for idx, val in enumerate(cutValues):
                 indices[idx] = np.abs(Y - val).argmin()
             x = X
             y = Z[:, indices]
-            for i in range(0, len(cutValues)):
-                label = "y={0:d} px".format(int(Y[indices[i]]))
+            for i in range(len(cutValues)):
+                label = f"y={int(Y[indices[i]]):d} px"
                 ax.plot(x, y[:, i], label=label)
             ax.legend()
 
@@ -1015,8 +1182,14 @@ def _createCutLineGraph_(nCols, nRows, dataX, dataY, dataZ, cutValues, cutComp,
 
 
 # --------------------------------------------------------------------------------------------
-def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
-                       smoothWindow=0, smoothOrder=2, interpolate=False):
+def getDispTimeHistory(
+    resultsFile,
+    points,
+    dispComp=DispComp.DISP_MAG,
+    smoothWindow=0,
+    smoothOrder=2,
+    interpolate=False,
+):
     """
     Calculate and return displacement time history data at one or more points for all
     image pairs in the results file.
@@ -1048,14 +1221,14 @@ def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
 
     # Validate displacement component
     if dispComp not in (DispComp.X_DISP, DispComp.Y_DISP, DispComp.DISP_MAG):
-        raise ValueError('Invalid dispComp argument - use the Comp object.')
+        raise ValueError("Invalid dispComp argument - use the Comp object.")
 
     # Validate points
     if not points or not isinstance(points, (list, tuple)):
-        raise ValueError('Points must be a non-empty list of (x, y) tuples.')
+        raise ValueError("Points must be a non-empty list of (x, y) tuples.")
     for p in points:
         if not isinstance(p, (list, tuple)) or len(p) != 2:
-            raise ValueError('Each point must be an (x, y) tuple.')
+            raise ValueError("Each point must be an (x, y) tuple.")
 
     # Open results file and get number of image pairs from the first subset dimension
     inFile = dataFile.DataFile.openReader(resultsFile)
@@ -1073,9 +1246,13 @@ def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
 
     # Loop over all image pairs and sample requested component at requested points
     for pairIdx in imgPairs:
-        results, nRows, nCols = getDisplacements(
-            resultsFile, int(pairIdx), dilation=0,
-            smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+        results, _, _ = getDisplacements(
+            resultsFile,
+            int(pairIdx),
+            dilation=0,
+            smoothWindow=smoothWindow,
+            smoothOrder=smoothOrder,
+        )
 
         dataX = results[:, CompID.XCoordID]
         dataY = results[:, CompID.YCoordID]
@@ -1086,14 +1263,15 @@ def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
             validMask = ~np.isnan(dataZ)
             if np.any(validMask):
                 interp = NearestNDInterpolator(
-                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask])
+                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask]
+                )
                 for i, (px, py) in enumerate(points):
                     dispHist[i, pairIdx] = float(interp(px, py))
             # usedPoints remain the requested points
         else:
             # Use nearest subset-point values
             for i, (px, py) in enumerate(points):
-                d2 = (dataX - px)**2 + (dataY - py)**2
+                d2 = (dataX - px) ** 2 + (dataY - py) ** 2
                 idx = int(np.argmin(d2))
                 dispHist[i, pairIdx] = dataZ[idx]
 
@@ -1105,10 +1283,18 @@ def getDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
 
 
 # --------------------------------------------------------------------------------------------
-def plotDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
-                        gridLines=True, showPlot=True, fileName='',
-                        smoothWindow=0, smoothOrder=2,
-                        interpolate=False, return_fig=False):
+def plotDispTimeHistory(
+    resultsFile,
+    points,
+    dispComp=DispComp.DISP_MAG,
+    gridLines=True,
+    showPlot=True,
+    fileName="",
+    smoothWindow=0,
+    smoothOrder=2,
+    interpolate=False,
+    return_fig=False,
+):
     """
     Plot displacement time history for one or more points. The x-axis is image pair index
     and the y-axis is the requested displacement component.
@@ -1136,28 +1322,33 @@ def plotDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
 
     # Get time history data
     imgPairs, dispHist, usedPoints = getDispTimeHistory(
-        resultsFile, points, dispComp=dispComp,
-        smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate)
+        resultsFile,
+        points,
+        dispComp=dispComp,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        interpolate=interpolate,
+    )
 
     # Setup y label
     if dispComp == DispComp.DISP_MAG:
-        ylabel = 'Displacement Magnitude (pixels)'
+        ylabel = "Displacement Magnitude (pixels)"
     elif dispComp == DispComp.X_DISP:
-        ylabel = 'Displacement X (pixels)'
+        ylabel = "Displacement X (pixels)"
     elif dispComp == DispComp.Y_DISP:
-        ylabel = 'Displacement Y (pixels)'
+        ylabel = "Displacement Y (pixels)"
     else:
-        raise ValueError('Invalid dispComp argument - use the Comp object.')
+        raise ValueError("Invalid dispComp argument - use the Comp object.")
 
     # Create figure
     fig, ax = plt.subplots()
 
     # Plot each point history
     for i, p in enumerate(usedPoints):
-        label = "x={0:.1f}, y={1:.1f}".format(p[0], p[1])
+        label = f"x={p[0]:.1f}, y={p[1]:.1f}"
         ax.plot(imgPairs, dispHist[i, :], label=label)
 
-    ax.set_xlabel('Image pair index')
+    ax.set_xlabel("Image pair index")
     ax.set_ylabel(ylabel)
     ax.legend()
 
@@ -1174,9 +1365,16 @@ def plotDispTimeHistory(resultsFile, points, dispComp=DispComp.DISP_MAG,
     if return_fig:
         return fig
 
+
 # --------------------------------------------------------------------------------------------
-def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
-                         smoothWindow=9, smoothOrder=2, interpolate=False):
+def getStrainTimeHistory(
+    resultsFile,
+    points,
+    strainComp=StrainComp.VM_STRAIN,
+    smoothWindow=9,
+    smoothOrder=2,
+    interpolate=False,
+):
     """
     Calculate and return strain time history data at one or more points for all
     image pairs in the results file.
@@ -1206,16 +1404,20 @@ def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
     """
 
     # Validate strain component
-    if strainComp not in (StrainComp.X_STRAIN, StrainComp.Y_STRAIN,
-                          StrainComp.SHEAR_STRAIN, StrainComp.VM_STRAIN):
-        raise ValueError('Invalid strainComp argument - use the Comp object.')
+    if strainComp not in (
+        StrainComp.X_STRAIN,
+        StrainComp.Y_STRAIN,
+        StrainComp.SHEAR_STRAIN,
+        StrainComp.VM_STRAIN,
+    ):
+        raise ValueError("Invalid strainComp argument - use the Comp object.")
 
     # Validate points
     if not points or not isinstance(points, (list, tuple)):
-        raise ValueError('points must be a non-empty list of (x, y) tuples.')
+        raise ValueError("points must be a non-empty list of (x, y) tuples.")
     for p in points:
         if not isinstance(p, (list, tuple)) or len(p) != 2:
-            raise ValueError('Each point must be an (x, y) tuple.')
+            raise ValueError("Each point must be an (x, y) tuple.")
 
     # Open results file and get number of image pairs from the first subset dimension
     inFile = dataFile.DataFile.openReader(resultsFile)
@@ -1234,8 +1436,12 @@ def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
     # Loop over all image pairs and sample requested component at requested points
     for pairIdx in imgPairs:
         results, _, _ = getStrains(
-            resultsFile, int(pairIdx), dilation=0,
-            smoothWindow=smoothWindow, smoothOrder=smoothOrder)
+            resultsFile,
+            int(pairIdx),
+            dilation=0,
+            smoothWindow=smoothWindow,
+            smoothOrder=smoothOrder,
+        )
 
         dataX = results[:, CompID.XCoordID]
         dataY = results[:, CompID.YCoordID]
@@ -1246,14 +1452,15 @@ def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
             validMask = ~np.isnan(dataZ)
             if np.any(validMask):
                 interp = NearestNDInterpolator(
-                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask])
+                    list(zip(dataX[validMask], dataY[validMask])), dataZ[validMask]
+                )
                 for i, (px, py) in enumerate(points):
                     strainHist[i, pairIdx] = float(interp(px, py))
             # usedPoints remain the requested points
         else:
             # Use nearest subset-point values
             for i, (px, py) in enumerate(points):
-                d2 = (dataX - px)**2 + (dataY - py)**2
+                d2 = (dataX - px) ** 2 + (dataY - py) ** 2
                 idx = int(np.argmin(d2))
                 strainHist[i, pairIdx] = dataZ[idx]
 
@@ -1265,10 +1472,18 @@ def getStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
 
 
 # --------------------------------------------------------------------------------------------
-def plotStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
-                          gridLines=True, showPlot=True, fileName='',
-                          smoothWindow=9, smoothOrder=2,
-                          interpolate=False, return_fig=False):
+def plotStrainTimeHistory(
+    resultsFile,
+    points,
+    strainComp=StrainComp.VM_STRAIN,
+    gridLines=True,
+    showPlot=True,
+    fileName="",
+    smoothWindow=9,
+    smoothOrder=2,
+    interpolate=False,
+    return_fig=False,
+):
     """
     Plot strain time history for one or more points. The x-axis is image pair index
     and the y-axis is the requested strain component.
@@ -1295,30 +1510,35 @@ def plotStrainTimeHistory(resultsFile, points, strainComp=StrainComp.VM_STRAIN,
 
     # Get time history data
     imgPairs, strainHist, usedPoints = getStrainTimeHistory(
-        resultsFile, points, strainComp=strainComp,
-        smoothWindow=smoothWindow, smoothOrder=smoothOrder, interpolate=interpolate)
+        resultsFile,
+        points,
+        strainComp=strainComp,
+        smoothWindow=smoothWindow,
+        smoothOrder=smoothOrder,
+        interpolate=interpolate,
+    )
 
     # Setup y label
     if strainComp == StrainComp.SHEAR_STRAIN:
-        ylabel = 'Strain (XY component)'
+        ylabel = "Strain (XY component)"
     elif strainComp == StrainComp.X_STRAIN:
-        ylabel = 'Strain (X component)'
+        ylabel = "Strain (X component)"
     elif strainComp == StrainComp.Y_STRAIN:
-        ylabel = 'Strain (Y component)'
+        ylabel = "Strain (Y component)"
     elif strainComp == StrainComp.VM_STRAIN:
-        ylabel = 'Strain (Von Mises)'
+        ylabel = "Strain (Von Mises)"
     else:
-        raise ValueError('Invalid strainComp argument - use the Comp object.')
+        raise ValueError("Invalid strainComp argument - use the Comp object.")
 
     # Create figure
     fig, ax = plt.subplots()
 
     # Plot each point history
     for i, p in enumerate(usedPoints):
-        label = "x={0:.1f}, y={1:.1f}".format(p[0], p[1])
+        label = f"x={p[0]:.1f}, y={p[1]:.1f}"
         ax.plot(imgPairs, strainHist[i, :], label=label)
 
-    ax.set_xlabel('Image pair index')
+    ax.set_xlabel("Image pair index")
     ax.set_ylabel(ylabel)
     ax.legend()
 

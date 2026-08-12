@@ -11,7 +11,7 @@ __version__ = "0.0.35b"
 #        - Added an option to only save the required data for post-porocessing and to
 #          compress the results file to save disk space
 # 0.0.33 - Resolved dependency issue with headless opencv and AKAZE
-#        - Add post-processing functions to obtain displacement and strain time history 
+#        - Add post-processing functions to obtain displacement and strain time history
 #          at specific points.  Both data and plots can be generated.
 #        - Updated the example Jupyter notebook file and manual accordingly.
 #        - Updated the GUI to support this new functionality as well.
@@ -38,9 +38,9 @@ __version__ = "0.0.35b"
 # 0.0.27 - Updated copy_examples
 #        - Added dilation support for displacement field to post-processing to help create
 #          exclusion zone around automatically detected boundaries in the ROI
-#        - Added dilation support to GUI as well 
+#        - Added dilation support to GUI as well
 #        - Update ROI in GUI to work with latest PyQT libraries
-# 0.0.26 - Updated requirements file and added pyproject.toml installation 
+# 0.0.26 - Updated requirements file and added pyproject.toml installation
 #          support
 # 0.0.25 - Fixed bug in post-processing that caused an exception when
 #          not enough matched subsets were found for smoothing

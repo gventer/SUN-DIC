@@ -6,10 +6,10 @@
 # Date: 2025/04/14
 ################################################################################
 
-from pathlib import Path
-import shutil
 import argparse
+import shutil
 from importlib.resources import files
+from pathlib import Path
 
 
 def _copy_resource(source, target: Path) -> None:

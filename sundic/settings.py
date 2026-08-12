@@ -1,5 +1,6 @@
-import os
 import configparser
+import os
+
 import sundic.util.datafile as dataFile
 
 
@@ -12,15 +13,15 @@ class Settings:
 
     # Define the default class variables
     __defDebugLevel = 0
-    __defDataSaveMode = 'DispOnly'
+    __defDataSaveMode = "DispOnly"
     __defDataCompression = True
-    __defImageFolder = 'images'
+    __defImageFolder = "images"
     __defCPUCount = 1
-    __defDICType = 'Planar'
+    __defDICType = "Planar"
     __defSubsetSize = 33
     __defStepSize = 5
-    __defShapeFunctions = 'Affine'
-    __defReferenceStrategy = 'Relative'
+    __defShapeFunctions = "Affine"
+    __defReferenceStrategy = "Relative"
     __defStartingPoints = 4
     __defGaussianBlurSize = 5
     __defGaussianBlurStdDev = 0.0
@@ -29,12 +30,12 @@ class Settings:
     __defIncrement = 1
     __defROI = [0, 0, 0, 0]
     __defBackgroundCutoff = 25
-    __defOptimizationAlgorithm = 'IC-GN'
+    __defOptimizationAlgorithm = "IC-GN"
     __defMaxIterations = 50
     __defInterpolationOrder = 3
     __defConvergenceThreshold = 0.0001
     __defNZCCThreshold = 0.999
-    __defMaskFile = ''
+    __defMaskFile = ""
 
     # --------------------------------------------------------------------------------------------
 
@@ -70,7 +71,7 @@ class Settings:
     # --------------------------------------------------------------------------------------------
 
     @classmethod
-    def fromSettingsFile(cls, filename='settings.ini'):
+    def fromSettingsFile(cls, filename="settings.ini"):
         """
         Load the settings object from a configuration file.
 
@@ -93,7 +94,7 @@ class Settings:
         Load the settings object from a file in MsgPack format.
 
         Args:
-            filename (str): The name of the file to load the MsgPack 
+            filename (str): The name of the file to load the MsgPack
                 data from.
 
         Returns:
@@ -126,42 +127,44 @@ class Settings:
         """
         String representation of the object data values.
         """
-        retStr = '\nDIC Job Settings:\n'
-        retStr += '------------------------------------------------\n'
-        retStr += "  %25s : %s\n" % ('Debug Level', str(self.DebugLevel))
-        retStr += "  %25s : %s\n" % ('Data Save Mode', str(self.DataSaveMode))
-        retStr += "  %25s : %s\n" % ('Data Compression', str(self.DataCompression))
-        retStr += "  %25s : %s\n" % ('Image Folder', str(self.ImageFolder))
-        retStr += "  %25s : %s\n" % ('CPU Count', str(self.CPUCount))
-        retStr += "  %25s : %s\n" % ('DIC Type', str(self.DICType))
-        retStr += "  %25s : %s\n" % ('Subset Size', str(self.SubsetSize))
-        retStr += "  %25s : %s\n" % ('Step Size', str(self.StepSize))
-        retStr += "  %25s : %s\n" % ('Shape Functions',
-                                     str(self.ShapeFunctions))
-        retStr += "  %25s : %s\n" % ('Reference Strategy',
-                                     str(self.ReferenceStrategy))
-        retStr += "  %25s : %s\n" % ('Starting Points',
-                                     str(self.StartingPoints))
-        retStr += "  %25s : %s\n" % ('Gaussian Blur Size',
-                                     str(self.GaussianBlurSize))
-        retStr += "  %25s : %s\n" % \
-            ('Gaussian Blur StdDev', str(self.GaussianBlurStdDev))
-        retStr += "  %25s : %s\n" % ('Datum Image', str(self.DatumImage))
-        retStr += "  %25s : %s\n" % ('Target Image', str(self.TargetImage))
-        retStr += "  %25s : %s\n" % ('Increment', str(self.Increment))
-        retStr += "  %25s : %s\n" % ('ROI', str(self.ROI))
-        retStr += "  %25s : %s\n" % ('Background Cutoff',
-                                     str(self.BackgroundCutoff))
-        retStr += "  %25s : %s\n" % ('Mask File', str(self.MaskFile))
-        retStr += "  %25s : %s\n" % \
-            ('Optimization Algorithm', str(self.OptimizationAlgorithm))
-        retStr += "  %25s : %s\n" % ('Max Iterations', str(self.MaxIterations))
-        retStr += "  %25s : %s\n" % ('Interpolation Order',
-                                     str(self.InterpolationOrder))
-        retStr += "  %25s : %s\n" % \
-            ('Convergence Threshold', str(self.ConvergenceThreshold))
-        retStr += "  %25s : %s\n" % \
-            ('NZCC Threshold', str(self.NZCCThreshold))
+        retStr = "\nDIC Job Settings:\n"
+        retStr += "------------------------------------------------\n"
+        retStr += "  %25s : %s\n" % ("Debug Level", str(self.DebugLevel))
+        retStr += "  %25s : %s\n" % ("Data Save Mode", str(self.DataSaveMode))
+        retStr += "  %25s : %s\n" % ("Data Compression", str(self.DataCompression))
+        retStr += "  %25s : %s\n" % ("Image Folder", str(self.ImageFolder))
+        retStr += "  %25s : %s\n" % ("CPU Count", str(self.CPUCount))
+        retStr += "  %25s : %s\n" % ("DIC Type", str(self.DICType))
+        retStr += "  %25s : %s\n" % ("Subset Size", str(self.SubsetSize))
+        retStr += "  %25s : %s\n" % ("Step Size", str(self.StepSize))
+        retStr += "  %25s : %s\n" % ("Shape Functions", str(self.ShapeFunctions))
+        retStr += "  %25s : %s\n" % ("Reference Strategy", str(self.ReferenceStrategy))
+        retStr += "  %25s : %s\n" % ("Starting Points", str(self.StartingPoints))
+        retStr += "  %25s : %s\n" % ("Gaussian Blur Size", str(self.GaussianBlurSize))
+        retStr += "  %25s : %s\n" % (
+            "Gaussian Blur StdDev",
+            str(self.GaussianBlurStdDev),
+        )
+        retStr += "  %25s : %s\n" % ("Datum Image", str(self.DatumImage))
+        retStr += "  %25s : %s\n" % ("Target Image", str(self.TargetImage))
+        retStr += "  %25s : %s\n" % ("Increment", str(self.Increment))
+        retStr += "  %25s : %s\n" % ("ROI", str(self.ROI))
+        retStr += "  %25s : %s\n" % ("Background Cutoff", str(self.BackgroundCutoff))
+        retStr += "  %25s : %s\n" % ("Mask File", str(self.MaskFile))
+        retStr += "  %25s : %s\n" % (
+            "Optimization Algorithm",
+            str(self.OptimizationAlgorithm),
+        )
+        retStr += "  %25s : %s\n" % ("Max Iterations", str(self.MaxIterations))
+        retStr += "  %25s : %s\n" % (
+            "Interpolation Order",
+            str(self.InterpolationOrder),
+        )
+        retStr += "  %25s : %s\n" % (
+            "Convergence Threshold",
+            str(self.ConvergenceThreshold),
+        )
+        retStr += "  %25s : %s\n" % ("NZCC Threshold", str(self.NZCCThreshold))
 
         return retStr
 
@@ -172,7 +175,7 @@ class Settings:
         Load the settings object from a file in MsgPack format.
 
         Args:
-            filename (str): The name of the file to load the MsgPack 
+            filename (str): The name of the file to load the MsgPack
                 data from.
         """
         # Read msgpack file back
@@ -206,10 +209,7 @@ class Settings:
         Returns:
             - bool: True if the reference strategy is relative, False otherwise.
         """
-        if self.ReferenceStrategy == 'Relative':
-            return True
-        else:
-            return False
+        return self.ReferenceStrategy == "Relative"
 
     # --------------------------------------------------------------------------------------------
 
@@ -220,10 +220,7 @@ class Settings:
         Returns:
             - bool: True if the reference strategy is absolute, False otherwise.
         """
-        if self.ReferenceStrategy == 'Absolute':
-            return True
-        else:
-            return False
+        return self.ReferenceStrategy == "Absolute"
 
     # --------------------------------------------------------------------------------------------
 
@@ -234,10 +231,7 @@ class Settings:
         Returns:
             - bool: True if the optimization algorithm is the Gauss-Newton method, False otherwise.
         """
-        if self.OptimizationAlgorithm == 'IC-GN':
-            return True
-        else:
-            return False
+        return self.OptimizationAlgorithm == "IC-GN"
 
     # --------------------------------------------------------------------------------------------
 
@@ -248,10 +242,7 @@ class Settings:
         Returns:
             - bool: True if the optimization algorithm is the Levenberg-Marquardt method, False otherwise.
         """
-        if self.OptimizationAlgorithm == 'IC-LM':
-            return True
-        else:
-            return False
+        return self.OptimizationAlgorithm == "IC-LM"
 
     # --------------------------------------------------------------------------------------------
     def isFastICLM(self):
@@ -261,11 +252,7 @@ class Settings:
         Returns:
             - bool: True if the optimization algorithm is the fast Levenberg-Marquardt method, False otherwise.
         """
-        if self.OptimizationAlgorithm == 'Fast-IC-LM':
-            return True
-        else:
-            return False
-        
+        return self.OptimizationAlgorithm == "Fast-IC-LM"
 
     # --------------------------------------------------------------------------------------------
     def hasMask(self):
@@ -276,10 +263,9 @@ class Settings:
             - bool: True if a mask file was defined, False otherwise.
         """
         return isinstance(self.MaskFile, str) and len(self.MaskFile.strip()) > 0
-    
 
     # --------------------------------------------------------------------------------------------
-    def loadSettings(self, configFile='settings.ini'):
+    def loadSettings(self, configFile="settings.ini"):
         """
         Load the DIC settings from a configuration file and return them as a dictionary.
         The settings file name is obtained from the constant CONFIG_FILENAME.
@@ -291,175 +277,207 @@ class Settings:
             - ValueError: If the settings file contains invalid values.
         """
         # Load the configuration file containing the DIC settings
-        cp = configparser.ConfigParser(converters={'intlist': lambda x: [
-            int(i.strip()) for i in x.split(',')] if len(x) > 0 else []})
+        cp = configparser.ConfigParser(
+            converters={
+                "intlist": lambda x: (
+                    [int(i.strip()) for i in x.split(",")] if len(x) > 0 else []
+                )
+            }
+        )
         cp.read(configFile)
 
         # -- General -----------------------------------------------------------------------------
         self.DebugLevel = cp.getint(
-            'General', 'DebugLevel', fallback=self.__defDebugLevel)
+            "General", "DebugLevel", fallback=self.__defDebugLevel
+        )
         if self.DebugLevel < 0:
             self.DebugLevel = 0
-            print('WARNING: Config Parser - DebugLevel set to minimum value of 0')
+            print("WARNING: Config Parser - DebugLevel set to minimum value of 0")
         if self.DebugLevel > 2:
             self.DebugLevel = 2
-            print('WARNING: Config Parser - DebugLevel set to maximum value of 2')
+            print("WARNING: Config Parser - DebugLevel set to maximum value of 2")
 
         self.DataSaveMode = cp.get(
-            'General', 'DataSaveMode', fallback=self.__defDataSaveMode)
-        if self.DataSaveMode not in ['DispOnly', 'All']:
-            raise ValueError('Config Parser:  DataSaveMode must be DispOnly or All')
-        
-        self.DataCompression = cp.getboolean(
-            'General', 'DataCompression', fallback=self.__defDataCompression)
-        
-        self.ImageFolder = cp.get(
-            'General', 'ImageFolder', fallback=self.__defImageFolder)
-        if not os.path.isdir(self.ImageFolder):
-            raise ValueError('Config Parser:  Image folder does not exist')
+            "General", "DataSaveMode", fallback=self.__defDataSaveMode
+        )
+        if self.DataSaveMode not in ["DispOnly", "All"]:
+            raise ValueError("Config Parser:  DataSaveMode must be DispOnly or All")
 
-        self.CPUCount = cp.get('General', 'CPUCount',
-                               fallback=self.__defCPUCount).lower()
-        if self.CPUCount == 'auto':
+        self.DataCompression = cp.getboolean(
+            "General", "DataCompression", fallback=self.__defDataCompression
+        )
+
+        self.ImageFolder = cp.get(
+            "General", "ImageFolder", fallback=self.__defImageFolder
+        )
+        if not os.path.isdir(self.ImageFolder):
+            raise ValueError("Config Parser:  Image folder does not exist")
+
+        self.CPUCount = cp.get(
+            "General", "CPUCount", fallback=self.__defCPUCount
+        ).lower()
+        if self.CPUCount == "auto":
             self.CPUCount = os.cpu_count()
         else:
             self.CPUCount = int(self.CPUCount)
 
         if self.CPUCount < 1:
-            raise ValueError('Config Parser:  CPUCount must be greater than 0')
+            raise ValueError("Config Parser:  CPUCount must be greater than 0")
 
-        self.DICType = cp.get('General', 'DICType', fallback=self.__defDICType)
-        if self.DICType not in ['Planar', 'Stereo']:
-            raise ValueError(
-                'Config Parser:  DICType must be Planar or Stereo')
+        self.DICType = cp.get("General", "DICType", fallback=self.__defDICType)
+        if self.DICType not in ["Planar", "Stereo"]:
+            raise ValueError("Config Parser:  DICType must be Planar or Stereo")
 
         # -- DICSettings -------------------------------------------------------------------------
         self.SubsetSize = cp.getint(
-            'DICSettings', 'SubSetSize', fallback=self.__defSubsetSize)
+            "DICSettings", "SubSetSize", fallback=self.__defSubsetSize
+        )
         if self.SubsetSize < 1:
-            raise ValueError(
-                'Config Parser:  Subset size must be greater than 0')
+            raise ValueError("Config Parser:  Subset size must be greater than 0")
         if self.SubsetSize % 2 == 0:
-            raise ValueError(
-                'Config Parser:  Subset size must be an odd number')
+            raise ValueError("Config Parser:  Subset size must be an odd number")
 
         self.StepSize = cp.getint(
-            'DICSettings', 'StepSize', fallback=self.__defStepSize)
+            "DICSettings", "StepSize", fallback=self.__defStepSize
+        )
         if self.StepSize < 1:
-            raise ValueError(
-                'Config Parser:  Step size must be greater than 0')
+            raise ValueError("Config Parser:  Step size must be greater than 0")
 
         self.ShapeFunctions = cp.get(
-            'DICSettings', 'ShapeFunctions', fallback=self.__defShapeFunctions)
-        if self.ShapeFunctions not in ['Affine', 'Quadratic']:
+            "DICSettings", "ShapeFunctions", fallback=self.__defShapeFunctions
+        )
+        if self.ShapeFunctions not in ["Affine", "Quadratic"]:
             raise ValueError(
-                'Config Parser:  ShapeFunctions must be Affine or Quadratic')
+                "Config Parser:  ShapeFunctions must be Affine or Quadratic"
+            )
 
         self.ReferenceStrategy = cp.get(
-            'DICSettings', 'ReferenceStrategy', fallback=self.__defReferenceStrategy)
-        if self.ReferenceStrategy not in ['Relative', 'Absolute']:
+            "DICSettings", "ReferenceStrategy", fallback=self.__defReferenceStrategy
+        )
+        if self.ReferenceStrategy not in ["Relative", "Absolute"]:
             raise ValueError(
-                'Config Parser:  ReferenceStrategy must be Relative or Absolute')
+                "Config Parser:  ReferenceStrategy must be Relative or Absolute"
+            )
 
         self.StartingPoints = cp.getint(
-            'DICSettings', 'StartingPoints', fallback=self.__defStartingPoints)
+            "DICSettings", "StartingPoints", fallback=self.__defStartingPoints
+        )
         if self.StartingPoints < 1:
-            raise ValueError(
-                'Config Parser:  StartingPoints be greater than 0')
+            raise ValueError("Config Parser:  StartingPoints be greater than 0")
 
         # -- PreProcess --------------------------------------------------------------------------
         self.GaussianBlurSize = cp.getint(
-            'PreProcess', 'GaussianBlurSize', fallback=self.__defGaussianBlurSize)
+            "PreProcess", "GaussianBlurSize", fallback=self.__defGaussianBlurSize
+        )
         if self.GaussianBlurSize < 0:
             raise ValueError(
-                'Config Parser:  GaussianBlurSize must be greater than or equal to 0')
+                "Config Parser:  GaussianBlurSize must be greater than or equal to 0"
+            )
         if self.GaussianBlurSize % 2 == 0 and self.GaussianBlurSize > 0:
-            raise ValueError(
-                'Config Parser:  GaussianBlurSize must be an odd number')
+            raise ValueError("Config Parser:  GaussianBlurSize must be an odd number")
 
         self.GaussianBlurStdDev = cp.getfloat(
-            'PreProcess', 'GaussianBlurStdDev', fallback=self.__defGaussianBlurStdDev)
+            "PreProcess", "GaussianBlurStdDev", fallback=self.__defGaussianBlurStdDev
+        )
         if self.GaussianBlurStdDev < 0:
             raise ValueError(
-                'Config Parser:  GaussianBlurStdDev must be greater than or equal to 0.0')
+                "Config Parser:  GaussianBlurStdDev must be greater than or equal to 0.0"
+            )
 
         # -- ImageSetDefinition ------------------------------------------------------------------
         self.DatumImage = cp.getint(
-            'ImageSetDefinition', 'DatumImage', fallback=self.__defDatumImage)
+            "ImageSetDefinition", "DatumImage", fallback=self.__defDatumImage
+        )
         if self.DatumImage < 0:
             raise ValueError(
-                'Config Parser:  DatumImage must be greater than or equal to 0')
+                "Config Parser:  DatumImage must be greater than or equal to 0"
+            )
 
         self.TargetImage = cp.getint(
-            'ImageSetDefinition', 'TargetImage', fallback=self.__defTargetImage)
+            "ImageSetDefinition", "TargetImage", fallback=self.__defTargetImage
+        )
         if (self.TargetImage != -1) and (self.TargetImage < self.DatumImage):
             raise ValueError(
-                'Config Parser:  TargetImage must be greater than DatumImage')
+                "Config Parser:  TargetImage must be greater than DatumImage"
+            )
 
         self.Increment = cp.getint(
-            'ImageSetDefinition', 'Increment', fallback=self.__defIncrement)
+            "ImageSetDefinition", "Increment", fallback=self.__defIncrement
+        )
         if self.Increment < 1:
-            raise ValueError(
-                'Config Parser:  Increment must be greater than 0')
+            raise ValueError("Config Parser:  Increment must be greater than 0")
 
-        self.ROI = cp.getintlist('ImageSetDefinition',
-                                 'ROI', fallback=self.__defROI)
+        self.ROI = cp.getintlist("ImageSetDefinition", "ROI", fallback=self.__defROI)
         if min(self.ROI) < 0:
             raise ValueError(
-                'Config Parser:  ROI values must be greater than or equal to 0')
+                "Config Parser:  ROI values must be greater than or equal to 0"
+            )
 
         self.BackgroundCutoff = cp.getint(
-            'ImageSetDefinition', 'BackgroundCutoff', fallback=self.__defBackgroundCutoff)
+            "ImageSetDefinition",
+            "BackgroundCutoff",
+            fallback=self.__defBackgroundCutoff,
+        )
         if self.BackgroundCutoff < 0:
             raise ValueError(
-                'Config Parser:  BackgroundCutoff value must be greater than or equal to 0')
-        
+                "Config Parser:  BackgroundCutoff value must be greater than or equal to 0"
+            )
+
         self.MaskFile = cp.get(
-            'ImageSetDefinition', 'MaskFile', fallback=self.__defMaskFile)
+            "ImageSetDefinition", "MaskFile", fallback=self.__defMaskFile
+        )
         # Check if the maskFile exists if it is not empty
         if self.MaskFile and not os.path.isfile(self.MaskFile):
-            raise ValueError(
-                'Config Parser:  Specified MaskFile does not exist')
+            raise ValueError("Config Parser:  Specified MaskFile does not exist")
 
         # -- Optimization ------------------------------------------------------------------------
         # Initialization of optimisation routine
         self.OptimizationAlgorithm = cp.get(
-            'Optimisation', 'OptimizationAlgorithm', fallback=self.__defOptimizationAlgorithm)
-        if self.OptimizationAlgorithm not in ['IC-GN', 'IC-LM', 'Fast-IC-LM']:
+            "Optimisation",
+            "OptimizationAlgorithm",
+            fallback=self.__defOptimizationAlgorithm,
+        )
+        if self.OptimizationAlgorithm not in ["IC-GN", "IC-LM", "Fast-IC-LM"]:
             raise ValueError(
-                'Config Parser:  OptimizationAlgorithm must be IC-GN , IC-LM or Fast-IC-LM')
+                "Config Parser:  OptimizationAlgorithm must be IC-GN , IC-LM or Fast-IC-LM"
+            )
 
         self.MaxIterations = cp.getint(
-            'Optimisation', 'MaxIterations', fallback=self.__defMaxIterations)
+            "Optimisation", "MaxIterations", fallback=self.__defMaxIterations
+        )
         if self.MaxIterations < 1:
-            raise ValueError(
-                'Config Parser:  MaxIterations must be greater than 0')
+            raise ValueError("Config Parser:  MaxIterations must be greater than 0")
 
         self.InterpolationOrder = cp.getint(
-            'Optimisation', 'InterpolationOrder', fallback=self.__defInterpolationOrder)
+            "Optimisation", "InterpolationOrder", fallback=self.__defInterpolationOrder
+        )
         if self.InterpolationOrder not in [3, 5]:
-            raise ValueError(
-                'Config Parser:  InterpolationOrder must be either 3 or 5')
+            raise ValueError("Config Parser:  InterpolationOrder must be either 3 or 5")
 
         self.ConvergenceThreshold = cp.getfloat(
-            'Optimisation', 'ConvergenceThreshold', fallback=self.__defConvergenceThreshold)
+            "Optimisation",
+            "ConvergenceThreshold",
+            fallback=self.__defConvergenceThreshold,
+        )
         if self.ConvergenceThreshold < 0:
             raise ValueError(
-                'Config Parser:  ConvergenceThreshold must be greater than or equal to 0')
+                "Config Parser:  ConvergenceThreshold must be greater than or equal to 0"
+            )
 
         self.NZCCThreshold = cp.getfloat(
-            'Optimisation', 'NZCCThreshold', fallback=self.__defNZCCThreshold)
+            "Optimisation", "NZCCThreshold", fallback=self.__defNZCCThreshold
+        )
         if self.NZCCThreshold < 0:
             raise ValueError(
-                'Config Parser:  NZCCThreshold must be greater than or equal to 0')
+                "Config Parser:  NZCCThreshold must be greater than or equal to 0"
+            )
 
         # Perform Debug output if requested - print all values in dictionary
         if self.DebugLevel > 1:
             print(self.__repr__())
 
-
     # --------------------------------------------------------------------------------------------
-    def saveSettings(self, configFile='settings.ini'):
+    def saveSettings(self, configFile="settings.ini"):
         """
         Save the current DIC settings to a configuration file.
 
@@ -468,45 +486,44 @@ class Settings:
         """
         cp = configparser.ConfigParser()
 
-        cp['General'] = {
-            'DebugLevel': str(self.DebugLevel),
-            'DataSaveMode': str(self.DataSaveMode),
-            'DataCompression': str(self.DataCompression),
-            'ImageFolder': str(self.ImageFolder),
-            'CPUCount': str(self.CPUCount),
-            'DICType': str(self.DICType),
+        cp["General"] = {
+            "DebugLevel": str(self.DebugLevel),
+            "DataSaveMode": str(self.DataSaveMode),
+            "DataCompression": str(self.DataCompression),
+            "ImageFolder": str(self.ImageFolder),
+            "CPUCount": str(self.CPUCount),
+            "DICType": str(self.DICType),
         }
 
-        cp['DICSettings'] = {
-            'SubSetSize': str(self.SubsetSize),
-            'StepSize': str(self.StepSize),
-            'ShapeFunctions': str(self.ShapeFunctions),
-            'ReferenceStrategy': str(self.ReferenceStrategy),
-            'StartingPoints': str(self.StartingPoints),
+        cp["DICSettings"] = {
+            "SubSetSize": str(self.SubsetSize),
+            "StepSize": str(self.StepSize),
+            "ShapeFunctions": str(self.ShapeFunctions),
+            "ReferenceStrategy": str(self.ReferenceStrategy),
+            "StartingPoints": str(self.StartingPoints),
         }
 
-        cp['PreProcess'] = {
-            'GaussianBlurSize': str(self.GaussianBlurSize),
-            'GaussianBlurStdDev': str(self.GaussianBlurStdDev),
+        cp["PreProcess"] = {
+            "GaussianBlurSize": str(self.GaussianBlurSize),
+            "GaussianBlurStdDev": str(self.GaussianBlurStdDev),
         }
 
-        cp['ImageSetDefinition'] = {
-            'DatumImage': str(self.DatumImage),
-            'TargetImage': str(self.TargetImage),
-            'Increment': str(self.Increment),
-            'ROI': ', '.join(str(v) for v in self.ROI),
-            'BackgroundCutoff': str(self.BackgroundCutoff),
-            'MaskFile': str(self.MaskFile),
+        cp["ImageSetDefinition"] = {
+            "DatumImage": str(self.DatumImage),
+            "TargetImage": str(self.TargetImage),
+            "Increment": str(self.Increment),
+            "ROI": ", ".join(str(v) for v in self.ROI),
+            "BackgroundCutoff": str(self.BackgroundCutoff),
+            "MaskFile": str(self.MaskFile),
         }
 
-        cp['Optimisation'] = {
-            'OptimizationAlgorithm': str(self.OptimizationAlgorithm),
-            'MaxIterations': str(self.MaxIterations),
-            'InterpolationOrder': str(self.InterpolationOrder),
-            'ConvergenceThreshold': str(self.ConvergenceThreshold),
-            'NZCCThreshold': str(self.NZCCThreshold),
+        cp["Optimisation"] = {
+            "OptimizationAlgorithm": str(self.OptimizationAlgorithm),
+            "MaxIterations": str(self.MaxIterations),
+            "InterpolationOrder": str(self.InterpolationOrder),
+            "ConvergenceThreshold": str(self.ConvergenceThreshold),
+            "NZCCThreshold": str(self.NZCCThreshold),
         }
 
-        with open(configFile, 'w', encoding='utf-8') as f:
+        with open(configFile, "w", encoding="utf-8") as f:
             cp.write(f)
-        

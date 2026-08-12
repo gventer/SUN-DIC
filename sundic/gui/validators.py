@@ -1,15 +1,15 @@
 from PyQt6 import QtGui
-from PyQt6.QtGui import QValidator, QIntValidator, QDoubleValidator
+from PyQt6.QtGui import QIntValidator, QValidator
 
 
 class OddNumberValidator(QValidator):
-    """ Custom OddNumberValidator - with upper and lower bounds that are optional
-        but inclusive.
+    """Custom OddNumberValidator - with upper and lower bounds that are optional
+    but inclusive.
     """
 
     # ---------------------------------------------------------------------------
     def __init__(self, minVal=None, maxVal=None):
-        """ Validator to ensure input is an odd integer within optional min and max bounds.
+        """Validator to ensure input is an odd integer within optional min and max bounds.
         Args:
             minVal (int, optional): Minimum acceptable value. Defaults to None.
             maxVal (int, optional): Maximum acceptable value. Defaults to None.
@@ -21,7 +21,7 @@ class OddNumberValidator(QValidator):
 
     # ---------------------------------------------------------------------------
     def validate(self, input_str, pos):
-        """ Validate the input string.
+        """Validate the input string.
         Args:
             input_str (str): The input string to validate.
             pos (int): The current cursor position.
@@ -35,23 +35,25 @@ class OddNumberValidator(QValidator):
         if not input_str.isdigit():
             return (QValidator.State.Invalid, input_str, pos)
 
-        if input_str.startswith('0'):
+        if input_str.startswith("0"):
             return (QValidator.State.Intermediate, input_str, pos)
 
         try:
             value = int(input_str)
             # Odd check
-            if value % 2 == 1:
-                if (self.minVal is None or value >= self.minVal) and \
-                   (self.maxVal is None or value <= self.maxVal):
-                    return (QValidator.State.Acceptable, input_str, pos)
+            if (
+                (value % 2 == 1)
+                and (self.minVal is None or value >= self.minVal)
+                and (self.maxVal is None or value <= self.maxVal)
+            ):
+                return (QValidator.State.Acceptable, input_str, pos)
             return (QValidator.State.Intermediate, input_str, pos)
         except ValueError:
             return (QValidator.State.Invalid, input_str, pos)
 
     # ----------------------------------------------------------------------------
     def fixup(self, input_str):
-        """ Attempt to fix the input string to a valid odd integer within bounds.
+        """Attempt to fix the input string to a valid odd integer within bounds.
         Args:
             input_str (str): The input string to fix.
         Returns:
@@ -75,12 +77,11 @@ class OddNumberValidator(QValidator):
 
 
 class ClampingIntValidator(QIntValidator):
-    """ Custom ClampingIntValidator - ensures input is an integer within specified bounds
-    """
+    """Custom ClampingIntValidator - ensures input is an integer within specified bounds"""
 
     # ----------------------------------------------------------------------------
     def fixup(self, input_str):
-        """ Attempt to fix the input string to a valid integer within bounds.
+        """Attempt to fix the input string to a valid integer within bounds.
         Args:
             input_str (str): The input string to fix.
         Returns:
@@ -103,13 +104,13 @@ class ClampingIntValidator(QIntValidator):
 
 
 class ClampingDblValidator(QtGui.QValidator):
-    """ Custom DoubleValidator - with upper and lower bounds that are optional
-        but exclusive.
+    """Custom DoubleValidator - with upper and lower bounds that are optional
+    but exclusive.
     """
 
     # ---------------------------------------------------------------------------
     def __init__(self, minVal=None, maxVal=None):
-        """ Validator to ensure input is a float within optional min and max bounds.
+        """Validator to ensure input is a float within optional min and max bounds.
         Args:
             minVal (float, optional): Minimum acceptable value. Defaults to None.
             maxVal (float, optional): Maximum acceptable value. Defaults to None.
@@ -121,7 +122,7 @@ class ClampingDblValidator(QtGui.QValidator):
 
     # ---------------------------------------------------------------------------
     def validate(self, input_str, pos):
-        """ Validate the input string.
+        """Validate the input string.
         Args:
             input_str (str): The input string to validate.
             pos (int): The current cursor position.
@@ -137,13 +138,14 @@ class ClampingDblValidator(QtGui.QValidator):
             return (QValidator.State.Intermediate, input_str, pos)
 
         # Do not allow non-numeric characters except for the decimal point
-        if not all(c.isdigit() or c == '.' for c in input_str):
+        if not all(c.isdigit() or c == "." for c in input_str):
             return (QValidator.State.Invalid, input_str, pos)
 
         try:
             value = float(input_str)
-            if (self.minVal is None or value > self.minVal) and \
-                    (self.maxVal is None or value < self.maxVal):
+            if (self.minVal is None or value > self.minVal) and (
+                self.maxVal is None or value < self.maxVal
+            ):
                 return (QValidator.State.Acceptable, input_str, pos)
             return (QValidator.State.Intermediate, input_str, pos)
         except ValueError:
@@ -151,7 +153,7 @@ class ClampingDblValidator(QtGui.QValidator):
 
     # ---------------------------------------------------------------------------
     def fixup(self, input_str):
-        """ Attempt to fix the input string to a valid float within bounds.
+        """Attempt to fix the input string to a valid float within bounds.
         Args:
             input_str (str): The input string to fix.
         Returns:
@@ -161,12 +163,12 @@ class ClampingDblValidator(QtGui.QValidator):
         try:
             value = float(input_str)
             if self.minVal is not None and value <= self.minVal:
-                value = self.minVal+epsilon
+                value = self.minVal + epsilon
             elif self.maxVal is not None and value >= self.maxVal:
-                value = self.maxVal-epsilon
+                value = self.maxVal - epsilon
         except ValueError:
             if self.minVal is not None:
-                value = str(self.minVal+epsilon)
+                value = str(self.minVal + epsilon)
             else:
                 value = str(epsilon)
 
@@ -174,22 +176,24 @@ class ClampingDblValidator(QtGui.QValidator):
 
 
 class IntListValidator(QIntValidator):
-    """ Custom IntListValidator - ensures input is an integer from a list of acceptable values
-    """
+    """Custom IntListValidator - ensures input is an integer from a list of acceptable values"""
 
     # ---------------------------------------------------------------------------
-    def __init__(self, values=[]):
-        """ Validator to ensure input is an integer from a list of acceptable values.
+    def __init__(self, values=None):
+        """Validator to ensure input is an integer from a list of acceptable values.
         Args:
             values (list): List of acceptable integer values.
         """
         super().__init__()
 
+        if values is None:
+            values = []
+
         self._values = values
 
     # ---------------------------------------------------------------------------
     def validate(self, input_str, pos):
-        """ Validate the input string.
+        """Validate the input string.
         Args:
             input_str (str): The input string to validate.
             pos (int): The current cursor position.
@@ -198,7 +202,7 @@ class IntListValidator(QIntValidator):
                    QValidator.State.Intermediate, or QValidator.State.Invalid.
         """
 
-        state, _, _ = super().validate(input_str, pos)
+        _, _, _ = super().validate(input_str, pos)
 
         try:
             value = int(input_str)
@@ -210,7 +214,7 @@ class IntListValidator(QIntValidator):
 
     # ---------------------------------------------------------------------------
     def fixup(self, input_str):
-        """ Attempt to fix the input string to a valid integer within the list of acceptable values.
+        """Attempt to fix the input string to a valid integer within the list of acceptable values.
         Args:
             input_str (str): The input string to fix.
         Returns:

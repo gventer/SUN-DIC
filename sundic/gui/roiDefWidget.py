@@ -1,24 +1,43 @@
 import os
+
 import natsort as ns
 import numpy as np
-
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit,
-    QSpacerItem, QSizePolicy, QGraphicsPixmapItem, QGraphicsView,
-    QGraphicsScene, QGraphicsRectItem, QApplication, QFrame,
-    QPushButton, QCheckBox, QFileDialog
-)
-from PyQt6.QtGui import QImage, QImageReader
 from PIL import Image
-from PyQt6.QtGui import QPixmap, QPen, QColor, QBrush, QCursor
-from PyQt6.QtCore import pyqtSignal, Qt, QPointF, QRectF
+from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QCursor, QImage, QImageReader, QPen, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QFileDialog,
+    QFrame,
+    QGraphicsPixmapItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from sundic.gui.validators import ClampingIntValidator
-from sundic.sundic import readImage, _setupROI_, _setupSubSets_, _loadMask_, _buildActiveSubsetsMask_
+from sundic.sundic import (
+    _buildActiveSubsetsMask_,
+    _loadMask_,
+    _setupROI_,
+    _setupSubSets_,
+    readImage,
+)
+
 
 class ROIDefUI(QWidget):
-    """ Class for the ROI definition UI: Defines the layout and widgets for the 
-        ROI definition tab
+    """Class for the ROI definition UI: Defines the layout and widgets for the
+    ROI definition tab
     """
 
     # ------------------------------------------------------------------------------
@@ -27,8 +46,8 @@ class ROIDefUI(QWidget):
 
         super().__init__(parent)
 
-        self._loadingData = False # Guard varaible to deal with sync 
-                                # between maskFile textfield
+        self._loadingData = False  # Guard varaible to deal with sync
+        # between maskFile textfield
 
         # Set the class variables
         self.parent = parent
@@ -108,12 +127,13 @@ class ROIDefUI(QWidget):
         gridLayout.addWidget(self.maskFileIn, 3, 1, 1, 2)
 
         self.maskBrowseBut = QPushButton("Browse...", self)
-        gridLayout.addWidget(self.maskBrowseBut, 3, 3, 1, 1)        
+        gridLayout.addWidget(self.maskBrowseBut, 3, 3, 1, 1)
 
         verticalLayout.addLayout(gridLayout)
 
         spacerItem = QSpacerItem(
-            10, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            10, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+        )
         verticalLayout.addItem(spacerItem)
 
         # Add the photo viewer for the ROI selection
@@ -131,7 +151,8 @@ centers defined by the mask (if enabled).""")
         # Add a label to show the coordinates of the mouse
         self.labelCoords = QLabel(self)
         self.labelCoords.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         verticalLayout.addWidget(self.labelCoords)
 
         # Add connections here
@@ -150,8 +171,6 @@ centers defined by the mask (if enabled).""")
         self.useMaskCheck.toggled.connect(self.changedMask)
         self.maskFileIn.editingFinished.connect(self.changedMask)
         self.toggleMaskControls(False)
-
-
 
     # ------------------------------------------------------------------------------
     # Function that is called to get data from this widget and store it in the settings object
@@ -177,7 +196,10 @@ centers defined by the mask (if enabled).""")
             self.yIn.setText(str(yPos))
             self.widthIn.setText(str(width))
             self.heightIn.setText(str(height))
-            hasMask = isinstance(settings.MaskFile, str) and len(settings.MaskFile.strip()) > 0
+            hasMask = (
+                isinstance(settings.MaskFile, str)
+                and len(settings.MaskFile.strip()) > 0
+            )
             fileName = settings.MaskFile.strip() if hasMask else "None"
 
             self.useMaskCheck.setChecked(hasMask)
@@ -185,7 +207,6 @@ centers defined by the mask (if enabled).""")
                 self.maskFileIn.setText(fileName)
             else:
                 self.maskFileIn.setText("")
-
 
             try:
                 imageFolder = self.parent.settings.ImageFolder
@@ -211,7 +232,7 @@ centers defined by the mask (if enabled).""")
                         pilImage.width,
                         pilImage.height,
                         pilImage.width * 4,
-                        QImage.Format.Format_RGBA8888
+                        QImage.Format.Format_RGBA8888,
                     )
                     pixmap = QPixmap.fromImage(qimage.copy())
 
@@ -222,16 +243,17 @@ centers defined by the mask (if enabled).""")
             except Exception as e:
                 print("Error setting ROI data:", e)
                 import traceback
+
                 traceback.print_exc()
-                self.roiViewer.setPhoto(QPixmap())   
+                self.roiViewer.setPhoto(QPixmap())
         finally:
-            self._loadingData = False          
+            self._loadingData = False
 
     # ------------------------------------------------------------------------------
     # Function that updates the display of coordinates
     def handleCoords(self, point):
         if not point.isNull():
-            self.labelCoords.setText(f'({int(point.x())}, {int(point.y())})')
+            self.labelCoords.setText(f"({int(point.x())}, {int(point.y())})")
         else:
             self.labelCoords.setText(" ")
 
@@ -308,7 +330,7 @@ centers defined by the mask (if enabled).""")
             pass
 
     # ------------------------------------------------------------------------------
-    # Helper function to update the mask preview when the user changes the mask file 
+    # Helper function to update the mask preview when the user changes the mask file
     # or toggles the use mask option
     def changedMask(self):
         """Save mask changes immediately to the settings object."""
@@ -318,13 +340,12 @@ centers defined by the mask (if enabled).""")
         self.parent.savedFlag = False
         self.parent.updateWindowTitle()
 
-
     # ------------------------------------------------------------------------------
-    # Helper function to toggle the mask file input and browse button based on the 
+    # Helper function to toggle the mask file input and browse button based on the
     # state of the checkbox
     def toggleMaskControls(self, checked):
-        """Enable or disable the mask file input and browse button based on the state 
-        of the "Use ROI binary mask" checkbox. When the checkbox is unchecked, the 
+        """Enable or disable the mask file input and browse button based on the state
+        of the "Use ROI binary mask" checkbox. When the checkbox is unchecked, the
         mask file input is cleared and both the input and browse button are disabled.
 
         Parameters:
@@ -333,9 +354,8 @@ centers defined by the mask (if enabled).""")
         self.maskFileIn.setEnabled(checked)
         self.maskBrowseBut.setEnabled(checked)
 
-
     # ------------------------------------------------------------------------------
-    # Helper function to open a file dialog for selecting the mask file and update 
+    # Helper function to open a file dialog for selecting the mask file and update
     # the mask file input with the selected file path
     def browseMaskFile(self):
         """Open a file dialog for selecting a binary mask image file and update the mask
@@ -347,7 +367,7 @@ centers defined by the mask (if enabled).""")
             self,
             "Select ROI Mask",
             "",
-            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+            "Images (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
         )
         if fileName:
             self.maskFileIn.setText(fileName)
@@ -356,23 +376,21 @@ centers defined by the mask (if enabled).""")
             self.changedMask()
 
     # -----------------------------------------------------------------------------
-    # Helper function to update the mask preview points on the image based on the 
+    # Helper function to update the mask preview points on the image based on the
     # current ROI definition and mask file
     def updateMaskPreview(self):
-        """Update the mask preview points on the image based on the current ROI definition and mask file.
-        """
+        """Update the mask preview points on the image based on the current ROI definition and mask file."""
         try:
             imageFolder = self.parent.settings.ImageFolder
             files = ns.os_sorted(os.listdir(imageFolder))
             roiImage = files[self.parent.settings.DatumImage]
             firstImagePath = os.path.join(imageFolder, roiImage)
 
-            settings = self.parent.settings
             roiVals = [
                 int(self.xIn.text()),
                 int(self.yIn.text()),
                 int(self.widthIn.text()),
-                int(self.heightIn.text())
+                int(self.heightIn.text()),
             ]
 
             img0 = readImage(firstImagePath, normalize8Bit=True)
@@ -382,7 +400,8 @@ centers defined by the mask (if enabled).""")
                 self.parent.settings.StepSize,
                 self.parent.settings.ShapeFunctions,
                 ROI,
-                firstImagePath, debugLevel=0
+                firstImagePath,
+                debugLevel=0,
             )
 
             activeSubsets = np.ones(subSetPnts.shape[:2], dtype=bool)
@@ -401,10 +420,8 @@ centers defined by the mask (if enabled).""")
             self.roiViewer.clearMaskPreview()
 
 
-        
 class PhotoViewer(QGraphicsView):
-    """ Class for the photo viewer used in the ROI definition tab
-    """
+    """Class for the photo viewer used in the ROI definition tab"""
 
     coordinatesChanged = pyqtSignal(QPointF)
     rectDrawn = pyqtSignal(float, float, float, float)
@@ -431,15 +448,13 @@ class PhotoViewer(QGraphicsView):
         self.scene.addItem(self.photo)
         self.setScene(self.scene)
 
-        self.setTransformationAnchor(
-            QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
 
         self.setMinimumSize(400, 300)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding,
-                        QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     # ------------------------------------------------------------------------------
     # Function to reset the view
@@ -495,8 +510,11 @@ class PhotoViewer(QGraphicsView):
 
         step = int(step)
         self.zoomLevel += step
-        scaleFactor = self.SCALE_FACTOR ** step if step > 0 else 1 / \
-            (self.SCALE_FACTOR ** abs(step))
+        scaleFactor = (
+            self.SCALE_FACTOR**step
+            if step > 0
+            else 1 / (self.SCALE_FACTOR ** abs(step))
+        )
         self.currentScale *= scaleFactor
         self.scale(scaleFactor, scaleFactor)
 
@@ -527,8 +545,10 @@ class PhotoViewer(QGraphicsView):
             return
 
         # Enable panning with Shift + Left Click
-        if (event.button() == Qt.MouseButton.LeftButton and
-                QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier):
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier
+        ):
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             super().mousePressEvent(event)
@@ -624,8 +644,7 @@ class PhotoViewer(QGraphicsView):
             if rect.isNull():
                 rect = QRectF(0, 0, 1, 1)
 
-            self.rectDrawn.emit(rect.x(), rect.y(),
-                                rect.width(), rect.height())
+            self.rectDrawn.emit(rect.x(), rect.y(), rect.width(), rect.height())
 
             self._finalRect = QGraphicsRectItem(rect)
             self._finalRect.setPen(pen)
@@ -693,24 +712,23 @@ class PhotoViewer(QGraphicsView):
     # ------------------------------------------------------------------------------
     # Function to clear the mask preview items from the scene
     def clearMaskPreview(self):
-        """Remove any existing mask preview items from the scene and clear the list of mask preview items.
-        """
+        """Remove any existing mask preview items from the scene and clear the list of mask preview items."""
         for item in self._maskPreviewItems:
             self.scene.removeItem(item)
 
         self._maskPreviewItems = []
 
     # ------------------------------------------------------------------------------
-    # Function to set the mask preview points on the image based on the coordinates 
+    # Function to set the mask preview points on the image based on the coordinates
     # of the active points defined by the mask
     def setMaskPreviewPoints(self, xCoords, yCoords):
-        """ Add small green circles to the scene at the specified x and y 
-            coordinates to preview the active points defined by the mask. Any existing 
-            mask preview items are cleared before adding the new ones.
+        """Add small green circles to the scene at the specified x and y
+        coordinates to preview the active points defined by the mask. Any existing
+        mask preview items are cleared before adding the new ones.
 
-            Parameters:
-                xCoords (array-like): An array of x coordinates for the active points defined by the mask.
-                yCoords (array-like): An array of y coordinates for the active points defined by the mask.
+        Parameters:
+            xCoords (array-like): An array of x coordinates for the active points defined by the mask.
+            yCoords (array-like): An array of y coordinates for the active points defined by the mask.
         """
         self.clearMaskPreview()
 
