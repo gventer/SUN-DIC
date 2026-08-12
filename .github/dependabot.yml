@@ -5,8 +5,8 @@ updates:
     schedule:
       interval: "weekly"          # Options: "daily", "weekly", "monthly"
     open-pull-requests-limit: 5   # (optional) Limit number of open PRs
-  ignore:
+    ignore:
       - dependency-name: "*"
-        update-types: 
+        update-types:
           - "version-update:semver-patch"
           - "version-update:semver-minor"
