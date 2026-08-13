@@ -1,4 +1,6 @@
-__version__ = "0.0.36"
+__version__ = "0.0.36b"
+# 0.0.37 - Sort out ruff linting errors and warnings
+#        -
 # 0.0.36 - Added ruff linting and formatting
 #        - Changed daily checks to run when push/pull requests are received
 #        - Disabled fastmath in interpolator

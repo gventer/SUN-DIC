@@ -1,4 +1,4 @@
-import os
+import os  # noqa: N999
 
 import natsort as ns
 from PyQt6 import QtCore
@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListView,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSpacerItem,
@@ -266,7 +267,10 @@ Starts from 1.""")
 
             # Do a natural sort on the filenames and display them in the image list
             files = ns.os_sorted(files)
-        except Exception:
+        except OSError:
+            QMessageBox.warning(
+                self, "Warning", f"No files found in folder: {self.folderDisp.text()}"
+            )
             files = None
 
         # Setup the ItemModel from the start, end and increment values
@@ -326,7 +330,7 @@ Starts from 1.""")
         try:
             files = os.listdir(self.folderDisp.text())
             return len(files)
-        except Exception:
+        except OSError:
             return 2
 
     # ------------------------------------------------------------------------------

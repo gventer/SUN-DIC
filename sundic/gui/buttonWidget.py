@@ -1,4 +1,4 @@
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets  # noqa: N999
 
 
 class LeftIconButton(QtWidgets.QPushButton):

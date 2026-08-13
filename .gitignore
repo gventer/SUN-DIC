@@ -10,6 +10,7 @@ test_sundic.py
 SUN-DIC.code-workspace
 SUN_DIC.egg-info/
 settings.json
+spellright.dict
 sundic/docs/SUN-DIC_Manual.aux
 sundic/docs/SUN-DIC_Manual.bbl
 sundic/docs/SUN-DIC_Manual.blg

@@ -1,4 +1,4 @@
-import os
+import os  # noqa: N999
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPainter, QPixmap

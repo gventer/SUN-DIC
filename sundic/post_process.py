@@ -745,7 +745,7 @@ def plotDispCutLine(
     imgPair,
     dispComp=DispComp.DISP_MAG,
     cutComp=CompID.YCoordID,
-    cutValues=[0],
+    cutValues=None,
     gridLines=True,
     showPlot=True,
     fileName="",
@@ -840,7 +840,7 @@ def plotStrainCutLine(
     imgPair,
     strainComp=StrainComp.VM_STRAIN,
     cutComp=CompID.YCoordID,
-    cutValues=[0],
+    cutValues=None,
     gridLines=True,
     showPlot=True,
     fileName="",
@@ -1086,6 +1086,9 @@ def _createCutLineGraph_(
         None
 
     """
+
+    if cutValues is None:
+        cutValues = [0]
 
     # Process the raw data arrays
     X = dataX.reshape(nCols, nRows)

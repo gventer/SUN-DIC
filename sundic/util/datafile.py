@@ -42,7 +42,7 @@ class DataFile:
         """
         obj = cls.__new__(cls)  # Does not call __init__
         super(DataFile, obj).__init__()
-        obj.__fh__ = open(filename, "rb")
+        obj.__fh__ = open(filename, "rb")  # noqa: SIM115
         return obj
 
     # --------------------------------------------------------------------------
@@ -56,7 +56,7 @@ class DataFile:
         """
         obj = cls.__new__(cls)  # Does not call __init__
         super(DataFile, obj).__init__()
-        obj.__fh__ = open(filename, "wb")
+        obj.__fh__ = open(filename, "wb")  # noqa: SIM115
         return obj
 
     # --------------------------------------------------------------------------

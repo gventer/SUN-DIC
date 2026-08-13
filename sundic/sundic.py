@@ -1626,7 +1626,7 @@ def _akazeDetect_(adPoints, adActive, F, G):
                 try:
                     kpG, descG = akaze.detectAndCompute(trainImg, None)
                     kpQ, descQ = akaze.detectAndCompute(queryImg, None)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     # If we cannot detect keypoints, we will just continue to the next
                     # iteration and try with a larger subset size
                     kpG, descG = [], None
@@ -1682,7 +1682,7 @@ def _akazeDetect_(adPoints, adActive, F, G):
                     model_robust.params[1][1] - 1.0
                 )
 
-            except Exception:
+            except Exception:  # noqa: BLE001
                 adPoints[iRow, iCol, CompID.XDispID :] = 0.0
 
     return adPoints
@@ -2324,7 +2324,7 @@ def readImage(imgFile, normalize8Bit=False):
         else:
             grayImg = img
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise RuntimeError(f"Error reading image file {imgFile}: {e}")
 
     # Use the full range of the image bitrange but keep the same data type
@@ -2369,7 +2369,7 @@ def _safeRayInit_(externalRay, nCpus, debugLevel=0):
                 return ray.init(num_cpus=nCpus)
             else:
                 return ray.init(address="auto", ignore_reinit_error=True)
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray init failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(2)
@@ -2397,7 +2397,7 @@ def _safeRayLaunch_(func, debugLevel=0):
     for i in range(nRetry):
         try:
             return ray.get(func)
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray task launch failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(1)
@@ -2427,7 +2427,7 @@ def _safeRayShutdown_(externalRay, debugLevel=0):
             if not externalRay:
                 ray.shutdown()
             return
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray shutdown failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(1)

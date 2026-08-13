@@ -1,4 +1,4 @@
-import os
+import os  # noqa: N999
 
 import matplotlib
 import numpy as np
@@ -53,7 +53,7 @@ def showGraph(parent, figure, layout):
             if widget is not None and widget.objectName() in widgetNames:
                 widget.setParent(None)
                 widget.deleteLater()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     # Add the new ones
@@ -483,7 +483,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
                 if not csvPath.endswith(".csv"):
                     csvPath = csvPath + ".csv"
                 results.to_csv(csvPath, index=False)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Capture the standard error and display it in a popup
             error_message = str(e)
             QMessageBox.critical(self, "Error", f"{error_message}")
@@ -740,7 +740,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
                 )
                 showGraph(self, figure, self.verticalLayout)
 
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
 
@@ -1002,7 +1002,7 @@ boundaries in the ROI (eg holes) where the results may be unreliable.""")
                 )
 
                 showGraph(self, figure, self.verticalLayout)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")
 
 
@@ -1242,7 +1242,7 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                 )
                 showGraph(self, figure, self.verticalLayout)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")
 
     # ------------------------------------------------------------------------------
@@ -1308,5 +1308,5 @@ A value of 0 means no smoothing but can only be set to zero for displacement."""
                     csvPath += ".csv"
                 df.to_csv(csvPath, index=False)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Error", f"An error occurred: {e!s}")
