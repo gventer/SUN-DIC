@@ -47,6 +47,7 @@ SUN-DIC documentation is currently provided through the following resources:
 # Publications
 
 1. Venter, Gerhard and Neaves, Melody, [*SUN-DIC: A Python-Based Open-Source Software Tool for Digital Image Correlation*](https://www.sciencedirect.com/science/article/pii/S0965997825001814), Advances in Engineering Software, Volume 211, 2025.
+2. Visser, Carl-Hein and Venter, Gerhard and Neaves, Melody, [*A Strain-Gauge-Based Method for the Compensation of Out-of-Plane Motions in 2D Digital Image Correlation*](https://www.mdpi.com/2297-8747/28/2/40), Mathematical and Computational Applications, Volume 28, Issue 2, 2023.
 
 
 # Key Features
