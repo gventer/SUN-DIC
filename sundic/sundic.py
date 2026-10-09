@@ -1669,18 +1669,21 @@ def _akazeDetect_(adPoints, adActive, F, G):
                     max_trials=100,
                 )
 
+                # Calculate the initial subset center position
+                x_c = x - xMin
+                y_c = y - yMin
+                # Calculate the deformed subset center position
+                x_prime = model_robust.params[0][0] * x_c + model_robust.params[0][1] * y_c + model_robust.params[0][2]
+                y_prime = model_robust.params[1][0] * x_c + model_robust.params[1][1] * y_c + model_robust.params[1][2]
+
                 # Get the affine transformation homography coefficients
-                adPoints[iRow, iCol, CompID.XDispID + 0] = model_robust.params[0][2]
-                adPoints[iRow, iCol, CompID.XDispID + 1] = (
-                    model_robust.params[0][0] - 1.0
-                )
+                adPoints[iRow, iCol, CompID.XDispID + 0] = x_prime - x_c
+                adPoints[iRow, iCol, CompID.XDispID + 1] = model_robust.params[0][0] - 1.0
                 adPoints[iRow, iCol, CompID.XDispID + 2] = model_robust.params[0][1]
 
-                adPoints[iRow, iCol, CompID.YDispID + 0] = model_robust.params[1][2]
+                adPoints[iRow, iCol, CompID.YDispID + 0] = y_prime - y_c
                 adPoints[iRow, iCol, CompID.YDispID + 1] = model_robust.params[1][0]
-                adPoints[iRow, iCol, CompID.YDispID + 2] = (
-                    model_robust.params[1][1] - 1.0
-                )
+                adPoints[iRow, iCol, CompID.YDispID + 2] = model_robust.params[1][1] - 1.0
 
             except Exception:  # noqa: BLE001
                 adPoints[iRow, iCol, CompID.XDispID :] = 0.0
