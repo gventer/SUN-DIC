@@ -120,9 +120,9 @@ class DataFile:
         pImgPair = msgpack.packb(imgPair)
         self.__fh__.write(pImgPair)
 
-        # Filter data to save only essential columns if 'disp_only' mode is selected
+        # Filter data to save only essential columns if 'DispOnly' mode is selected
         save_mode = getattr(self, "dataSaveMode", "All")
-        if save_mode == "disp_only":
+        if save_mode == "DispOnly":
             data_to_write = data[:, :, [0, 1, 2, 3, 4, 5, 11]]
         else:
             data_to_write = data
@@ -222,7 +222,7 @@ class DataFile:
         if last_data is None:
             return None
 
-        # If data was saved in 'disp_only' mode (7 columns), pad with zeros
+        # If data was saved in 'DispOnly' mode (7 columns), pad with zeros
         # to recreate the 17-column structure expected by the post-processing tools
         if len(last_dim) == 3 and last_dim[2] == 7:
             full_data = np.zeros((last_dim[0], last_dim[1], 17))
