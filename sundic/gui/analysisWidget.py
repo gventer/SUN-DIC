@@ -1,4 +1,4 @@
-import socket
+import socket  # noqa: N999
 import sys
 import time
 
@@ -366,7 +366,7 @@ class PlanarDICWorker(QThread):
                     self.settings, self.resultsFile, externalRay=False, guiThread=self
                 )
             self.finished.emit("FINISHED")
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError, TypeError) as e:
             self.finished.emit(f"Exception in thread: {e}")
         finally:
             sys.stdout = saveStdOut
@@ -414,21 +414,3 @@ class PlanarDICWorker(QThread):
                 return True
         except OSError:
             return False
-
-    # # ------------------------------------------------------------------------------
-    # # Start or connect to a Ray cluster
-    # def startConnectRay(self):
-    #     address = "auto"
-    #     try:
-    #         # Try connecting to an existing Ray cluster
-    #         ray.init(address=address)
-    #         return False  # Did not start locally, so don't need to shutdown
-    #     except Exception:
-    #         # Start a new local Ray cluster
-    #         ray.init()
-    #         return True  # Started locally, remember to shutdown
-
-    # # ------------------------------------------------------------------------------
-    # # Shutdown Ray gracefully
-    # def shutdownRay(self):
-    #     ray.shutdown()

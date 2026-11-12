@@ -1,4 +1,14 @@
-__version__ = "0.0.36"
+__version__ = "0.0.37"
+# 0.0.37 - Sort out ruff linting errors and warnings
+#        - Updated the starting point assumed displacement for each new subset based on the
+#          the offset of the best neighbor subset.  This should improve convergence and reduce
+#          the number of iterations required for convergence.
+#        - Updated center point for subsets to be the center of the subset rather
+#          than the top left corner.  This should improve convergence and reduce
+#          the number of iterations required for convergence.
+#        - Fixed bug that prevented the DispOnly saving option from working properly.
+#          This option allows the user to only save the displacement data and not the other
+#          data that is normally saved in the results file.
 # 0.0.36 - Added ruff linting and formatting
 #        - Changed daily checks to run when push/pull requests are received
 #        - Disabled fastmath in interpolator

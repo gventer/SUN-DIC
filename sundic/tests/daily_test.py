@@ -78,18 +78,18 @@ def test_daily_sundic_example_regression():
         "um_std": float(np.std(um)),
     }
     expected = {
-        "ux_min": -41.3179,
-        "ux_max": -6.8583,
-        "ux_mean": -24.2743,
-        "ux_std": 14.9013,
-        "uy_min": -8.5182,
-        "uy_max": 9.7297,
-        "uy_mean": 0.2014,
-        "uy_std": 1.9595,
-        "um_min": 6.8510,
-        "um_max": 41.2756,
-        "um_mean": 24.3615,
-        "um_std": 14.8894,
+        "ux_min": -41.3499,
+        "ux_max": -6.8586,
+        "ux_mean": -24.2755,
+        "ux_std": 14.8975,
+        "uy_min": -8.5196,
+        "uy_max": 9.7209,
+        "uy_mean": 0.2013,
+        "uy_std": 1.9630,
+        "um_min": 6.8499,
+        "um_max": 41.2967,
+        "um_mean": 24.3629,
+        "um_std": 14.8854,
     }
 
     # Tolerance: tune if needed for platform/library drift.
@@ -98,6 +98,9 @@ def test_daily_sundic_example_regression():
     # Make the comparison on the results
     for k, exp in expected.items():
         val = stats[k]
+        # print(
+        #     f"{k}: got {val:.4f}, expected {exp:.4f}, |Δ|={abs(val - exp):.4f} <= {atol}"
+        # )
         assert abs(val - exp) <= atol, (
             f"{k}: got {val:.4f}, expected {exp:.4f}, |Δ|={abs(val - exp):.4f} > {atol}"
         )

@@ -1,4 +1,4 @@
-import os
+import os  # noqa: N999
 
 import natsort as ns
 import numpy as np
@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSpacerItem,
@@ -240,11 +241,9 @@ centers defined by the mask (if enabled).""")
                 self.roiViewer.setRect(xPos, yPos, width, height)
                 self.updateMaskPreview()
 
-            except Exception as e:
-                print("Error setting ROI data:", e)
-                import traceback
-
-                traceback.print_exc()
+            except (FileNotFoundError, IndexError, OSError, ValueError) as e:
+                # Handle expected errors from file access, indexing, image loading/conversion
+                QMessageBox.critical(self, "Error", f"Error setting ROI data: {e!s}")
                 self.roiViewer.setPhoto(QPixmap())
         finally:
             self._loadingData = False
@@ -415,9 +414,12 @@ centers defined by the mask (if enabled).""")
             y = subSetPnts[:, :, 1][activeSubsets]
             self.roiViewer.setMaskPreviewPoints(x, y)
 
-        except Exception as e:
-            print("Error updating mask preview:", e)
-            self.roiViewer.clearMaskPreview()
+        except (OSError, IndexError, ValueError) as e:
+            QMessageBox.critical(self, "Error", f"Error updating mask preview: {e!s}")
+            try:
+                self.roiViewer.clearMaskPreview()
+            except Exception:  # noqa: BLE001, S110
+                pass
 
 
 class PhotoViewer(QGraphicsView):

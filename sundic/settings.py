@@ -28,7 +28,7 @@ class Settings:
     __defDatumImage = 0
     __defTargetImage = -1
     __defIncrement = 1
-    __defROI = [0, 0, 0, 0]
+    __defROI = [0, 0, 0, 0]  # noqa: RUF012
     __defBackgroundCutoff = 25
     __defOptimizationAlgorithm = "IC-GN"
     __defMaxIterations = 50

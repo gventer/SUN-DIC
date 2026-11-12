@@ -68,7 +68,7 @@ def copy_examples(include_manual: bool = False) -> list[Path]:
             _copy_resource(source, target)
             print(f"Copied {resource} -> {target}")
             copied_paths.append(target)
-        except Exception as exc:
+        except OSError as exc:
             print(f"Error copying {resource}: {exc}")
 
     return copied_paths

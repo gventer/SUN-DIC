@@ -33,7 +33,6 @@ class IntConst(IntEnum):
     CNZSSD_MAX = 1000000  # Maximum value for CZNSSD - indicate point has not been set
     SUBSET_PNT_SIZE = 17  # Number of values stored for each subset
     MIN_SUBSET_SIZE = 5  # Minimum allowable subset size to use for the analysis
-    MAX_NEIGHBORS = 4  # Maximum number of neighbors to use for next point
 
 
 # Define floating point constants
@@ -1285,19 +1284,20 @@ def _getNextPnt_(
     iRow, iCol = currentPnt
     maxRow, maxCol = subSetPnts.shape[0] - 1, subSetPnts.shape[1] - 1
 
-    # Precompute neighbor indices
+    # Precompute neighbor indices - we look at all 8 neighbors (4 direct and 4 diagonal)
     neighbor_indices = [
-        (max(0, iRow - 1), iCol),
-        (min(maxRow, iRow + 1), iCol),
-        (iRow, max(0, iCol - 1)),
-        (iRow, min(maxCol, iCol + 1)),
-        (max(0, iRow - 1), max(0, iCol - 1)),
-        (max(0, iRow - 1), min(maxCol, iCol + 1)),
-        (min(maxRow, iRow + 1), max(0, iCol - 1)),
-        (min(maxRow, iRow + 1), min(maxCol, iCol + 1)),
+        (max(0, iRow - 1), iCol),  # left neighbor
+        (min(maxRow, iRow + 1), iCol),  # right neighbor
+        (iRow, max(0, iCol - 1)),  # top neighbor
+        (iRow, min(maxCol, iCol + 1)),  # bottom neighbor
+        (max(0, iRow - 1), max(0, iCol - 1)),  # top-left neighbor
+        (max(0, iRow - 1), min(maxCol, iCol + 1)),  # top-right neighbor
+        (min(maxRow, iRow + 1), max(0, iCol - 1)),  # bottom-left neighbor
+        (min(maxRow, iRow + 1), min(maxCol, iCol + 1)),  # bottom-right neighbor
     ]
     neighbor_indices = list(dict.fromkeys(neighbor_indices))
 
+    # Filter neighbors to only include active subsets that have not been analyzed yet
     neighbors = [
         (r, c)
         for r, c in neighbor_indices
@@ -1316,11 +1316,7 @@ def _getNextPnt_(
     all_neighbor_info = []  # Store (row, col, x0, y0, f_info, etc.)
 
     # First pass: collect all neighbors and their coordinate transformations
-    for idx, (r, c) in enumerate(neighbors[: IntConst.MAX_NEIGHBORS]):
-        # Skip if already analyzed
-        if analyzed[r, c]:
-            continue
-
+    for idx, (r, c) in enumerate(neighbors):
         # The current point and its coordinates
         x0 = int(subSetPnts[r, c, CompID.XCoordID])
         y0 = int(subSetPnts[r, c, CompID.YCoordID])
@@ -1426,16 +1422,30 @@ def _getNextPnt_(
 
             # Store the CZNSSD value if it's better
             if newCZNSSD < oldCZNSSD:
-                subSetPnts[info["row"], info["col"], CompID.XDispID :] = subSetPnts[
-                    currentPnt[0], currentPnt[1], CompID.XDispID :
-                ]
+                source = subSetPnts[currentPnt[0], currentPnt[1], CompID.XDispID :]
+                sourceX = subSetPnts[currentPnt[0], currentPnt[1], CompID.XCoordID]
+                sourceY = subSetPnts[currentPnt[0], currentPnt[1], CompID.YCoordID]
+                targetX = subSetPnts[info["row"], info["col"], CompID.XCoordID]
+                targetY = subSetPnts[info["row"], info["col"], CompID.YCoordID]
+                subSetPnts[info["row"], info["col"], CompID.XDispID :] = (
+                    _recenterModelCoefficients_(
+                        source,
+                        targetX - sourceX,
+                        targetY - sourceY,
+                        subSetPnts[currentPnt[0], currentPnt[1], CompID.ShapeFnID],
+                    )
+                )
+
                 subSetPnts[info["row"], info["col"], CompID.CZNSSDID] = newCZNSSD
 
     # Find the index of the best point that has not been analyzed yet using a masked array
     cznssd_arr = subSetPnts[:, :, CompID.CZNSSDID]
     valid = activeSubsets & (~analyzed)
+
+    # End of the line - no more valied points to analyze - return None
     if not np.any(valid):
         return None, subSetPnts
+
     masked_cznssd = np.where(valid, cznssd_arr, np.inf)
     nextPnt = np.unravel_index(np.argmin(masked_cznssd), masked_cznssd.shape)
 
@@ -1626,7 +1636,7 @@ def _akazeDetect_(adPoints, adActive, F, G):
                 try:
                     kpG, descG = akaze.detectAndCompute(trainImg, None)
                     kpQ, descQ = akaze.detectAndCompute(queryImg, None)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     # If we cannot detect keypoints, we will just continue to the next
                     # iteration and try with a larger subset size
                     kpG, descG = [], None
@@ -1651,7 +1661,8 @@ def _akazeDetect_(adPoints, adActive, F, G):
                 matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
                 matches = matcher.match(descQ, descG)  # query then train
 
-                # Store the x and y coordinates of the keypoints
+                # Store the x and y coordinates of the keypoints - these are relative to the
+                # top left corner of the subset image used for the Akaze detection!
                 nTop = len(matches)
                 coordQ = np.zeros([2, nTop])
                 coordG = np.zeros([2, nTop])
@@ -1669,20 +1680,29 @@ def _akazeDetect_(adPoints, adActive, F, G):
                     max_trials=100,
                 )
 
+                # Calculate the initial subset center position
+                centerQ = np.array([x - xMin, y - yMin])
+
+                # Map the center point to the deformed image
+                centerG = model_robust(centerQ[None, :])[0]
+
+                # The displacement at the center of the subset
+                dx, dy = centerG - centerQ
+
                 # Get the affine transformation homography coefficients
-                adPoints[iRow, iCol, CompID.XDispID + 0] = model_robust.params[0][2]
+                adPoints[iRow, iCol, CompID.XDispID + 0] = dx
                 adPoints[iRow, iCol, CompID.XDispID + 1] = (
                     model_robust.params[0][0] - 1.0
                 )
                 adPoints[iRow, iCol, CompID.XDispID + 2] = model_robust.params[0][1]
 
-                adPoints[iRow, iCol, CompID.YDispID + 0] = model_robust.params[1][2]
+                adPoints[iRow, iCol, CompID.YDispID + 0] = dy
                 adPoints[iRow, iCol, CompID.YDispID + 1] = model_robust.params[1][0]
                 adPoints[iRow, iCol, CompID.YDispID + 2] = (
                     model_robust.params[1][1] - 1.0
                 )
 
-            except Exception:
+            except Exception:  # noqa: BLE001
                 adPoints[iRow, iCol, CompID.XDispID :] = 0.0
 
     return adPoints
@@ -1900,6 +1920,63 @@ def _relativeDeformedCoords_(p, xsi, eta, shapeFn):
         )
 
     return xsi_d, eta_d
+
+
+# --------------------------------------------------------------------------------------------
+def _recenterModelCoefficients_(p, deltaX, deltaY, shapeFn):
+    """
+    Express a deformation model relative to a new subset centre.
+
+    The returned model represents the same global warp as ``p`` when the new
+    centre is ``(deltaX, deltaY)`` away from the old centre.
+
+    Parameters:
+    - p: array-like
+        The original model coefficients.
+    - deltaX: float
+        The x-coordinate of the new center relative to the old center.
+    - deltaY: float
+        The y-coordinate of the new center relative to the old center.
+    - shapeFn: int
+        The type of shape functions to use.
+
+    Returns:
+    - recentered: array-like
+        The recentered model coefficients.
+    """
+    recentered = np.array(p, copy=True)
+
+    if shapeFn == ShapeFN.AFFINE:
+        recentered[0] = p[0] + p[1] * deltaX + p[2] * deltaY
+        recentered[6] = p[6] + p[7] * deltaX + p[8] * deltaY
+
+    elif shapeFn == ShapeFN.QUADRATIC:
+        recentered[0] = (
+            p[0]
+            + p[1] * deltaX
+            + p[2] * deltaY
+            + 0.5 * p[3] * deltaX**2
+            + p[4] * deltaX * deltaY
+            + 0.5 * p[5] * deltaY**2
+        )
+        recentered[6] = (
+            p[6]
+            + p[7] * deltaX
+            + p[8] * deltaY
+            + 0.5 * p[9] * deltaX**2
+            + p[10] * deltaX * deltaY
+            + 0.5 * p[11] * deltaY**2
+        )
+        recentered[1] = p[1] + p[3] * deltaX + p[4] * deltaY
+        recentered[2] = p[2] + p[4] * deltaX + p[5] * deltaY
+        recentered[7] = p[7] + p[9] * deltaX + p[10] * deltaY
+        recentered[8] = p[8] + p[10] * deltaX + p[11] * deltaY
+    else:
+        raise ValueError(
+            "Invalid ShapeFunctions value. Only supported values are: Affine | Quadratic"
+        )
+
+    return recentered
 
 
 # --------------------------------------------------------------------------------------------
@@ -2324,7 +2401,7 @@ def readImage(imgFile, normalize8Bit=False):
         else:
             grayImg = img
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise RuntimeError(f"Error reading image file {imgFile}: {e}")
 
     # Use the full range of the image bitrange but keep the same data type
@@ -2369,7 +2446,7 @@ def _safeRayInit_(externalRay, nCpus, debugLevel=0):
                 return ray.init(num_cpus=nCpus)
             else:
                 return ray.init(address="auto", ignore_reinit_error=True)
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray init failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(2)
@@ -2397,7 +2474,7 @@ def _safeRayLaunch_(func, debugLevel=0):
     for i in range(nRetry):
         try:
             return ray.get(func)
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray task launch failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(1)
@@ -2427,7 +2504,7 @@ def _safeRayShutdown_(externalRay, debugLevel=0):
             if not externalRay:
                 ray.shutdown()
             return
-        except Exception as e:
+        except ray.exceptions.RayError as e:
             if debugLevel > 0:
                 print(f"Ray shutdown failed: {e}, retrying ({i + 1}/{nRetry})...")
             time.sleep(1)

@@ -1,4 +1,4 @@
-import os
+import os  # noqa: N999
 import sys
 import time
 from enum import IntEnum
@@ -575,7 +575,7 @@ class UIMainWindow:
             self.parent.roiDefUI.setData(self.parent.settings)
             self.parent.analysisUI.setData(self.parent.settings)
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             QMessageBox.critical(
                 self.parent,
                 "Import Settings Error",
@@ -608,7 +608,7 @@ class UIMainWindow:
             # Save to text file
             self.parent.settings.saveSettings(filePath)
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             QMessageBox.critical(
                 self.parent,
                 "Export Settings Error",
@@ -713,7 +713,7 @@ class mainProgram(QMainWindow, UIMainWindow):
                 elif reply == QMessageBox.StandardButton.Save:
                     self.saveAction()
                     event.accept()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Exception during closeEvent: {e}")
             event.accept()
 

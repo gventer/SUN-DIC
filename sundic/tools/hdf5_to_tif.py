@@ -69,5 +69,5 @@ for f in os.listdir(DIR):
                 else:
                     print(f"WARNING:  Dataset '{DATA_SET}' not found in the HDF5 file.")
 
-        except Exception as e:
+        except (OSError, h5py.HDF5Error) as e:
             print(f"ERROR: Processing {hdf5_file_path} failed: {e}")
